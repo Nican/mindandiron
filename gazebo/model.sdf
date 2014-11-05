@@ -4,7 +4,13 @@
    
    <static>false</static>
    <link name='chassis'>
-    <pose>0 0 .1 0 0 1.57079633</pose>
+    <pose>0 0 0 0 0 0</pose>
+
+    <inertial>
+      <pose>0 0.5 0.1 0 -0 0</pose>
+      <mass>10</mass>
+    </inertial>
+
     <collision name='collision'>
       <geometry>
         <mesh>
@@ -24,7 +30,7 @@
     </visual>
 
     <collision name='caster_collision'>
-      <pose>-0.15 0 -0.05 0 0 0</pose>
+      <pose>0 1.05 -0.057 0 0 0</pose>
       <geometry>
         <sphere>
           <radius>.05</radius>
@@ -44,7 +50,7 @@
     </collision>
 
     <visual name='caster_visual'>
-      <pose>0 1.2 -0.05 0 0 0</pose>
+      <pose>0 1.05 -0.057 0 0 0</pose>
       <geometry>
         <sphere>
           <radius>.05</radius>
@@ -52,51 +58,53 @@
       </geometry>
     </visual>
   </link>
+
   <link name="left_wheel">
-    <pose>-0.35 0.4 0.114 0 1.5707 1.5707</pose>
+    <pose>0.31 0.33 0.05 0 1.5707 0</pose>
     <collision name="collision">
       <geometry>
         <cylinder>
-          <radius>.114</radius>
-          <length>.05</length>
+          <radius>.157</radius>
+          <length>.065</length>
         </cylinder>
       </geometry>
     </collision>
     <visual name="visual">
       <geometry>
         <cylinder>
-          <radius>.114</radius>
-          <length>.05</length>
+          <radius>.157</radius>
+          <length>.065</length>
         </cylinder>
       </geometry>
     </visual>
   </link>
 
   <link name="right_wheel">
-    <pose>-0.35 -0.4 0.114 0 1.5707 1.5707</pose>
+    <pose>-0.31 0.33 0.05 0 1.5707 0</pose>
     <collision name="collision">
       <geometry>
         <cylinder>
-          <radius>.114</radius>
-          <length>.05</length>
+          <radius>.157</radius>
+          <length>.065</length>
         </cylinder>
       </geometry>
     </collision>
     <visual name="visual">
       <geometry>
         <cylinder>
-          <radius>.114</radius>
-          <length>.05</length>
+          <radius>.157</radius>
+          <length>.065</length>
         </cylinder>
       </geometry>
     </visual>
   </link>
+
   <joint type="revolute" name="left_wheel_hinge">
     <pose>0 0 -0.03 0 0 0</pose>
     <child>left_wheel</child>
     <parent>chassis</parent>
     <axis>
-      <xyz>0 1 0</xyz>
+      <xyz>1 0 0</xyz>
     </axis>
   </joint>
 
@@ -105,10 +113,11 @@
     <child>right_wheel</child>
     <parent>chassis</parent>
     <axis>
-      <xyz>0 1 0</xyz>
+      <xyz>1 0 0</xyz>
     </axis>
   </joint>
 
+  <!--
   <include>
     <uri>model://hokuyo</uri>
     <pose>-1.275 0 0.2 0 3.14 0</pose>
@@ -124,6 +133,7 @@
       </limit>
     </axis>
   </joint>
+-->
 
   <plugin name="kratos" filename="libkratos.so"/>
 </model>

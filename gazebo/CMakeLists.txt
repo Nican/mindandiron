@@ -13,5 +13,5 @@ endif()
 include_directories(${GAZEBO_INCLUDE_DIRS})
 link_directories(${GAZEBO_LIBRARY_DIRS})
 
-add_library(kratos SHARED kratos.cc)
+add_library(kratos SHARED kratos.cc robot.cc)
 target_link_libraries(kratos ${GAZEBO_LIBRARIES} ${Boost_LIBRARIES})
