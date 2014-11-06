@@ -1,7 +1,7 @@
 #pragma once
 
 #include <memory>
-
+#include <eigen3/Eigen/Dense>
 
 namespace Robot
 {
@@ -18,10 +18,21 @@ public:
 
 typedef std::shared_ptr<Wheel> WheelPtr;
 
+class TotalRoboticStation
+{
+public:
+
+	virtual Eigen::Vector3d GetPosition() const = 0; 
+};
+
+typedef std::shared_ptr<TotalRoboticStation> TotalRoboticStationPtr;
+
 
 class RobotSensors
 {
+public:
 	//Kinetic? Lidar? Camera?
+	TotalRoboticStationPtr mTRS;
 };
 
 class RobotMotion
@@ -44,7 +55,5 @@ public:
 	void Update(double simTime);
 
 };
-
-
 
 }

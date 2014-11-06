@@ -3,7 +3,9 @@ cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
 ADD_DEFINITIONS(-std=c++11)
 
 find_package(Boost REQUIRED COMPONENTS system)
+find_package(Eigen3 REQUIRED)
 include_directories(${Boost_INCLUDE_DIRS})
+include_directories(${Eigen_INCLUDE_DIRS})
 link_directories(${Boost_LIBRARY_DIRS})
 
 include (FindPkgConfig)

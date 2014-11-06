@@ -29,9 +29,29 @@ public:
 
   virtual void SetForce(double force) override
   {
-    mJoint->SetForce(1, force);
+    mJoint->SetForce(1, -force);
   }
 
+};
+
+class TRSGazebo : public Robot::TotalRoboticStation 
+{
+public:
+  physics::EntityPtr mEntity;
+  math::Pose startPose;
+
+
+  TRSGazebo(physics::EntityPtr entity) : mEntity(entity)
+  {
+    startPose = mEntity->GetWorldPose();
+  }
+
+  virtual Eigen::Vector3d GetPosition() const override
+  {
+    math::Vector3 pos = mEntity->GetWorldPose().pos - startPose.pos;
+
+    return Eigen::Vector3d(pos.x, pos.y, pos.z);
+  }
 };
 
 
@@ -91,6 +111,8 @@ public:
 
       motion.mLeftWheel = std::make_shared<WheelJoint>(m_leftWheelJoint);
       motion.mRightWheel = std::make_shared<WheelJoint>(m_rightWheelJoint);
+
+      sensors.mTRS = std::make_shared<TRSGazebo>(this->model);
 
       m_kratos.reset(new Robot::Kratos(motion, sensors));
 
