@@ -2,6 +2,9 @@
 
 #include <memory>
 #include <eigen3/Eigen/Dense>
+#include <zmq.hpp>
+#include "msgpack.h"
+
 
 namespace Robot
 {
@@ -35,6 +38,9 @@ public:
 	TotalRoboticStationPtr mTRS;
 };
 
+/**
+	Hold the adapters for controlling the wheels
+*/
 class RobotMotion
 {
 public:
@@ -42,11 +48,40 @@ public:
 	WheelPtr mRightWheel;
 };
 
+class LocationDataPoint
+{
+public:
+	double mTime;
+	Eigen::Vector3d mPosition;
 
+	MSGPACK_DEFINE(mTime, mPosition);
+};
+
+/**
+	Keep history of locations
+*/
+class LocationHistory
+{
+public:
+	std::vector<LocationDataPoint> mPoints;
+};
+
+/**
+	Main class for the robot
+*/
 class Kratos
 {
 	RobotMotion mMotion;
 	RobotSensors mSensors;
+
+	LocationHistory mLocationHistory;
+
+	double mStartSimTime;
+	double mLastSimTime;
+
+	zmq::context_t mZmqContext;
+	zmq::socket_t mZmqSocket;
+
 
 public:
 
