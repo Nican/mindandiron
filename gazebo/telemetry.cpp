@@ -7,8 +7,8 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), mZmqContext(1), mZmqSocket(mZmqContext, ZMQ_SUB)
 {
 
-	mZmqSocket.connect("tcp://localhost:5563");
-    mZmqSocket.setsockopt( ZMQ_SUBSCRIBE, "B", 1);
+	mZmqSocket.connect("tcp://127.0.0.1:5555");
+    mZmqSocket.setsockopt( ZMQ_SUBSCRIBE, "", 0);
 
 
 	QTimer *timer = new QTimer(this);
@@ -24,12 +24,18 @@ MainWindow::~MainWindow()
 
 void MainWindow::update()
 {
-	std::cout << "UPDATE!\n";
-
+	std::cout << "Reading bytes!\n";
 	zmq::message_t msg;
 	while(mZmqSocket.recv(&msg, ZMQ_DONTWAIT))
 	{
-		
+		msgpack::unpacked result;
+    	msgpack::unpack(result, (char*) msg.data(), msg.size());
+    	Robot::LocationDataPoint historyPoint;
+
+    	result.get().convert(&historyPoint);
+
+    	std::cout << "Got point: " << historyPoint.mPosition.transpose() << std::endl;
+
 	}
 }
 
