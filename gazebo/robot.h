@@ -26,6 +26,7 @@ class TotalRoboticStation
 public:
 
 	virtual Eigen::Vector3d GetPosition() const = 0; 
+	virtual double GetOrientation() const = 0;
 };
 
 typedef std::shared_ptr<TotalRoboticStation> TotalRoboticStationPtr;
@@ -53,8 +54,9 @@ class LocationDataPoint
 public:
 	double mTime;
 	Eigen::Vector3d mPosition;
+	double mRotation;
 
-	MSGPACK_DEFINE(mTime, mPosition);
+	MSGPACK_DEFINE(mTime, mPosition, mRotation);
 };
 
 /**

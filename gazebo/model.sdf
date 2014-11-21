@@ -68,6 +68,18 @@
           <length>.065</length>
         </cylinder>
       </geometry>
+
+      <surface>
+        <friction>
+          <ode>
+            <mu>100.0</mu>
+            <mu2>100.0</mu2>
+            <slip1>1.0</slip1>
+            <slip2>1.0</slip2>
+          </ode>
+        </friction>
+      </surface>
+
     </collision>
     <visual name="visual">
       <geometry>
@@ -88,6 +100,18 @@
           <length>.065</length>
         </cylinder>
       </geometry>
+
+      <surface>
+        <friction>
+          <ode>
+            <mu>100.0</mu>
+            <mu2>100.0</mu2>
+            <slip1>1.0</slip1>
+            <slip2>1.0</slip2>
+          </ode>
+        </friction>
+      </surface>
+
     </collision>
     <visual name="visual">
       <geometry>
@@ -105,6 +129,10 @@
     <parent>chassis</parent>
     <axis>
       <xyz>1 0 0</xyz>
+      <dynamics>
+        <friction>1.0</friction>
+        <damping>1.0</damping>
+      </dynamics>
     </axis>
   </joint>
 
@@ -114,6 +142,10 @@
     <parent>chassis</parent>
     <axis>
       <xyz>1 0 0</xyz>
+      <dynamics>
+        <friction>1.0</friction>
+        <damping>1.0</damping>
+      </dynamics>
     </axis>
   </joint>
 

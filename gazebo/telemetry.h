@@ -1,5 +1,8 @@
 #pragma once
 #include <QMainWindow>
+#include <QGraphicsScene>
+#include <QGraphicsView>
+#include <QLabel>
 #include "robot.h"
 
 
@@ -13,6 +16,14 @@ public:
 
     zmq::context_t mZmqContext;
 	zmq::socket_t mZmqSocket;
+
+	QGraphicsScene scene;
+	QGraphicsView view;
+
+	QGraphicsRectItem* mRobotInstance;
+	QLabel* mStatusText;
+
+	Robot::LocationHistory mHistory;
 
 public slots:
 	void update();

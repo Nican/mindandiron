@@ -52,6 +52,16 @@ public:
 
     return Eigen::Vector3d(pos.x, pos.y, pos.z);
   }
+
+  virtual double GetOrientation() const override
+  {
+    const auto pose = mEntity->GetWorldPose();
+    Eigen::Quaterniond quat(pose.rot.w, pose.rot.x, pose.rot.y, pose.rot.z);
+
+    auto p1 = quat * Eigen::Vector3d(0,1,0);
+
+    return std::atan2(p1.y(), p1.x());
+  }
 };
 
 

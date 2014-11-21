@@ -2,10 +2,11 @@
 
 #include <iostream>
 #include <algorithm>
+#include <stdlib.h>
 
 using namespace Robot;
 
-Eigen::Vector2d gDesiredGoal(1.5, -1.5);
+Eigen::Vector2d gDesiredGoal(5.0, 5.0);
 double desiredRotation = M_PI / 2;
 
 Kratos::Kratos(const RobotMotion& motion, const RobotSensors& sensors) 
@@ -25,7 +26,9 @@ void Kratos::Update(double simTime)
 		return;
 	}
 
-	LocationDataPoint historyPoint{simTime, mSensors.mTRS->GetPosition()};
+	Eigen::Vector3d pos = mSensors.mTRS->GetPosition();
+	double angle = mSensors.mTRS->GetOrientation();
+	LocationDataPoint historyPoint{simTime, pos, angle};
 	mLocationHistory.mPoints.push_back(historyPoint);
 
 
@@ -46,9 +49,10 @@ void Kratos::Update(double simTime)
 	}
 	else
 	{
-		mMotion.mLeftWheel->SetForce(0.2);
-		mMotion.mRightWheel->SetForce(0.1);
+		//mMotion.mLeftWheel->SetForce(0.0);
+		//mMotion.mRightWheel->SetForce(0.0);
 
+		/*
 		Eigen::Vector3d last5Average;
 		Eigen::Vector3d last5beforeAverage;
 
@@ -64,7 +68,42 @@ void Kratos::Update(double simTime)
 		last5beforeAverage /= 5.0;
 
 		Eigen::Vector3d diff = last5beforeAverage - last5Average;
-		std::cout << "Angle: " << std::atan2(diff.y(), diff.x()) << std::endl;
+		*/
+		//Eigen::Vector3d diff = last5beforeAverage - last5Average;
+		//double angle = std::atan2(diff.y(), diff.x());
+		
+		//std::cout << "Angle: " << angle << " at: (" << pos.head<2>().transpose() << ")" << std::endl;
+
+		Eigen::Vector2d diff2 = gDesiredGoal - pos.head<2>();
+		double desiredAngle = std::atan2(diff2.y(), diff2.x());
+
+		double angleDiff = fmod(desiredAngle - angle, M_PI / 2.0);
+
+
+
+		std::cout << "\tAngle diff: " << diff2.transpose() << std::endl;
+
+		
+		if(angleDiff < 0.01)
+		{
+			mMotion.mLeftWheel->SetForce(0.2);
+			mMotion.mRightWheel->SetForce(0.4);
+		}
+		else if(angleDiff > 0.01)
+		{
+			mMotion.mLeftWheel->SetForce(0.4);
+			mMotion.mRightWheel->SetForce(0.2);
+		} 
+		else 
+		{
+			mMotion.mLeftWheel->SetForce(0.4);
+			mMotion.mRightWheel->SetForce(0.4);
+		}
+	
+		//mMotion.mLeftWheel->SetForce(0.4);
+		//mMotion.mRightWheel->SetForce(0.2);
+		
+		
 	}
 
 
