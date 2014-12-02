@@ -18,8 +18,13 @@ endif()
 include_directories(${GAZEBO_INCLUDE_DIRS})
 link_directories(${GAZEBO_LIBRARY_DIRS})
 
-add_library(kratos SHARED kratos.cc robot.cc)
-target_link_libraries(kratos ${GAZEBO_LIBRARIES} ${Boost_LIBRARIES} zmq msgpack)
+add_library(kratos_base SHARED robot.cc trajectory.cpp)
+target_link_libraries(kratos_base ${Boost_LIBRARIES} zmq msgpack Box2D)
+
+
+add_library(kratos SHARED kratos.cc)
+target_link_libraries(kratos ${Boost_LIBRARIES} ${GAZEBO_LIBRARIES}  kratos_base)
+
 
 
 
@@ -33,4 +38,7 @@ ADD_DEFINITIONS(${QT_DEFINITIONS})
 
 #QT5_WRAP_CPP(kratos_telemetry telemetry.h)
 ADD_EXECUTABLE(kratos_telemetry telemetry.cpp)
-TARGET_LINK_LIBRARIES(kratos_telemetry Qt5::Widgets kratos)
+TARGET_LINK_LIBRARIES(kratos_telemetry Qt5::Widgets kratos_base)
+
+#ADD_EXECUTABLE(box2dtest box2dtest.cpp)
+#TARGET_LINK_LIBRARIES(box2dtest Box2D)

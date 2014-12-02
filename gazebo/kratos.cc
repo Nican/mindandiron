@@ -29,7 +29,7 @@ public:
 
   virtual void SetForce(double force) override
   {
-    mJoint->SetForce(1, -force);
+    mJoint->SetForce(0, -force);
   }
 
 };

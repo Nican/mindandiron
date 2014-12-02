@@ -20,7 +20,7 @@ public:
 	QGraphicsScene scene;
 	QGraphicsView view;
 
-	QGraphicsRectItem* mRobotInstance;
+	QGraphicsPolygonItem* mRobotInstance;
 	QLabel* mStatusText;
 
 	Robot::LocationHistory mHistory;

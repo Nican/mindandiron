@@ -56,7 +56,9 @@ public:
 	Eigen::Vector3d mPosition;
 	double mRotation;
 
-	MSGPACK_DEFINE(mTime, mPosition, mRotation);
+	msgpack::object testObject;
+
+	MSGPACK_DEFINE(mTime, mPosition, mRotation, testObject);
 };
 
 /**

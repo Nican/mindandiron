@@ -6,7 +6,7 @@ void LeavingPlataform::Initialize(Kratos& robot) override
 
 }
 
-void LeavingPlataform::Think(Kratos &robot) override
+void LeavingPlataform::Think() override
 {
 	
 }

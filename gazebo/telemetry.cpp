@@ -5,10 +5,41 @@
 #include <QTextStream>
 #include <QTimer>
 #include <iostream>
+#include "trajectory.h"
+
+
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), mZmqContext(1), mZmqSocket(mZmqContext, ZMQ_SUB), view(&scene)
 {
+
+	TrajectoryPlanner planner({0.0,0.0}, Complex(1.0,0.0), {6.0,1.0}); //0 degrees
+	planner.run(2000);
+	
+
+	auto result = planner.getResult();
+
+	for(int i = 1; i < result.size(); i++)
+	{
+		auto pt1 = result[i-1];
+		auto pt2 = result[i];
+		scene.addLine(pt1->mPoint.x(), pt1->mPoint.y(), pt2->mPoint.x(), pt2->mPoint.y(), QPen(Qt::blue, 0));
+	}
+
+	/*
+	std::function<void(TrajectoryTreeNode*, TrajectoryTreeNode*)> exploreChild = [&](TrajectoryTreeNode* parent, TrajectoryTreeNode* node)
+	{
+		scene.addLine(parent->mPoint.x(), parent->mPoint.y(), node->mPoint.x(), node->mPoint.y(), QPen(Qt::blue, 0));
+
+		for(auto &newChild : node->childs)
+		{
+			if(newChild)
+				exploreChild(node, newChild.get());
+		}
+	};
+	assert(!planner.rootNode->childs.empty());
+	*/
+	
 
 	mZmqSocket.connect("tcp://127.0.0.1:5555");
     mZmqSocket.setsockopt( ZMQ_SUBSCRIBE, "", 0);
@@ -37,9 +68,25 @@ MainWindow::MainWindow(QWidget *parent)
 	//scene.addText("Hello, world!");
 
 	//Make a robot with a nose.
-	mRobotInstance = scene.addRect(-0.25, -0.25, 0.5, 0.5, QPen(Qt::black, 0));
-	auto nose = new QGraphicsRectItem(0.25, -0.1, 0.2, 0.2, mRobotInstance);
-	nose->setPen(QPen(Qt::black, 0));
+	scene.addRect(3.0, -0.5, 1.0, 1.0, QPen(Qt::red, 0));
+	//auto nose = new QGraphicsRectItem(0.25, -0.1, 0.2, 0.2, mRobotInstance);
+	//nose->setPen(QPen(Qt::black, 0));
+
+	mRobotInstance = new QGraphicsPolygonItem();
+	mRobotInstance->setPen(QPen(Qt::black, 0));
+	mRobotInstance->setPolygon(QPolygonF({
+		{0.130f, -0.447675f},
+		{0.5366f, -0.447675f},
+		{1.25095f, -0.1383f},
+		{1.25095f, 0.1383f},
+		{0.5366f, 0.447675f},
+		{0.1302f, 0.447675f},
+		{0.0f, 0.2286f},
+		{0.0f, -0.2286f}
+	}));
+	scene.addItem(mRobotInstance);
+
+	//exploreChild(planner.rootNode.get(), planner.rootNode->childs.front().get());
 
 	//Make the whole world visible
 	view.setSceneRect(-3, -3, 6, 6);
