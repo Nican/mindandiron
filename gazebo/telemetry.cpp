@@ -1,46 +1,19 @@
 #include "telemetry.h"
+#include "trajectory.h"
+
+#include <iostream>
+
 #include <QApplication>
 #include <QGraphicsRectItem>
 #include <QDockWidget>
 #include <QTextStream>
 #include <QTimer>
-#include <iostream>
-#include "trajectory.h"
-
+#include <QGridLayout>
 
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), mZmqContext(1), mZmqSocket(mZmqContext, ZMQ_SUB), view(&scene)
 {
-
-	TrajectoryPlanner planner({0.0,0.0}, Complex(1.0,0.0), {6.0,1.0}); //0 degrees
-	planner.run(2000);
-	
-
-	auto result = planner.getResult();
-
-	for(int i = 1; i < result.size(); i++)
-	{
-		auto pt1 = result[i-1];
-		auto pt2 = result[i];
-		scene.addLine(pt1->mPoint.x(), pt1->mPoint.y(), pt2->mPoint.x(), pt2->mPoint.y(), QPen(Qt::blue, 0));
-	}
-
-	/*
-	std::function<void(TrajectoryTreeNode*, TrajectoryTreeNode*)> exploreChild = [&](TrajectoryTreeNode* parent, TrajectoryTreeNode* node)
-	{
-		scene.addLine(parent->mPoint.x(), parent->mPoint.y(), node->mPoint.x(), node->mPoint.y(), QPen(Qt::blue, 0));
-
-		for(auto &newChild : node->childs)
-		{
-			if(newChild)
-				exploreChild(node, newChild.get());
-		}
-	};
-	assert(!planner.rootNode->childs.empty());
-	*/
-	
-
 	mZmqSocket.connect("tcp://127.0.0.1:5555");
     mZmqSocket.setsockopt( ZMQ_SUBSCRIBE, "", 0);
 
@@ -57,18 +30,21 @@ MainWindow::MainWindow(QWidget *parent)
 	addDockWidget(Qt::TopDockWidgetArea, dockWidget);
 
 	setCentralWidget(&view);
+	//setCentralWidget(new ViewerWidget());
 
 	qreal windowSize = 10.0;
 	for(qreal x = -windowSize; x <= windowSize; x += 1.0)
 	{
-		scene.addLine(x, -windowSize, x, windowSize, QPen(Qt::black, 0));
-		scene.addLine(-windowSize, x, windowSize, x, QPen(Qt::black, 0));
+        auto color = x == 0 ? Qt::black : Qt::gray;
+
+		scene.addLine(x, -windowSize, x, windowSize, QPen(color, 0));
+		scene.addLine(-windowSize, x, windowSize, x, QPen(color, 0));
 	}
 
 	//scene.addText("Hello, world!");
 
 	//Make a robot with a nose.
-	scene.addRect(3.0, -0.5, 1.0, 1.0, QPen(Qt::red, 0));
+	scene.addRect(-0.5, 3.0, 1.0, 1.0, QPen(Qt::red, 0));
 	//auto nose = new QGraphicsRectItem(0.25, -0.1, 0.2, 0.2, mRobotInstance);
 	//nose->setPen(QPen(Qt::black, 0));
 
@@ -94,6 +70,9 @@ MainWindow::MainWindow(QWidget *parent)
 
 	//Scale the axis to fit nice visually.
 	view.scale(1, -1);
+
+
+    trajectoryPath = scene.addPath(QPainterPath(), QPen(Qt::black, 0));
 }
 
 MainWindow::~MainWindow()
@@ -107,43 +86,81 @@ void MainWindow::update()
 	zmq::message_t msg;
 	while(mZmqSocket.recv(&msg, ZMQ_DONTWAIT))
 	{
+        char id = ((char*) msg.data())[0];
 
 		//Read result from the network
 		msgpack::unpacked result;
-    	msgpack::unpack(result, (char*) msg.data(), msg.size());
-    	Robot::LocationDataPoint historyPoint;
+    	msgpack::unpack(result, ((char*) msg.data())+1, msg.size() - 1);
 
-    	result.get().convert(&historyPoint);
+        if(id == 0)
+        {
+            Robot::LocationDataPoint historyPoint;
+            result.get().convert(&historyPoint);
+            ReadLocation(historyPoint);
+        }
+        else if (id == 1)
+        {
+            //std::vector<Eigen::Vector2d> waypoints;
+            Robot::State::MoveToWaypointTelemetry telemetry;
+            result.get().convert(&telemetry);
 
-    	//Keep history
-    	mHistory.mPoints.push_back(historyPoint);
+            const int waypointsSize = telemetry.mWaypoints.size();
 
-    	//Make lines every so often to keep a history of where we moved
-    	if(mHistory.mPoints.size() % 200 == 0)
-    	{
-    		int points = mHistory.mPoints.size();
-    		auto lastPoint = mHistory.mPoints[points - 200];
+            if(waypointsSize == 0)
+                return;
 
-    		scene.addLine(historyPoint.mPosition.x(), historyPoint.mPosition.y(), lastPoint.mPosition.x(), lastPoint.mPosition.y(), QPen(Qt::red, 0));
-    	}
+            QPainterPath path(QPointF(telemetry.mWaypoints[0].x(), telemetry.mWaypoints[0].y()));
 
-    	//Update our robot position
-    	mRobotInstance->setRotation(historyPoint.mRotation * 180.0 / M_PI);
-    	mRobotInstance->setPos(historyPoint.mPosition.x(), historyPoint.mPosition.y());
+            for(int i = 1; i < waypointsSize; i++)
+            {
+                QPointF pt(telemetry.mWaypoints[i].x(), telemetry.mWaypoints[i].y());
+                path.lineTo(pt);
 
-    	//Show the positions
-    	QString statusStr;
-    	std::ostringstream stringStream;
-  		stringStream << historyPoint.mPosition.head<2>().transpose();
- 		QTextStream(&statusStr) << "Position = " << stringStream.str().c_str() << "\n" << "rotation = " << historyPoint.mRotation;
-    	mStatusText->setText(statusStr);
+                if((waypointsSize - i) == telemetry.mCurrentPoint)
+                {
+                    path.addEllipse(pt, 0.1, 0.1);
+                    path.lineTo(pt);
+                }
+            }
+
+
+
+            trajectoryPath->setPath(path);
+        }
+
 	}
 }
 
+void MainWindow::ReadLocation(const Robot::LocationDataPoint &historyPoint)
+{
+    //Keep history
+    mHistory.mPoints.push_back(historyPoint);
 
+    //Make lines every so often to keep a history of where we moved
+    if(mHistory.mPoints.size() % 200 == 0)
+    {
+        int points = mHistory.mPoints.size();
+        auto lastPoint = mHistory.mPoints[points - 200];
+
+        scene.addLine(historyPoint.mPosition.x(), historyPoint.mPosition.y(), lastPoint.mPosition.x(), lastPoint.mPosition.y(), QPen(Qt::red, 0));
+    }
+
+    //Update our robot position
+    mRobotInstance->setRotation(historyPoint.mRotation * 180.0 / M_PI);
+    mRobotInstance->setPos(historyPoint.mPosition.x(), historyPoint.mPosition.y());
+
+    //Show the positions
+    QString statusStr;
+    std::ostringstream stringStream;
+    stringStream << historyPoint.mPosition.head<2>().transpose();
+    QTextStream(&statusStr) << "Position = " << stringStream.str().c_str() << "\n" << "rotation = " << historyPoint.mRotation;
+    mStatusText->setText(statusStr);
+}
 
 int main(int argc, char *argv[])
 {
+	//osg::ArgumentParser arguments(&argc, argv);
+
     QApplication a(argc, argv);
     MainWindow w;
     //w.show();

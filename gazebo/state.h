@@ -1,5 +1,5 @@
 #pragma once
-#include <robot.h>
+#include <trajectory.h>
 
 namespace Robot {
 
@@ -9,16 +9,51 @@ namespace State {
 
 class Base
 {
+protected:
+	/// mRobot should as long as this state exists.
+	Kratos* mRobot;
+
 public:
-	virtual void Initialize(Kratos& robot) = 0;
+	Base(Kratos* robot) : mRobot(robot)
+	{
+	}
+
+	virtual void Initialize() = 0;
 	virtual void Think() = 0;
+
+	virtual std::shared_ptr<msgpack::sbuffer> GetTelemetry(){};
 };
 
-class LeavingPlataform : public Base
+class MoveToWaypointTelemetry
 {
 public:
-	virtual void Initialize(Kratos& robot) override;
+	int mCurrentPoint;
+	std::vector<Eigen::Vector2d> mWaypoints;
+
+	MSGPACK_DEFINE(mCurrentPoint, mWaypoints);
+};
+
+class MoveToWaypoint : public Base
+{
+protected:
+	std::shared_ptr<TrajectoryPlanner> mPlanner;
+	std::vector<TrajectoryTreeNode*> mPath;
+	int mCurrentPoint;
+
+	double lastReplan;
+
+public:
+	MoveToWaypoint(Kratos* robot) : Base(robot)
+	{
+		this->Replan();
+	}
+
+	virtual void Initialize() override;
 	virtual void Think() override;
+
+	virtual std::shared_ptr<msgpack::sbuffer> GetTelemetry() override;
+
+	virtual void Replan();
 };
 
 } //namespace State

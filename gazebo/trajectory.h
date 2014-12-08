@@ -53,6 +53,4 @@ public:
 	void run(int iterations);
 
 	std::vector<TrajectoryTreeNode*> getResult() const;
-
-	
 };

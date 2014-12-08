@@ -48,7 +48,8 @@ void TrajectoryTreeNode::explore()
 
 		availableAngles.remove(bestAngle);
 
-		auto node = std::unique_ptr<TrajectoryTreeNode>(new TrajectoryTreeNode(mPlanner, mPoint + Eigen::Vector2d(std::real(bestAngle), std::imag(bestAngle)) * 0.1, bestAngle));
+		auto newPoint = mPoint + Eigen::Vector2d(std::real(bestAngle), std::imag(bestAngle)) * 0.1;
+		auto node = std::unique_ptr<TrajectoryTreeNode>(new TrajectoryTreeNode(mPlanner, newPoint, bestAngle));
 		double x = node->mPoint.x();
 		double y = node->mPoint.y();
 
@@ -150,7 +151,7 @@ TrajectoryPlanner::TrajectoryPlanner(const Eigen::Vector2d &point, Complex rotat
 
 	//For the obstacle
 	b2BodyDef obstacleBodyDef;
-    obstacleBodyDef.position.Set(3.5f, 0.0f);
+    obstacleBodyDef.position.Set(0.0f, 3.5f);
     obstacleBodyDef.type = b2_dynamicBody;
 
     b2Body* obstacleBody = world.CreateBody(&obstacleBodyDef);
@@ -176,7 +177,8 @@ bool TrajectoryPlanner::testPosition(Eigen::Vector2d pos, double rotation)
 
 void TrajectoryPlanner::run(int iterations)
 {
-	for(int i = 0; i < iterations; i ++){
+	for(int i = 0; i < iterations; i ++)
+	{
 		rootNode->explore();
 	}
 }

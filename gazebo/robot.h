@@ -4,7 +4,7 @@
 #include <eigen3/Eigen/Dense>
 #include <zmq.hpp>
 #include "msgpack.h"
-
+#include "state.h"
 
 namespace Robot
 {
@@ -56,9 +56,7 @@ public:
 	Eigen::Vector3d mPosition;
 	double mRotation;
 
-	msgpack::object testObject;
-
-	MSGPACK_DEFINE(mTime, mPosition, mRotation, testObject);
+	MSGPACK_DEFINE(mTime, mPosition, mRotation);
 };
 
 /**
@@ -73,8 +71,9 @@ public:
 /**
 	Main class for the robot
 */
-class Kratos
+class Kratos : public std::enable_shared_from_this<Kratos>
 {
+public:
 	RobotMotion mMotion;
 	RobotSensors mSensors;
 
@@ -86,12 +85,29 @@ class Kratos
 	zmq::context_t mZmqContext;
 	zmq::socket_t mZmqSocket;
 
+	std::shared_ptr<State::Base> mState;
 
-public:
+
+
+	double mCurTime;
 
 	Kratos(const RobotMotion& motion, const RobotSensors& sensors);
 
 	void Update(double simTime);
+
+
+	template<typename T> 
+	void SendTelemetry(char id, T obj)
+	{
+		msgpack::sbuffer sbuf;
+		sbuf.write(&id, sizeof(id));
+		msgpack::pack(sbuf, obj);
+
+
+		zmq::message_t msg(sbuf.size());
+		memcpy(msg.data(), sbuf.data(), sbuf.size());
+		mZmqSocket.send (msg);
+	};
 
 };
 

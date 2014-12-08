@@ -5,6 +5,8 @@ ADD_DEFINITIONS(-std=c++11)
 find_package(Boost REQUIRED COMPONENTS system)
 find_package(Eigen3 REQUIRED)
 find_package(Qt5Widgets)
+find_package(Qt5OpenGL)
+#find_package(osg)
 
 
 include_directories(${Boost_INCLUDE_DIRS})
@@ -18,7 +20,7 @@ endif()
 include_directories(${GAZEBO_INCLUDE_DIRS})
 link_directories(${GAZEBO_LIBRARY_DIRS})
 
-add_library(kratos_base SHARED robot.cc trajectory.cpp)
+add_library(kratos_base SHARED robot.cc trajectory.cpp state.cc)
 target_link_libraries(kratos_base ${Boost_LIBRARIES} zmq msgpack Box2D)
 
 
@@ -38,7 +40,8 @@ ADD_DEFINITIONS(${QT_DEFINITIONS})
 
 #QT5_WRAP_CPP(kratos_telemetry telemetry.h)
 ADD_EXECUTABLE(kratos_telemetry telemetry.cpp)
-TARGET_LINK_LIBRARIES(kratos_telemetry Qt5::Widgets kratos_base)
+#osg osgQt osgWidget osgViewer osgUtil osgGA osgDB
+TARGET_LINK_LIBRARIES(kratos_telemetry Qt5::Widgets Qt5::OpenGL kratos_base) 
 
 #ADD_EXECUTABLE(box2dtest box2dtest.cpp)
 #TARGET_LINK_LIBRARIES(box2dtest Box2D)

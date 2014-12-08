@@ -25,6 +25,10 @@ public:
 
 	Robot::LocationHistory mHistory;
 
+	QGraphicsPathItem* trajectoryPath;
+
+	void ReadLocation(const Robot::LocationDataPoint &historyPoint);
+
 public slots:
 	void update();
 };
