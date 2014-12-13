@@ -22,6 +22,7 @@ Kratos::Kratos(const RobotMotion& motion, const RobotSensors& sensors)
 
 void Kratos::Update(double simTime)
 {
+
 	if(mStartSimTime == 0.0)
 	{
 		mLastSimTime = simTime;
@@ -35,7 +36,6 @@ void Kratos::Update(double simTime)
 	double angle = mSensors.mTRS->GetOrientation();
 	LocationDataPoint historyPoint{simTime, pos, angle};
 	mLocationHistory.mPoints.push_back(historyPoint);
-
 
 	SendTelemetry(0, historyPoint);
 

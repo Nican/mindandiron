@@ -1,8 +1,6 @@
 #include "trajectory.h"
 
 
-
-
 static Complex rotationToCompex(double theta)
 {
 	return std::polar<double>(1.0, theta);
@@ -130,16 +128,10 @@ TrajectoryPlanner::TrajectoryPlanner(const Eigen::Vector2d &point, Complex rotat
 	b2Body* robotBody = world.CreateBody(&robotBodyDef);
 
 	b2PolygonShape robotShape;
-	std::vector<b2Vec2> robotPoints({
-		{0.130f, -0.447675f},
-		{0.5366f, -0.447675f},
-		{1.25095f, -0.1383f},
-		{1.25095f, 0.1383f},
-		{0.5366f, 0.447675f},
-		{0.1302f, 0.447675f},
-		{0.0f, 0.2286f},
-		{0.0f, -0.2286f}
-	});
+	std::vector<b2Vec2> robotPoints = GetRobotPoints<b2Vec2>();
+
+	//std::transform(eigenRobotPoints.begin(), eigenRobotPoints.end(), robotPoints.begin(), [](Eigen::Vector2d pt){ return b2Vec2(pt.x(), pt.y()); } );
+
 	robotShape.Set(robotPoints.data(), robotPoints.size());
 
 	b2FixtureDef spriteShapeDef;

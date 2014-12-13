@@ -50,16 +50,7 @@ MainWindow::MainWindow(QWidget *parent)
 
 	mRobotInstance = new QGraphicsPolygonItem();
 	mRobotInstance->setPen(QPen(Qt::black, 0));
-	mRobotInstance->setPolygon(QPolygonF({
-		{0.130f, -0.447675f},
-		{0.5366f, -0.447675f},
-		{1.25095f, -0.1383f},
-		{1.25095f, 0.1383f},
-		{0.5366f, 0.447675f},
-		{0.1302f, 0.447675f},
-		{0.0f, 0.2286f},
-		{0.0f, -0.2286f}
-	}));
+	mRobotInstance->setPolygon(QVector<QPointF>::fromStdVector(GetRobotPoints<QPointF>()));
 	scene.addItem(mRobotInstance);
 
 	//exploreChild(planner.rootNode.get(), planner.rootNode->childs.front().get());

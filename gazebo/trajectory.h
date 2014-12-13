@@ -13,6 +13,21 @@ typedef std::complex<double> Complex;
 typedef std::unique_ptr<TrajectoryTreeNode> TrajectoryTreeNodePtr;
 
 
+template<class T>
+std::vector<T> GetRobotPoints()
+{
+	return std::vector<T>({
+		{0.130-0.33, -0.447675},
+		{0.5366-0.33, -0.447675},
+		{1.25095-0.33, -0.1383},
+		{1.25095-0.33, 0.1383},
+		{0.5366-0.33, 0.447675},
+		{0.1302-0.33, 0.447675},
+		{0.0-0.33, 0.2286},
+		{0.0-0.33, -0.2286}
+	});	
+};
+
 class TrajectoryTreeNode
 {
 public:
