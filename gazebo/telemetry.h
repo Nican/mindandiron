@@ -27,7 +27,10 @@ public:
 
 	QGraphicsPathItem* trajectoryPath;
 
+	QVector<QGraphicsLineItem*> mLines;
+
 	void ReadLocation(const Robot::LocationDataPoint &historyPoint);
+	void DrawExploreChild(TrajectoryTreeNode* parent, TrajectoryTreeNode* child, int &id);
 
 public slots:
 	void update();

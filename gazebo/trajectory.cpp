@@ -1,5 +1,5 @@
 #include "trajectory.h"
-
+#include <iostream>
 
 static Complex rotationToCompex(double theta)
 {
@@ -17,26 +17,52 @@ TrajectoryTreeNode::TrajectoryTreeNode(TrajectoryPlanner* planner, const Eigen::
 	}
 }
 
-void TrajectoryTreeNode::explore()
+TrajectoryTreeNode::TrajectoryTreeNode(TrajectoryPlanner* planner, const msgpack::object &o)
+	: mPlanner(planner)
+{
+	if (o.type != msgpack::type::ARRAY) throw msgpack::type_error();
+    if (o.via.array.size != 3) throw msgpack::type_error();
+
+    o.via.array.ptr[0].convert(mPoint);
+    o.via.array.ptr[1].convert(mRotation);
+    //o.via.array.ptr[2].convert(availableAngles);
+    
+    auto& childs = o.via.array.ptr[2];
+
+    if (childs.type != msgpack::type::ARRAY) throw msgpack::type_error();
+
+    for(uint32_t i = 0; i < childs.via.array.size; i++)
+    {
+    	this->childs.emplace_back(new TrajectoryTreeNode(mPlanner, childs.via.array.ptr[i]));
+    }
+}
+
+bool TrajectoryTreeNode::explore()
 {
 	if(inGoal())
-		return;
+		return true;
 
 	if(!childs.empty())
 	{
 		for(auto& child : childs)
 		{
-			child->explore();
+			if(child->explore())
+				return true;
 
+			/*
 			if(!child->availableAngles.empty())
 			{
 				return;
 			}
+			*/
 		}
 
+		/*
 		childs.remove_if([](const TrajectoryTreeNodePtr& child){
 			return child->availableAngles.empty() && child->childs.empty();
 		});
+		*/
+		//return false;
 	}
 
 
@@ -60,10 +86,10 @@ void TrajectoryTreeNode::explore()
 		}
 		
 		childs.emplace_back(std::move(node));
-		break;
+		return true;
 	}
 
-
+	return false;
 }
 
 Complex TrajectoryTreeNode::getNextBestAngle() const
@@ -113,11 +139,29 @@ static bool GetPath(TrajectoryTreeNode* node, std::vector<TrajectoryTreeNode*> &
 }
 
 
+TrajectoryPlanner::TrajectoryPlanner(const msgpack::object &o)
+	: world(b2Vec2(0.0, 0.0))
+{
+	if (o.type != msgpack::type::ARRAY) throw msgpack::type_error();
+    if (o.via.array.size != 2) throw msgpack::type_error();
+
+    InitializeWorld();
+
+    o.via.array.ptr[0].convert(mGoal);
+
+    rootNode.reset(new TrajectoryTreeNode(this, o.via.array.ptr[1]));
+}
+
 
 TrajectoryPlanner::TrajectoryPlanner(const Eigen::Vector2d &point, Complex rotation, const Eigen::Vector2d &goal) : 
 	world(b2Vec2(0.0, 0.0)),
 	rootNode(new TrajectoryTreeNode(this, point, rotation)),
 	mGoal(goal)
+{
+	InitializeWorld();
+}
+
+void TrajectoryPlanner::InitializeWorld()
 {
 	world.SetAllowSleeping(false);
 
@@ -128,7 +172,7 @@ TrajectoryPlanner::TrajectoryPlanner(const Eigen::Vector2d &point, Complex rotat
 	b2Body* robotBody = world.CreateBody(&robotBodyDef);
 
 	b2PolygonShape robotShape;
-	std::vector<b2Vec2> robotPoints = GetRobotPoints<b2Vec2>();
+	static std::vector<b2Vec2> robotPoints = GetRobotPoints<b2Vec2>();
 
 	//std::transform(eigenRobotPoints.begin(), eigenRobotPoints.end(), robotPoints.begin(), [](Eigen::Vector2d pt){ return b2Vec2(pt.x(), pt.y()); } );
 
@@ -149,7 +193,7 @@ TrajectoryPlanner::TrajectoryPlanner(const Eigen::Vector2d &point, Complex rotat
     b2Body* obstacleBody = world.CreateBody(&obstacleBodyDef);
 
     b2PolygonShape groundBox;
-    groundBox.SetAsBox(1.0f, 1.0f);
+    groundBox.SetAsBox(2.0f, 0.5f);
 
     b2FixtureDef spriteShapeDef2;
     spriteShapeDef2.shape = &groundBox;
@@ -162,6 +206,7 @@ bool TrajectoryPlanner::testPosition(Eigen::Vector2d pos, double rotation)
 {
 	robotFixture->GetBody()->SetTransform({(float) pos.x(), (float) pos.y()}, (float) rotation);
 
+	//Recalculate collissions
 	world.Step(1.0f / 60.0f, 1, 1);
 
 	return robotFixture->GetBody()->GetContactList() != nullptr;

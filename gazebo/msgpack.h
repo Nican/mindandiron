@@ -5,29 +5,6 @@ namespace msgpack {
 
 MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
 
-/*
-inline object const& operator>> (object const& o, Eigen::Vector3d& v) {
-    if (o.type != msgpack::type::ARRAY) throw msgpack::type_error();
-    if (o.via.array.size != 3) throw msgpack::type_error();
-
-    o.via.array.ptr[0].convert(v.x());
-    o.via.array.ptr[1].convert(v.y());
-    o.via.array.ptr[2].convert(v.z());
-
-    return o;
-}
-
-template <typename Stream>
-inline packer<Stream>& operator<< (packer<Stream>& o, Eigen::Vector3d const& v) {
-    // packing member variables as an array.
-    o.pack_array(3);
-    o.pack(v.x());
-    o.pack(v.y());
-    o.pack(v.z());
-    return o;
-}
-*/
-
 template <int _Rows>
 inline object const& operator>> (object const& o, Eigen::Matrix<double, _Rows, 1>& v) {
     if (o.type != msgpack::type::ARRAY) throw msgpack::type_error();
@@ -49,6 +26,38 @@ inline packer<Stream>& operator<< (packer<Stream>& o, Eigen::Matrix<double, _Row
 
     return o;
 }
+
+
+inline object const& operator>> (object const& o, std::complex<double>& v) {
+    if (o.type != msgpack::type::ARRAY) throw msgpack::type_error();
+    if (o.via.array.size != 2) throw msgpack::type_error();
+
+    double real, imag;
+
+    o.via.array.ptr[0].convert(real);
+    o.via.array.ptr[1].convert(imag);
+
+    v = std::complex<double>(real, imag);
+
+    return o;
+}
+
+template <typename Stream>
+inline packer<Stream>& operator<< (packer<Stream>& o, std::complex<double>const& v) {
+    // packing member variables as an array.
+    o.pack_array(2);
+    
+    
+    o.pack_double(std::real(v));
+    o.pack_double(std::imag(v));
+
+    return o;
+}
+
+
+
+
+
 
 
 

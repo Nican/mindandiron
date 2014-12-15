@@ -44,7 +44,7 @@ MainWindow::MainWindow(QWidget *parent)
 	//scene.addText("Hello, world!");
 
 	//Make a robot with a nose.
-	scene.addRect(-0.5, 3.0, 1.0, 1.0, QPen(Qt::red, 0));
+	scene.addRect(-2.0, 3.0, 4.0, 1.0, QPen(Qt::red, 0));
 	//auto nose = new QGraphicsRectItem(0.25, -0.1, 0.2, 0.2, mRobotInstance);
 	//nose->setPen(QPen(Qt::black, 0));
 
@@ -64,6 +64,33 @@ MainWindow::MainWindow(QWidget *parent)
 
 
     trajectoryPath = scene.addPath(QPainterPath(), QPen(Qt::black, 0));
+
+
+    TrajectoryPlanner mPlanner({0,0}, std::polar(M_PI/2.0, 1.0), {1.0,6.0});
+    mPlanner.run(2000);
+
+    int id = 0;
+    DrawExploreChild(mPlanner.rootNode.get(), mPlanner.rootNode->childs.front().get(), id);
+
+}
+
+void MainWindow::DrawExploreChild(TrajectoryTreeNode* parent, TrajectoryTreeNode* node, int &id)
+{
+    QColor color;
+    color.setHsvF( (id/1000.0) , 1.0, 1.0);
+    id++;
+
+    auto line = scene.addLine(parent->mPoint.x(), parent->mPoint.y(), node->mPoint.x(), node->mPoint.y(), QPen(color, 0));
+    mLines.push_back(line);
+
+    mRobotInstance->setRotation(std::arg(node->mRotation) * 180.0 / M_PI);
+    mRobotInstance->setPos(node->mPoint.x(), node->mPoint.y());
+
+    for(auto &newChild : node->childs)
+    {
+       if(newChild)
+           DrawExploreChild(node, newChild.get(), id);
+    }
 }
 
 MainWindow::~MainWindow()
@@ -79,9 +106,17 @@ void MainWindow::update()
 	{
         char id = ((char*) msg.data())[0];
 
+
 		//Read result from the network
 		msgpack::unpacked result;
-    	msgpack::unpack(result, ((char*) msg.data())+1, msg.size() - 1);
+    	try { 
+            msgpack::unpack(result, ((char*) msg.data())+1, msg.size() - 1);
+        }
+        catch(std::exception &e)
+        {
+            std::cerr << "Failed to parse: " << e.what() << "\n";
+            //return;
+        }
 
         if(id == 0)
         {
@@ -92,6 +127,24 @@ void MainWindow::update()
         else if (id == 1)
         {
             //std::vector<Eigen::Vector2d> waypoints;
+
+            TrajectoryPlanner planner(result.get());
+
+            for(auto& line : mLines)
+            {
+                scene.removeItem(line);
+                delete line;
+            }
+
+            std::cout << "Reading childs AAA\n";
+
+            mLines.clear();
+
+            int id2 = 0;
+            DrawExploreChild(planner.rootNode.get(), planner.rootNode->childs.front().get(), id2);
+
+
+            /*
             Robot::State::MoveToWaypointTelemetry telemetry;
             result.get().convert(&telemetry);
 
@@ -100,6 +153,7 @@ void MainWindow::update()
             if(waypointsSize == 0)
                 return;
 
+            
             QPainterPath path(QPointF(telemetry.mWaypoints[0].x(), telemetry.mWaypoints[0].y()));
 
             for(int i = 1; i < waypointsSize; i++)
@@ -114,9 +168,20 @@ void MainWindow::update()
                 }
             }
 
-
-
             trajectoryPath->setPath(path);
+            */
+
+           /*
+            TrajectoryPlanner mPlanner(telemetry.mWaypoints[0], std::polar(M_PI/2.0, 1.0), {1.0,6.0});
+            mPlanner.run(2000);
+            int id = 0;
+
+            DrawExploreChild( mPlanner.rootNode.get(), mPlanner.rootNode->childs.front().get(), id );
+             */
+        }
+        else 
+        {
+            std::cerr << "Reading message of unkown id: " << id << "\n";
         }
 
 	}

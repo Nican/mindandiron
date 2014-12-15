@@ -20,7 +20,7 @@ void MoveToWaypoint::Think()
 
 	if(mRobot->mCurTime - lastReplan > 5.0 )
 	{
-		//Replan();
+		Replan();
 		lastReplan = mRobot->mCurTime;
 	}
 
@@ -82,6 +82,7 @@ std::shared_ptr<msgpack::sbuffer> MoveToWaypoint::GetTelemetry()
 
 	return sbuf;	
 	*/
+	/*
 	std::vector<Eigen::Vector2d> waypoints;
 	waypoints.reserve(mPath.size());
 
@@ -89,7 +90,22 @@ std::shared_ptr<msgpack::sbuffer> MoveToWaypoint::GetTelemetry()
 		waypoints.push_back(pt->mPoint);
 
 	mRobot->SendTelemetry(1, MoveToWaypointTelemetry({mCurrentPoint, waypoints}));
+	*/
 
+	msgpack::sbuffer sbuf;
+	char id = 1;
+	sbuf.write(&id, sizeof(id));
+
+	{
+		msgpack::packer<msgpack::sbuffer> stream(sbuf);
+		mPlanner->pack(stream);	
+	}
+
+	zmq::message_t msg(sbuf.size());
+	memcpy(msg.data(), sbuf.data(), sbuf.size());
+	mRobot->mZmqSocket.send (msg);
+
+	std::cout << "Sending message out ("<< sbuf.size() <<")!\n";
 
 	return nullptr;
 }
@@ -99,12 +115,15 @@ void MoveToWaypoint::Replan()
 	Eigen::Vector3d pos = mRobot->mSensors.mTRS->GetPosition();
 	double angle = mRobot->mSensors.mTRS->GetOrientation();
 
+	std::cout << "Replan from " << angle << "\n";
+
 	mPlanner.reset( new TrajectoryPlanner(pos.head<2>(), std::polar(angle, 1.0), {1.0,6.0}));
-	mPlanner->run(2000);
+	mPlanner->run(200);
 
 	auto newResult = mPlanner->getResult();
 
-	if(newResult.size() > 0){
+	if(newResult.size() > 0)
+	{
 		mPath = newResult;
 		mCurrentPoint = 0;
 	}
