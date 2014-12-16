@@ -18,7 +18,7 @@ void MoveToWaypoint::Think()
 	Eigen::Vector3d pos = mRobot->mSensors.mTRS->GetPosition();
 	double angle = mRobot->mSensors.mTRS->GetOrientation();
 
-	if(mRobot->mCurTime - lastReplan > 5.0 )
+	if(mRobot->mCurTime - lastReplan > 30.0 )
 	{
 		Replan();
 		lastReplan = mRobot->mCurTime;
@@ -36,20 +36,22 @@ void MoveToWaypoint::Think()
 
 		//std::cout << "\tAngle diff: " << diff2.transpose() << std::endl;
 		
+		double factor = 4.0;
+
 		if(angleDiff < 0.01)
 		{
-			mRobot->mMotion.mLeftWheel->SetForce(0.2);
-			mRobot->mMotion.mRightWheel->SetForce(0.4);
+			mRobot->mMotion.mLeftWheel->SetForce(0.2 * factor);
+			mRobot->mMotion.mRightWheel->SetForce(0.4 * factor);
 		}
 		else if(angleDiff > 0.01)
 		{
-			mRobot->mMotion.mLeftWheel->SetForce(0.4);
-			mRobot->mMotion.mRightWheel->SetForce(0.2);
+			mRobot->mMotion.mLeftWheel->SetForce(0.4 * factor);
+			mRobot->mMotion.mRightWheel->SetForce(0.2 * factor);
 		} 
 		else 
 		{
-			mRobot->mMotion.mLeftWheel->SetForce(0.4);
-			mRobot->mMotion.mRightWheel->SetForce(0.4);
+			mRobot->mMotion.mLeftWheel->SetForce(0.4 * factor);
+			mRobot->mMotion.mRightWheel->SetForce(0.4 * factor);
 		}
 
 		if(diff2.norm() < 1.0)
@@ -57,7 +59,7 @@ void MoveToWaypoint::Think()
 			mCurrentPoint++;
 			std::cout << " New target id: " << mCurrentPoint << "\n"; 
 
-			GetTelemetry();
+			//GetTelemetry();
 		}
 	} 
 	else 
@@ -96,9 +98,15 @@ std::shared_ptr<msgpack::sbuffer> MoveToWaypoint::GetTelemetry()
 	char id = 1;
 	sbuf.write(&id, sizeof(id));
 
+
 	{
 		msgpack::packer<msgpack::sbuffer> stream(sbuf);
-		mPlanner->pack(stream);	
+		//mPlanner->pack(stream);	
+		stream.pack_array(3);
+		stream.pack(mPlanner->mGoal);
+		stream.pack(mPlanner->rootNode->mPoint);
+		stream.pack(mPlanner->rootNode->mRotation);
+
 	}
 
 	zmq::message_t msg(sbuf.size());
@@ -117,13 +125,15 @@ void MoveToWaypoint::Replan()
 
 	std::cout << "Replan from " << angle << "\n";
 
-	mPlanner.reset( new TrajectoryPlanner(pos.head<2>(), std::polar(angle, 1.0), {1.0,6.0}));
-	mPlanner->run(200);
+	std::shared_ptr<TrajectoryPlanner> planner;
+	planner.reset(new TrajectoryPlanner(pos.head<2>(), std::polar(angle, 1.0), {1.0,6.0}));
+	planner->run(2000);
 
-	auto newResult = mPlanner->getResult();
+	auto newResult = planner->getResult();
 
 	if(newResult.size() > 0)
 	{
+		mPlanner = planner;
 		mPath = newResult;
 		mCurrentPoint = 0;
 	}

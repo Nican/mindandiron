@@ -7,6 +7,11 @@
 #include <gazebo/sensors/Sensor.hh>
 #include <gazebo/sensors/RaySensor.hh>
 
+#include "gazebo/sensors/SensorManager.hh"
+#include "gazebo/sensors/DepthCameraSensor.hh"
+
+#include "gazebo/rendering/DepthCamera.hh"
+
 #include "robot.h"
 
 namespace gazebo
@@ -67,6 +72,8 @@ public:
 
   class Kratos : public ModelPlugin
   {
+    event::ConnectionPtr newDepthFrameConnection;
+
     physics::LinkPtr m_leftWheelLink;
     physics::LinkPtr m_rightWheelLink;
 
@@ -91,6 +98,31 @@ public:
       m_rightWheelJoint = _parent->GetJoint("right_wheel_hinge");
       assert(m_leftWheelJoint);
       assert(m_rightWheelJoint);
+
+
+      for(sensors::SensorPtr &sensor : sensors::SensorManager::Instance()->GetSensors())
+      {
+        std::cout << "Looking at sensor: " << sensor->GetName() << " ("<< sensor->GetType ()  << ")\n";
+
+        //auto sensor2 = sensor.get();
+        //auto cast = dynamic_cast<sensors::DepthCameraSensor*>(sensor2);
+        auto cast = boost::dynamic_pointer_cast<sensors::DepthCameraSensor>(sensor);
+
+        std::cout << "Cast value to: " << cast << "\n";
+
+        if(cast != nullptr )
+        {
+          std::cout << "\tWe found our princess!\n";
+
+          auto depthCamera = cast->GetDepthCamera();
+          this->newDepthFrameConnection = depthCamera->ConnectNewDepthFrame(
+            boost::bind(&Kratos::OnNewDepthFrame,
+            this, _1, _2, _3, _4, _5));
+
+          cast->SetActive(true);
+
+        }
+      }        
 
       //for(int i = 0; i < _parent->GetChildCount (); i++)
       //{
@@ -126,6 +158,31 @@ public:
 
       m_kratos.reset(new Robot::Kratos(motion, sensors));
 
+    }
+
+    void OnNewDepthFrame(const float *_image,
+    unsigned int _width, unsigned int _height,
+    unsigned int /*_depth*/, const std::string &/*_format*/)
+    {
+      float min, max;
+      min = 1000;
+      max = 0;
+      for (unsigned int i = 0; i < _width * _height; i++)
+      {
+        if (_image[i] > max)
+          max = _image[i];
+        if (_image[i] < min)
+          min = _image[i];
+      }
+
+      int index =  ((_height * 0.5) * _width) + _width * 0.5;
+      printf("W[%u] H[%u] MidPoint[%d] Dist[%f] Min[%f] Max[%f]\n",
+          _width, _height, index, _image[index], min, max);
+
+      /*rendering::Camera::SaveFrame(_image, this->width,
+        this->height, this->depth, this->format,
+        "/tmp/depthCamera/me.jpg");
+        */
     }
 
     void OnScan(ConstLaserScanStampedPtr &_msg)

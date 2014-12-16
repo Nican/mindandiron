@@ -27,6 +27,9 @@ target_link_libraries(kratos_base ${Boost_LIBRARIES} zmq msgpack Box2D)
 add_library(kratos SHARED kratos.cc)
 target_link_libraries(kratos ${Boost_LIBRARIES} ${GAZEBO_LIBRARIES}  kratos_base)
 
+add_library(kratos_camera SHARED camera.cpp)
+target_link_libraries(kratos_camera ${Boost_LIBRARIES} ${GAZEBO_LIBRARIES} DepthCameraPlugin)
+
 
 
 

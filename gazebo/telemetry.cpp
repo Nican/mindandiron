@@ -115,7 +115,7 @@ void MainWindow::update()
         catch(std::exception &e)
         {
             std::cerr << "Failed to parse: " << e.what() << "\n";
-            //return;
+            return;
         }
 
         if(id == 0)
@@ -128,6 +128,33 @@ void MainWindow::update()
         {
             //std::vector<Eigen::Vector2d> waypoints;
 
+
+            Eigen::Vector2d goal;
+            Eigen::Vector2d point;
+            std::complex<double> rotation;
+
+            result.get().via.array.ptr[0].convert(&goal);
+            result.get().via.array.ptr[1].convert(&point);
+            result.get().via.array.ptr[2].convert(&rotation);
+
+            TrajectoryPlanner planner(point, rotation, goal);
+            planner.run(2000);
+
+
+            for(auto& line : mLines)
+            {
+                scene.removeItem(line);
+                delete line;
+            }
+
+            std::cout << "Reading childs AAA\n";
+
+            mLines.clear();
+
+            int id2 = 0;
+            DrawExploreChild(planner.rootNode.get(), planner.rootNode->childs.front().get(), id2);
+
+            /*
             TrajectoryPlanner planner(result.get());
 
             for(auto& line : mLines)
@@ -142,6 +169,7 @@ void MainWindow::update()
 
             int id2 = 0;
             DrawExploreChild(planner.rootNode.get(), planner.rootNode->childs.front().get(), id2);
+            */
 
 
             /*

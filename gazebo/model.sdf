@@ -57,6 +57,30 @@
         </sphere>
       </geometry>
     </visual>
+
+    <sensor type="depth" name="xtion_sensor">
+      <pose>-1.275 0 0.2 0 3.14 0</pose>
+      <always_on>true</always_on>
+      <update_rate>20.0</update_rate>
+      <topic>tteesstt</topic>
+      <camera>
+        <horizontal_fov>1.047</horizontal_fov>
+        <image>
+          <width>640</width>
+          <height>480</height>
+          <format>R8G8B8</format>
+        </image>
+        <clip>
+          <near>0.05</near>
+          <far>5</far>
+        </clip>
+      </camera>
+      <visualize>true</visualize>
+    
+      <!-- <plugin name='libkratos_camera' filename='libkratos_camera.so'/>
+      <plugin name="libkratos_camera" filename="libkratos_camera.so"/> -->
+    </sensor>
+
   </link>
 
 
@@ -150,6 +174,10 @@
       </dynamics>
     </axis>
   </joint>
+
+
+
+
  <!--
   <link name="kinect::link"> 
     <pose>0.2 0 0.265 0 0 0</pose> 
