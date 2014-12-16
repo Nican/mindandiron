@@ -1,0 +1,14 @@
+sudo apt-get install -y libzmqpp-dev
+sudo apt-get install -y qt5-default
+sudo apt-get install -y libbox2d-dev
+
+clone this: https://github.com/msgpack/msgpack-c
+follow the C++11 instructions
+
+clone this: https://github.com/Nican/mindandiron
+mkdir build
+cd build
+cmake ..
+make
+
+Run code by starting gazebo and inserting the robot
