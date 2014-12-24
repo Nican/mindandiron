@@ -58,8 +58,17 @@
       </geometry>
     </visual>
 
+    <visual name='camra_visual'>
+      <pose>0 1.5 0.1 0 0 0</pose>
+      <geometry>
+        <sphere>
+          <radius>.05</radius>
+        </sphere>
+      </geometry>
+    </visual>
+
     <sensor type="depth" name="xtion_sensor">
-      <pose>-1.275 0 0.2 0 3.14 0</pose>
+      <pose>0 1 0.1 0 0 1.57</pose>
       <always_on>true</always_on>
       <update_rate>20.0</update_rate>
       <topic>tteesstt</topic>

@@ -73,6 +73,8 @@ public:
   class Kratos : public ModelPlugin
   {
     event::ConnectionPtr newDepthFrameConnection;
+    event::ConnectionPtr newImageFrameConnection;
+
 
     physics::LinkPtr m_leftWheelLink;
     physics::LinkPtr m_rightWheelLink;
@@ -119,6 +121,11 @@ public:
             boost::bind(&Kratos::OnNewDepthFrame,
             this, _1, _2, _3, _4, _5));
 
+          this->newImageFrameConnection = depthCamera->ConnectNewImageFrame(
+            boost::bind(&Kratos::OnNewImageFrame,
+            this, _1, _2, _3, _4, _5));
+
+
           cast->SetActive(true);
 
         }
@@ -162,8 +169,13 @@ public:
 
     void OnNewDepthFrame(const float *_image,
     unsigned int _width, unsigned int _height,
-    unsigned int /*_depth*/, const std::string &/*_format*/)
+    unsigned int _depth, const std::string &/*_format*/)
     {
+     static int imageSkipCounter = 0;
+
+      if(imageSkipCounter++ % 10 != 0)
+        return;
+
       float min, max;
       min = 1000;
       max = 0;
@@ -175,15 +187,67 @@ public:
           min = _image[i];
       }
 
+     
       int index =  ((_height * 0.5) * _width) + _width * 0.5;
-      printf("W[%u] H[%u] MidPoint[%d] Dist[%f] Min[%f] Max[%f]\n",
-          _width, _height, index, _image[index], min, max);
+      //printf("W[%u] H[%u] MidPoint[%d] Dist[%f] Min[%f] Max[%f]\n", _width, _height, index, _image[index], min, max);
+
+       std::vector<unsigned char> imgData(_width * _height * _depth * 3);
+       //memcpy( imgData.data(), _image, imgData.size());
+
+       for(int i = 0; i < (_width * _height); i++)
+       {
+          float dist = _image[i];
+
+          if(dist <= 0.0001)
+            dist = 5.0;
+
+          imgData[i*3] = imgData[i*3+1] = imgData[i*3+2] = (unsigned char)(dist / 5.0 * 255);
+       }
+
+       Robot::ImgData data;
+       data.width = _width;
+       data.height = _height;
+       data.data = imgData;
+
+       m_kratos->SendTelemetry(3, data);
+         
 
       /*rendering::Camera::SaveFrame(_image, this->width,
         this->height, this->depth, this->format,
         "/tmp/depthCamera/me.jpg");
         */
     }
+
+    void OnNewImageFrame(const unsigned char * _image,
+                              unsigned int _width,
+                              unsigned int _height,
+                              unsigned int _depth,
+                              const std::string &_format)
+    {
+      static int imageSkipCounter = 0;
+
+      if(imageSkipCounter++ % 10 != 0)
+        return;
+
+      //std::cout << "New image of format: " << _format << " (" << _width << "," << _height << "," << _depth << ")\n";
+
+      std::vector<unsigned char> imgData(_width * _height * _depth);
+      assert(imgData.size() > 0);
+      memcpy( imgData.data(), _image, imgData.size());
+
+      Robot::ImgData data;
+      data.width = _width;
+      data.height = _height;
+      data.data = imgData;
+
+      m_kratos->SendTelemetry(2, data);
+
+      /*rendering::Camera::SaveFrame(_image, this->width,
+        this->height, this->depth, this->format,
+        "/tmp/depthCamera/me.jpg");
+        */
+    }
+
 
     void OnScan(ConstLaserScanStampedPtr &_msg)
     {

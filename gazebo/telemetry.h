@@ -22,6 +22,7 @@ public:
 
 	QGraphicsPolygonItem* mRobotInstance;
 	QLabel* mStatusText;
+	QLabel* mDepthCamera;
 
 	Robot::LocationHistory mHistory;
 

@@ -59,6 +59,15 @@ public:
 	MSGPACK_DEFINE(mTime, mPosition, mRotation);
 };
 
+struct ImgData
+{
+  std::vector<unsigned char> data;
+  unsigned int width;
+  unsigned int height;
+
+  MSGPACK_DEFINE(data, width, height);
+};
+
 /**
 	Keep history of locations
 */

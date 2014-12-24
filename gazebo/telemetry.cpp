@@ -23,11 +23,17 @@ MainWindow::MainWindow(QWidget *parent)
 
 
 	mStatusText = new QLabel("AAA", this);
+    mDepthCamera = new QLabel("AAA", this);
 
 	QDockWidget *dockWidget = new QDockWidget(tr("Dock Widget"), this);
 	dockWidget->setAllowedAreas(Qt::TopDockWidgetArea);
 	dockWidget->setWidget(mStatusText);
 	addDockWidget(Qt::TopDockWidgetArea, dockWidget);
+
+    QDockWidget *dockWidget2 = new QDockWidget(tr("Dock Widget2"), this);
+    dockWidget2->setAllowedAreas(Qt::TopDockWidgetArea);
+    dockWidget2->setWidget(mDepthCamera);
+    addDockWidget(Qt::TopDockWidgetArea, dockWidget2);
 
 	setCentralWidget(&view);
 	//setCentralWidget(new ViewerWidget());
@@ -129,6 +135,7 @@ void MainWindow::update()
             //std::vector<Eigen::Vector2d> waypoints;
 
 
+            /*
             Eigen::Vector2d goal;
             Eigen::Vector2d point;
             std::complex<double> rotation;
@@ -153,6 +160,7 @@ void MainWindow::update()
 
             int id2 = 0;
             DrawExploreChild(planner.rootNode.get(), planner.rootNode->childs.front().get(), id2);
+            */
 
             /*
             TrajectoryPlanner planner(result.get());
@@ -207,6 +215,24 @@ void MainWindow::update()
             DrawExploreChild( mPlanner.rootNode.get(), mPlanner.rootNode->childs.front().get(), id );
              */
         }
+        else if (id == 2)
+        {
+            Robot::ImgData imgData;
+            result.get().convert(&imgData);
+
+            //std::cout << "Got new image!\n";
+
+            QImage qImage(imgData.data.data(), imgData.width, imgData.height, QImage::Format_RGB888 );
+            mStatusText->setPixmap(QPixmap::fromImage(qImage));
+        }
+        else if (id ==3)
+        {
+            Robot::ImgData imgData;
+            result.get().convert(&imgData);
+
+            QImage qImage(imgData.data.data(), imgData.width, imgData.height, QImage::Format_RGB888 );
+            mDepthCamera->setPixmap(QPixmap::fromImage(qImage));
+        }
         else 
         {
             std::cerr << "Reading message of unkown id: " << id << "\n";
@@ -238,7 +264,7 @@ void MainWindow::ReadLocation(const Robot::LocationDataPoint &historyPoint)
     std::ostringstream stringStream;
     stringStream << historyPoint.mPosition.head<2>().transpose();
     QTextStream(&statusStr) << "Position = " << stringStream.str().c_str() << "\n" << "rotation = " << historyPoint.mRotation;
-    mStatusText->setText(statusStr);
+    //mStatusText->setText(statusStr);
 }
 
 int main(int argc, char *argv[])
