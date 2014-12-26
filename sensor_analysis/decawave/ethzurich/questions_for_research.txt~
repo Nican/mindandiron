@@ -1,0 +1,17 @@
+CRUCIAL POINTS
+1) What is the bit order? Unknown from Eth code
+2) Setup the spi for standard 8 bit data and SPI-Mode 0
+	Not entirely sure what SPI-Mode 0 is, it's unclear based on this: http://en.wikipedia.org/wiki/Serial_Peripheral_Interface_Bus#Mode_numbers. For now just going with the Arduino defined SPI_MODE0	
+3) Set frequency between 1 million (standard) and 49 million
+4) Set slave select low to start transmission, set it high to end transmission
+
+
+What is SPI.Transfer? (Ard) How is it related to spi.write? (Eth)
+	It appears that SPI.Transfer and spi.write both write a single byte to the bus.
+
+
+
+What is all this?
+// Interrupt (line 85, DW1000.h)
+InterruptIn irq; // Pin used to handle Events from DW1000 by an Interrupthandler
+void ISR(); // interrupt handling method (also calls according callback methods)
