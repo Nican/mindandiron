@@ -20,11 +20,12 @@ int main() {
     r.receiver = true;
     
     while(1) {
-        for(int j = 0; j < 10; j++)
+        for(int j = 0; j < 10; j++) {
             if(r.event[j][0] == '!') {
                 pc.printf("%s Time: %fus\r\n", r.event[j], r.eventtimes[j]*MMRANGING_TIMEUNIT);
                 r.event[j][0] = 'X';
-            }    
+            }
+        }
         if (!r.receiver) {
                 r.requestRanging();
                 wait(1);

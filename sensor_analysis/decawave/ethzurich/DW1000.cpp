@@ -11,9 +11,7 @@ DW1000::DW1000(PinName MOSI, PinName MISO, PinName SCLK, PinName CS, PinName IRQ
     loadLDE();                          // important everytime DW1000 initialises/awakes otherwise the LDE algorithm must be turned of or there's receiving malfunction see User Manual LDELOAD on p22 & p158
     
     // Configuration TODO: make method for that
-    // INTERNAL FUNCTION
     writeRegister8(DW1000_SYS_CFG, 3, 0x20); // enable auto reenabling receiver after error
-    // INTERNAL FUNCTION
     writeRegister8(DW1000_SYS_CFG, 2, 0x03); // enable 1024 byte frames
     
     irq.rise(this, &DW1000::ISR);       // attach Interrupt handler to rising edge
@@ -35,26 +33,22 @@ void DW1000::setCallbacks(void (*callbackRX)(void), void (*callbackTX)(void)) {
  
 uint32_t DW1000::getDeviceID() {
     uint32_t result;
-    // INTERNAL FUNCTION
     readRegister(DW1000_DEV_ID, 0, (uint8_t*)&result, 4);
     return result;
 }
  
 uint64_t DW1000::getEUI() {
     uint64_t result;
-    // INTERNAL FUNCTION
     readRegister(DW1000_EUI, 0, (uint8_t*)&result, 8);
     return result;
 }
  
 void DW1000::setEUI(uint64_t EUI) {
-    // INTERNAL FUNCTION
     writeRegister(DW1000_EUI, 0, (uint8_t*)&EUI, 8);
 }
  
 float DW1000::getVoltage() {
     uint8_t buffer[7] = {0x80, 0x0A, 0x0F, 0x01, 0x00};             // algorithm form User Manual p57
-    // INTERNAL FUNCTION
     // THESE ALL USE NON-ZERO SUB-ADDRESSES
     writeRegister(DW1000_RF_CONF, 0x11, buffer, 2);
     writeRegister(DW1000_RF_CONF, 0x12, &buffer[2], 1);
@@ -67,17 +61,14 @@ float DW1000::getVoltage() {
 }
  
 uint64_t DW1000::getStatus() {
-    // INTERNAL FUNCTION
     return readRegister40(DW1000_SYS_STATUS, 0);
 }
  
 uint64_t DW1000::getRXTimestamp() {
-    // INTERNAL FUNCTION
     return readRegister40(DW1000_RX_TIME, 0);
 }
  
 uint64_t DW1000::getTXTimestamp() {
-    // INTERNAL FUNCTION
     return readRegister40(DW1000_TX_TIME, 0);
 }
  
@@ -147,13 +138,11 @@ void DW1000::ISR() {
     }
     if (status & 0x80) {                                            // sending complete
         callbackTX.call();
-        // INTERNAL FUNCTION
         writeRegister8(DW1000_SYS_STATUS, 0, 0xF8);                 // clearing of sending status bits
     }
 }
  
 uint16_t DW1000::getFramelength() {
-    // INTERNAL FUNCTION
     uint16_t framelength = readRegister16(DW1000_RX_FINFO, 0);      // get framelength
     framelength = (framelength & 0x03FF) - 2;                       // take only the right bits and subtract the 2 CRC Bytes
     return framelength;
@@ -162,33 +151,28 @@ uint16_t DW1000::getFramelength() {
 // SPI Interface ------------------------------------------------------------------------------------
 uint8_t DW1000::readRegister8(uint8_t reg, uint16_t subaddress) {
     uint8_t result;
-    // INTERNAL FUNCTION
     readRegister(reg, subaddress, &result, 1);
     return result;
 }
  
 uint16_t DW1000::readRegister16(uint8_t reg, uint16_t subaddress) {
     uint16_t result;
-    // INTERNAL FUNCTION
     readRegister(reg, subaddress, (uint8_t*)&result, 2);
     return result;
 }
  
 uint64_t DW1000::readRegister40(uint8_t reg, uint16_t subaddress) {
     uint64_t result;
-    // INTERNAL FUNCTION
     readRegister(reg, subaddress, (uint8_t*)&result, 5);
     result &= 0xFFFFFFFFFF;                                 // only 40-Bit
     return result;
 }
  
 void DW1000::writeRegister8(uint8_t reg, uint16_t subaddress, uint8_t buffer) {
-    // INTERNAL FUNCTION
     writeRegister(reg, subaddress, &buffer, 1);
 }
  
 void DW1000::writeRegister16(uint8_t reg, uint16_t subaddress, uint16_t buffer) {
-    // INTERNAL FUNCTION
     writeRegister(reg, subaddress, (uint8_t*)&buffer, 2);
 }
 
@@ -199,7 +183,6 @@ void DW1000::writeRegister16(uint8_t reg, uint16_t subaddress, uint16_t buffer) 
 
 /////////////////// WHERE THE ACTION HAPPENS ///////////////////
 void DW1000::readRegister(uint8_t reg, uint16_t subaddress, uint8_t *buffer, int length) {
-    // INTERNAL FUNCTION
     setupTransaction(reg, subaddress, false);
     for(int i=0; i<length; i++)                             // get data
         buffer[i] = spi.write(0x00);
@@ -207,7 +190,6 @@ void DW1000::readRegister(uint8_t reg, uint16_t subaddress, uint8_t *buffer, int
 }
  
 void DW1000::writeRegister(uint8_t reg, uint16_t subaddress, uint8_t *buffer, int length) {
-    // INTERNAL FUNCTION
     setupTransaction(reg, subaddress, true);
     for(int i=0; i<length; i++)                             // put data
         spi.write(buffer[i]);
