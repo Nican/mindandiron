@@ -11,8 +11,12 @@
 #include <QGridLayout>
 
 
+
+
+
+
 MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent), mZmqContext(1), mZmqSocket(mZmqContext, ZMQ_SUB), view(&scene)
+    : QMainWindow(parent), mZmqContext(1), mZmqSocket(mZmqContext, ZMQ_SUB), view(&scene), cloud(new pcl::PointCloud<pcl::PointXYZRGBA>)
 {
 	mZmqSocket.connect("tcp://127.0.0.1:5555");
     mZmqSocket.setsockopt( ZMQ_SUBSCRIBE, "", 0);
@@ -26,17 +30,44 @@ MainWindow::MainWindow(QWidget *parent)
     mDepthCamera = new QLabel("AAA", this);
 
 	QDockWidget *dockWidget = new QDockWidget(tr("Dock Widget"), this);
-	dockWidget->setAllowedAreas(Qt::TopDockWidgetArea);
+	//dockWidget->setAllowedAreas(Qt::TopDockWidgetArea);
 	dockWidget->setWidget(mStatusText);
-	addDockWidget(Qt::TopDockWidgetArea, dockWidget);
+	addDockWidget(Qt::RightDockWidgetArea, dockWidget);
 
     QDockWidget *dockWidget2 = new QDockWidget(tr("Dock Widget2"), this);
-    dockWidget2->setAllowedAreas(Qt::TopDockWidgetArea);
+    //dockWidget2->setAllowedAreas(Qt::TopDockWidgetArea);
     dockWidget2->setWidget(mDepthCamera);
-    addDockWidget(Qt::TopDockWidgetArea, dockWidget2);
+    addDockWidget(Qt::RightDockWidgetArea, dockWidget2);
 
 	setCentralWidget(&view);
 	//setCentralWidget(new ViewerWidget());
+
+
+    /**
+        SETUP THE POINT CLOUD
+    */    
+    viewer.reset (new pcl::visualization::PCLVisualizer ("viewer", false));
+
+    qvtkWidget = new QVTKWidget(this);
+    qvtkWidget->SetRenderWindow(viewer->getRenderWindow());
+    viewer->setupInteractor(qvtkWidget->GetInteractor (), qvtkWidget->GetRenderWindow ());
+
+    qvtkWidget->update ();
+    viewer->addPointCloud (cloud, "cloud");
+    viewer->resetCamera ();
+    qvtkWidget->update ();
+
+    QDockWidget *dockWidget3 = new QDockWidget(tr("Dock Widget3"), this);
+    //dockWidget3->setAllowedAreas(Qt::TopDockWidgetArea);
+    dockWidget3->setWidget(qvtkWidget);
+    addDockWidget(Qt::RightDockWidgetArea, dockWidget3);
+
+
+
+
+      /**
+        SETUP THE GRID
+      */
 
 	qreal windowSize = 10.0;
 	for(qreal x = -windowSize; x <= windowSize; x += 1.0)
@@ -46,6 +77,8 @@ MainWindow::MainWindow(QWidget *parent)
 		scene.addLine(x, -windowSize, x, windowSize, QPen(color, 0));
 		scene.addLine(-windowSize, x, windowSize, x, QPen(color, 0));
 	}
+
+
 
 	//scene.addText("Hello, world!");
 
@@ -106,6 +139,8 @@ MainWindow::~MainWindow()
 
 void MainWindow::update()
 {
+    bool doneDepth = false;
+
 	//std::cout << "Reading bytes!\n";
 	zmq::message_t msg;
 	while(mZmqSocket.recv(&msg, ZMQ_DONTWAIT))
@@ -227,17 +262,39 @@ void MainWindow::update()
         }
         else if (id ==3)
         {
-            Robot::ImgData imgData;
+            if(doneDepth)
+                continue;
+
+            Robot::DepthImgData imgData;
             result.get().convert(&imgData);
 
-            QImage qImage(imgData.data.data(), imgData.width, imgData.height, QImage::Format_RGB888 );
+            std::vector<unsigned char> blobData(imgData.width * imgData.height * 3);
+
+            for(int i = 0; i < imgData.width * imgData.height; i++)
+            {
+                float dist = imgData.data[i];
+
+                if(dist <= 0.0001)
+                    dist = 5.0;
+
+                blobData[i*3] = blobData[i*3+1] = blobData[i*3+2] = (unsigned char)(dist / 5.0 * 255);
+            }
+
+            QImage qImage(blobData.data(), imgData.width, imgData.height, QImage::Format_RGB888 );
             mDepthCamera->setPixmap(QPixmap::fromImage(qImage));
+
+            UpdatePointCloud(imgData, cloud);
+
+            viewer->updatePointCloud (cloud, "cloud");
+            //viewer->resetCamera ();
+            qvtkWidget->update ();
+
+            doneDepth = true;
         }
         else 
         {
             std::cerr << "Reading message of unkown id: " << id << "\n";
         }
-
 	}
 }
 

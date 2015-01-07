@@ -84,6 +84,8 @@ public:
 
     sensors::RaySensorPtr m_sensor;
 
+    sensors::DepthCameraSensorPtr m_depthCameraSensor;
+
     std::shared_ptr<Robot::Kratos> m_kratos;
 
     public: void Load(physics::ModelPtr _parent, sdf::ElementPtr /*_sdf*/)
@@ -127,6 +129,8 @@ public:
 
 
           cast->SetActive(true);
+          m_depthCameraSensor = cast;
+          break;
 
         }
       }        
@@ -191,6 +195,21 @@ public:
       int index =  ((_height * 0.5) * _width) + _width * 0.5;
       //printf("W[%u] H[%u] MidPoint[%d] Dist[%f] Min[%f] Max[%f]\n", _width, _height, index, _image[index], min, max);
 
+      Robot::DepthImgData image;
+      image.data.resize(_width * _height);
+      image.width = _width;
+      image.height = _height;
+      image.hfov = m_depthCameraSensor->GetDepthCamera()->GetHFOV().Radian();
+
+      for(int i = 0; i < (_width * _height); i++)
+      {
+        image.data[i] = _image[i];
+      }
+      //memcpy( image.data.data(), _image, image.data.size());
+
+      m_kratos->SendTelemetry(3, image);
+
+      /*
        std::vector<unsigned char> imgData(_width * _height * _depth * 3);
        //memcpy( imgData.data(), _image, imgData.size());
 
@@ -210,6 +229,7 @@ public:
        data.data = imgData;
 
        m_kratos->SendTelemetry(3, data);
+       */
          
 
       /*rendering::Camera::SaveFrame(_image, this->width,

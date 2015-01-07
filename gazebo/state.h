@@ -24,6 +24,21 @@ public:
 	virtual std::shared_ptr<msgpack::sbuffer> GetTelemetry(){};
 };
 
+
+class MoveForward : public Base
+{
+
+public:
+	MoveForward(Kratos* robot) : Base(robot)
+	{
+	}
+
+	virtual void Initialize() override;
+	virtual void Think() override;
+};
+
+
+
 class MoveToWaypointTelemetry
 {
 public:

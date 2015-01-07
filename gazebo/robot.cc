@@ -15,7 +15,8 @@ Kratos::Kratos(const RobotMotion& motion, const RobotSensors& sensors)
 {
 	mZmqSocket.bind ("tcp://*:5555");
 
-	mState.reset(new State::MoveToWaypoint(this));
+	//mState.reset(new State::MoveToWaypoint(this));
+	mState.reset(new State::MoveForward(this));
 	mState->Initialize();
 	
 }

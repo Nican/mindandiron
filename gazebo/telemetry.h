@@ -4,6 +4,12 @@
 #include <QGraphicsView>
 #include <QLabel>
 #include "robot.h"
+#include "pointcloud.h"
+
+
+// Visualization Toolkit (VTK)
+#include <vtkRenderWindow.h>
+#include <QVTKWidget.h>
 
 
 class MainWindow : public QMainWindow
@@ -30,8 +36,14 @@ public:
 
 	QVector<QGraphicsLineItem*> mLines;
 
+	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud;
+	boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer;;
+	QVTKWidget* qvtkWidget;
+
 	void ReadLocation(const Robot::LocationDataPoint &historyPoint);
 	void DrawExploreChild(TrajectoryTreeNode* parent, TrajectoryTreeNode* child, int &id);
+
+	//void UpdatePointCloud(const Robot::DepthImgData &imgData);
 
 public slots:
 	void update();

@@ -8,6 +8,22 @@ namespace Robot {
 namespace State {
 
 
+
+
+void MoveForward::Initialize()
+{
+	std::cout << "Moving forward!\n";
+}
+
+void MoveForward::Think()
+{
+	mRobot->mMotion.mLeftWheel->SetForce(50.0);
+	mRobot->mMotion.mRightWheel->SetForce(50.0);
+}
+
+
+
+
 void MoveToWaypoint::Initialize()
 {
 

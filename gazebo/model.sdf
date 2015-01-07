@@ -165,8 +165,8 @@
     <axis>
       <xyz>1 0 0</xyz>
       <dynamics>
-        <friction>1.0</friction>
-        <damping>1.0</damping>
+        <friction>20.0</friction>
+        <damping>20.0</damping>
       </dynamics>
     </axis>
   </joint>
@@ -178,8 +178,8 @@
     <axis>
       <xyz>1 0 0</xyz>
       <dynamics>
-        <friction>1.0</friction>
-        <damping>1.0</damping>
+        <friction>20.0</friction>
+        <damping>20.0</damping>
       </dynamics>
     </axis>
   </joint>

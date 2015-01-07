@@ -4,10 +4,18 @@ ADD_DEFINITIONS(-std=c++11)
 
 find_package(Boost REQUIRED COMPONENTS system)
 find_package(Eigen3 REQUIRED)
-find_package(Qt5Widgets)
-find_package(Qt5OpenGL)
+find_package(Qt4 REQUIRED)
+find_package (VTK REQUIRED)
+#find_package(Qt5Widgets)
+#find_package(Qt5OpenGL)
+find_package(PCL 1.7.2 EXACT REQUIRED)
 #find_package(osg)
 
+include_directories (${PCL_INCLUDE_DIRS})
+link_directories    (${PCL_LIBRARY_DIRS})
+add_definitions     (${PCL_DEFINITIONS})
+
+set  (VTK_LIBRARIES   vtkRendering vtkGraphics vtkHybrid QVTK)
 
 include_directories(${Boost_INCLUDE_DIRS})
 include_directories(${Eigen_INCLUDE_DIRS})
@@ -20,7 +28,7 @@ endif()
 include_directories(${GAZEBO_INCLUDE_DIRS})
 link_directories(${GAZEBO_LIBRARY_DIRS})
 
-add_library(kratos_base SHARED robot.cc trajectory.cpp state.cc)
+add_library(kratos_base SHARED robot.cc trajectory.cpp state.cc pointcloud.cpp)
 target_link_libraries(kratos_base ${Boost_LIBRARIES} zmq msgpack Box2D)
 
 
@@ -38,13 +46,13 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 # Instruct CMake to run moc automatically when needed.
 set(CMAKE_AUTOMOC ON)
 
-#INCLUDE(${QT_USE_FILE})
+INCLUDE(${QT_USE_FILE})
 ADD_DEFINITIONS(${QT_DEFINITIONS})
 
 #QT5_WRAP_CPP(kratos_telemetry telemetry.h)
 ADD_EXECUTABLE(kratos_telemetry telemetry.cpp)
 #osg osgQt osgWidget osgViewer osgUtil osgGA osgDB
-TARGET_LINK_LIBRARIES(kratos_telemetry Qt5::Widgets Qt5::OpenGL kratos_base) 
+TARGET_LINK_LIBRARIES(kratos_telemetry ${QT_LIBRARIES}  kratos_base ${PCL_LIBRARIES} ${VTK_LIBRARIES}) #Qt5::Widgets Qt5::OpenGL
 
 #ADD_EXECUTABLE(box2dtest box2dtest.cpp)
 #TARGET_LINK_LIBRARIES(box2dtest Box2D)

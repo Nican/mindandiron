@@ -68,6 +68,16 @@ struct ImgData
   MSGPACK_DEFINE(data, width, height);
 };
 
+struct DepthImgData
+{
+  std::vector<float> data;
+  unsigned int width;
+  unsigned int height;
+  float hfov;
+
+  MSGPACK_DEFINE(data, width, height, hfov);
+};
+
 /**
 	Keep history of locations
 */
