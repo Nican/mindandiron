@@ -1,0 +1,1 @@
+/usr/bin/c++  -fPIC    -shared -Wl,-soname,libkratos_base.so -o libkratos_base.so CMakeFiles/kratos_base.dir/robot.cc.o CMakeFiles/kratos_base.dir/trajectory.cpp.o CMakeFiles/kratos_base.dir/state.cc.o  -L/usr/lib/x86_64-linux-gnu/gazebo-2.2/plugins -lboost_system -lzmq -lmsgpack -lBox2D -Wl,-rpath,/usr/lib/x86_64-linux-gnu/gazebo-2.2/plugins 
