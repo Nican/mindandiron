@@ -1,2 +1,0 @@
-# Hashes of file build rules.
-e7fa776263969c8904ad229d7dffd43b CMakeFiles/kratos_telemetry_automoc

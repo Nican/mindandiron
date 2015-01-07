@@ -1,4 +1,0 @@
-/home/eon-alone/sandbox/NASA/mindandiron/gazebo/build/CMakeFiles/kratos.dir
-/home/eon-alone/sandbox/NASA/mindandiron/gazebo/build/CMakeFiles/kratos_base.dir
-/home/eon-alone/sandbox/NASA/mindandiron/gazebo/build/CMakeFiles/kratos_telemetry.dir
-/home/eon-alone/sandbox/NASA/mindandiron/gazebo/build/CMakeFiles/kratos_telemetry_automoc.dir
