@@ -22,7 +22,7 @@ public:
   typedef std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT>>> RegionsType;
 
   MainWindow(QWidget *parent = 0);
-  ~MainWindow();
+  ~MainWindow(){};
 
   zmq::context_t mZmqContext;
 	zmq::socket_t mZmqSocket;

@@ -83,7 +83,7 @@
         </image>
         <clip>
           <near>0.05</near>
-          <far>50</far>
+          <far>5</far>
         </clip>
       </camera>
       <visualize>true</visualize>

@@ -131,20 +131,6 @@ void MainWindow::DrawExploreChild(TrajectoryTreeNode* parent, TrajectoryTreeNode
     }
 }
 
-MainWindow::~MainWindow()
-{
-
-}
-
-#include <pcl/filters/passthrough.h>
-#include <pcl/search/kdtree.h>
-#include <pcl/segmentation/region_growing_rgb.h>
-#include <pcl/segmentation/region_growing.h>
-#include <pcl/features/normal_3d.h>
-
-#include <chrono>
-#include <ctime>
-
 void MainWindow::update()
 {
 

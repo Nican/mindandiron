@@ -91,31 +91,31 @@ struct BaseGroundProcessor
 		{
 			auto status = segmentFuture.wait_for(std::chrono::seconds(0));
 
-		    if(status != std::future_status::ready)
-		        return false;
+			if(status != std::future_status::ready)
+				return false;
 
-		    std::cout << "Updated out cloud!\n";
-    		lastProccessed = segmentFuture.get();
-    		segmentFuture = std::future<T>();
+			//std::cout << "Updated out cloud!\n";
+			lastProccessed = segmentFuture.get();
+			segmentFuture = std::future<T>();
 
-    		return true;
+			return true;
 		}
 
 		if(!segmentFuture.valid())
-	    {
-	        std::cout << "Future does not have a valid state. Begin to process\n";
+		{
+			//std::cout << "Future does not have a valid state. Begin to process\n";
 
-	        segmentFuture = std::async(std::launch::async, [this, cloud](){
-	            auto val = this->AsyncronousUpdate(cloud);
-	            std::cout << "Finished async proccessing\n";
+			segmentFuture = std::async(std::launch::async, [this, cloud](){
+				auto val = this->AsyncronousUpdate(cloud);
+				//std::cout << "Finished async proccessing\n";
 
-	            return val;
-	        });
+				return val;
+			});
 
-	        //std::cout << "Future state: " << segmentFuture->valid() << "\n";
-	    }
+		//std::cout << "Future state: " << segmentFuture->valid() << "\n";
+		}
 
-	    return false;
+		return false;
 	}
 
 	virtual T AsyncronousUpdate(PointCloud::Ptr cloud) = 0;
@@ -131,9 +131,24 @@ struct RegionGrowingSegmenter : public BaseGroundProcessor<PointCloud::Ptr>
 
 struct MultiPlaneSegmenter : public BaseGroundProcessor<RegionsType>
 {
-	float threshold_;
+	float threshold;
+	float maxDepthChangeFactor;
+	float normalSmoothingSize;
 
-	MultiPlaneSegmenter() : threshold_(0.02f)
+	int minInliers;
+	float angularThreshold;
+	float distanceThreshold;
+
+	bool refine;
+
+	MultiPlaneSegmenter() : 
+		threshold(0.02f), 
+		maxDepthChangeFactor(0.02f),
+		normalSmoothingSize (20.0f),
+		minInliers (200),
+		angularThreshold (3.0),
+		distanceThreshold (0.02),
+		refine(true)
 	{
 	}
 

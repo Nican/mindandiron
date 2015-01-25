@@ -1,10 +1,20 @@
 #include "pointcloud.h"
 #include <QHBoxLayout>
+#include <QPushButton>
+#include <QDialog>
+
+#include <QLineEdit>
+#include <QFormLayout>
+#include <QDoubleSpinBox>
+#include <QCheckBox>
 
 PointCloudWidget::PointCloudWidget(QWidget *parent)
     : QWidget(parent), viewer(new pcl::visualization::PCLVisualizer ("viewer", false))
 {    
 
+    //
+    //  CRreate PCL related widgets
+    //
     qvtkWidget = new QVTKWidget(this);
     qvtkWidget->SetRenderWindow(viewer->getRenderWindow());
     viewer->setupInteractor(qvtkWidget->GetInteractor (), qvtkWidget->GetRenderWindow ());
@@ -14,15 +24,42 @@ PointCloudWidget::PointCloudWidget(QWidget *parent)
     viewer->resetCamera ();
     qvtkWidget->update ();
 
+    //
+    //  Settings button
+    //
+    auto button = new QPushButton("Settings", this);
+
+    // 
+    //  Popup dialog for settings
+    //
+    mDialog = new QDialog(this);
+    mDialogLayout = new QFormLayout;
+    mDialog->setLayout(mDialogLayout);
+
+
     QHBoxLayout *layout = new QHBoxLayout;
     layout->addWidget(qvtkWidget);
+    layout->addWidget(button);
 
     setLayout(layout);
     show();
+
+    connect(button, SIGNAL(released()), this, SLOT(OpenSettings()));
 }
 
 
 
+void PointCloudWidget::OpenSettings()
+{
+    mDialog->show();
+    mDialog->raise();
+    mDialog->activateWindow();
+}
+
+GrowingRegionPointCloudWidget::GrowingRegionPointCloudWidget(QWidget *parent) 
+: PointCloudWidget(parent)
+{
+}
 
 void GrowingRegionPointCloudWidget::ReceivePointCloud(Robot::PointCloud::Ptr &cloud)
 {
@@ -36,6 +73,60 @@ void GrowingRegionPointCloudWidget::ReceivePointCloud(Robot::PointCloud::Ptr &cl
     }
 }
 
+
+PlaneSegmentCloudWidget::PlaneSegmentCloudWidget(QWidget *parent)
+: PointCloudWidget(parent)
+{
+    threshold = new QDoubleSpinBox(this);
+    threshold->setValue(segmenter.threshold);
+    mDialogLayout->addRow(tr("&Theshold:"), threshold);
+    connect(threshold, SIGNAL(valueChanged(double)), this, SLOT(UpdateSettings()));
+
+    maxDepthChangeFactor = new QDoubleSpinBox(this);
+    maxDepthChangeFactor->setValue(segmenter.maxDepthChangeFactor);
+    mDialogLayout->addRow(tr("&Max Deapth Change:"), maxDepthChangeFactor);
+    connect(maxDepthChangeFactor, SIGNAL(valueChanged(double)), this, SLOT(UpdateSettings()));
+
+    normalSmoothingSize = new QDoubleSpinBox(this);
+    normalSmoothingSize->setValue(segmenter.normalSmoothingSize);
+    mDialogLayout->addRow(tr("&Normal Smoothing Size:"), normalSmoothingSize);
+    connect(normalSmoothingSize, SIGNAL(valueChanged(double)), this, SLOT(UpdateSettings()));
+
+    minInliers = new QSpinBox(this);
+    minInliers->setValue(segmenter.minInliers);
+    mDialogLayout->addRow(tr("&Min inliners:"), minInliers);
+    connect(minInliers, SIGNAL(valueChanged(int)), this, SLOT(UpdateSettings()));
+
+    angularThreshold = new QDoubleSpinBox(this);
+    angularThreshold->setValue(segmenter.angularThreshold);
+    mDialogLayout->addRow(tr("&Angular Threshold:"), angularThreshold);
+    connect(angularThreshold, SIGNAL(valueChanged(double)), this, SLOT(UpdateSettings()));
+
+    distanceThreshold = new QDoubleSpinBox(this);
+    distanceThreshold->setValue(segmenter.distanceThreshold);
+    mDialogLayout->addRow(tr("&Distance thershold:"), distanceThreshold);
+    connect(distanceThreshold, SIGNAL(valueChanged(double)), this, SLOT(UpdateSettings()));
+
+    refine = new QCheckBox(this); 
+    refine->setCheckState(segmenter.refine ? Qt::Checked : Qt::Unchecked );
+    mDialogLayout->addRow(tr("&Refine:"), refine);
+    connect(refine, SIGNAL(stateChanged(int)), this, SLOT(UpdateSettings()));
+
+}
+
+void PlaneSegmentCloudWidget::UpdateSettings()
+{
+    segmenter.threshold = threshold->value();
+    segmenter.maxDepthChangeFactor = maxDepthChangeFactor->value();
+    segmenter.normalSmoothingSize = normalSmoothingSize->value();
+
+    segmenter.minInliers = minInliers->value();
+    segmenter.angularThreshold = angularThreshold->value();
+    segmenter.distanceThreshold = distanceThreshold->value();
+
+    segmenter.refine = refine->checkState() == Qt::Checked;
+}    
+    
 
 
 void PlaneSegmentCloudWidget::ReceivePointCloud(Robot::PointCloud::Ptr &cloud)
@@ -74,7 +165,7 @@ void PlaneSegmentCloudWidget::ReceivePointCloud(Robot::PointCloud::Ptr &cloud)
             pcl::visualization::PointCloudColorHandlerCustom <PointT> color (contour, red[i], grn[i], blu[i]);
             viewer->addPointCloud (contour, color, name);
 
-            pcl::approximatePolygon (regions[i], approx_polygon, segmenter.threshold_, false);
+            pcl::approximatePolygon (regions[i], approx_polygon, segmenter.threshold, false);
             approx_contour->points = approx_polygon.getContour ();
             //std::cout << "polygon: " << contour->size () << " -> " << approx_contour->size () << std::endl;
             pcl::PointCloud<PointT>::ConstPtr approx_contour_const = approx_contour;

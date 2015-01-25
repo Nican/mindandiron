@@ -123,16 +123,16 @@ RegionsType MultiPlaneSegmenter::AsyncronousUpdate(PointCloud::Ptr imgCloud)
 {
 	pcl::IntegralImageNormalEstimation<pcl::PointXYZRGB, pcl::Normal> ne;
 	ne.setNormalEstimationMethod (ne.COVARIANCE_MATRIX);
-	ne.setMaxDepthChangeFactor (0.02f);
-	ne.setNormalSmoothingSize (20.0f);
+	ne.setMaxDepthChangeFactor (maxDepthChangeFactor);
+	ne.setNormalSmoothingSize (normalSmoothingSize);
 
 	pcl::PlaneRefinementComparator<pcl::PointXYZRGB, pcl::Normal, pcl::Label>::Ptr refinement_compare (new pcl::PlaneRefinementComparator<pcl::PointXYZRGB, pcl::Normal, pcl::Label> ());
-	refinement_compare->setDistanceThreshold (threshold_, true);
+	refinement_compare->setDistanceThreshold (threshold, true);
 
 	pcl::OrganizedMultiPlaneSegmentation<pcl::PointXYZRGB, pcl::Normal, pcl::Label> mps;
-	mps.setMinInliers (200);
-	mps.setAngularThreshold (0.017453 * 3.0); //3 degrees
-	mps.setDistanceThreshold (0.02); //2cm
+	mps.setMinInliers (minInliers);
+	mps.setAngularThreshold (0.017453 * angularThreshold); //3 degrees
+	mps.setDistanceThreshold (distanceThreshold); //2cm
 	mps.setRefinementComparator (refinement_compare);
 
 	RegionsType regions;
@@ -151,7 +151,7 @@ RegionsType MultiPlaneSegmenter::AsyncronousUpdate(PointCloud::Ptr imgCloud)
 	mps.setInputNormals (normal_cloud);
 	mps.setInputCloud (imgCloud);
 
-	if (true)
+	if (refine)
 		mps.segmentAndRefine (regions);
 	else
 		mps.segment (regions);
