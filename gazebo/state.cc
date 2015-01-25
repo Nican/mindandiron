@@ -36,7 +36,7 @@ void MoveToWaypoint::Think()
 
 	if(mRobot->mCurTime - lastReplan > 30.0 )
 	{
-		Replan();
+		//Replan();
 		lastReplan = mRobot->mCurTime;
 	}
 
@@ -52,7 +52,7 @@ void MoveToWaypoint::Think()
 
 		//std::cout << "\tAngle diff: " << diff2.transpose() << std::endl;
 		
-		double factor = 4.0;
+		double factor = 4.0 * 10.0;
 
 		if(angleDiff < 0.01)
 		{

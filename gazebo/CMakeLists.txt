@@ -15,6 +15,11 @@ include_directories (${PCL_INCLUDE_DIRS})
 link_directories    (${PCL_LIBRARY_DIRS})
 add_definitions     (${PCL_DEFINITIONS})
 
+message(STATUS "PCL_DEFINITIONS=${PCL_DEFINITIONS}")
+message(STATUS "PCL_LIBRARY_DIRS=${PCL_LIBRARY_DIRS}")
+message(STATUS "PCL_INCLUDE_DIRS=${PCL_INCLUDE_DIRS}")
+message(STATUS "PCL_LIBRARIES=${PCL_LIBRARIES}")
+
 set  (VTK_LIBRARIES   vtkRendering vtkGraphics vtkHybrid QVTK)
 
 include_directories(${Boost_INCLUDE_DIRS})
@@ -35,8 +40,8 @@ target_link_libraries(kratos_base ${Boost_LIBRARIES} zmq msgpack Box2D)
 add_library(kratos SHARED kratos.cc)
 target_link_libraries(kratos ${Boost_LIBRARIES} ${GAZEBO_LIBRARIES}  kratos_base)
 
-add_library(kratos_camera SHARED camera.cpp)
-target_link_libraries(kratos_camera ${Boost_LIBRARIES} ${GAZEBO_LIBRARIES} DepthCameraPlugin)
+#add_library(kratos_camera SHARED camera.cpp)
+#target_link_libraries(kratos_camera ${Boost_LIBRARIES} ${GAZEBO_LIBRARIES} DepthCameraPlugin)
 
 
 
@@ -50,7 +55,7 @@ INCLUDE(${QT_USE_FILE})
 ADD_DEFINITIONS(${QT_DEFINITIONS})
 
 #QT5_WRAP_CPP(kratos_telemetry telemetry.h)
-ADD_EXECUTABLE(kratos_telemetry telemetry.cpp)
+ADD_EXECUTABLE(kratos_telemetry telemetry/telemetry.cpp telemetry/pointcloud.cpp)
 #osg osgQt osgWidget osgViewer osgUtil osgGA osgDB
 TARGET_LINK_LIBRARIES(kratos_telemetry ${QT_LIBRARIES}  kratos_base ${PCL_LIBRARIES} ${VTK_LIBRARIES}) #Qt5::Widgets Qt5::OpenGL
 

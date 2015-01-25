@@ -3,24 +3,28 @@
 #include <QGraphicsScene>
 #include <QGraphicsView>
 #include <QLabel>
-#include "robot.h"
+#include "../robot.h"
 #include "pointcloud.h"
 
 
-// Visualization Toolkit (VTK)
-#include <vtkRenderWindow.h>
-#include <QVTKWidget.h>
+
 
 
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
 
-public:
-    MainWindow(QWidget *parent = 0);
-    ~MainWindow();
+    
 
-    zmq::context_t mZmqContext;
+public:
+  typedef pcl::PointXYZRGB PointT;
+  typedef pcl::PointCloud<PointT> PclPointCloud;
+  typedef std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT>>> RegionsType;
+
+  MainWindow(QWidget *parent = 0);
+  ~MainWindow();
+
+  zmq::context_t mZmqContext;
 	zmq::socket_t mZmqSocket;
 
 	QGraphicsScene scene;
@@ -36,9 +40,12 @@ public:
 
 	QVector<QGraphicsLineItem*> mLines;
 
-	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud;
-	boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer;;
-	QVTKWidget* qvtkWidget;
+  /**
+    POINT CLOUD
+  */
+  GrowingRegionPointCloudWidget* growingRegion;  
+  PlaneSegmentCloudWidget* planeSegments;
+
 
 	void ReadLocation(const Robot::LocationDataPoint &historyPoint);
 	void DrawExploreChild(TrajectoryTreeNode* parent, TrajectoryTreeNode* child, int &id);
@@ -48,3 +55,4 @@ public:
 public slots:
 	void update();
 };
+

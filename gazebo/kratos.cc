@@ -177,7 +177,7 @@ public:
     {
      static int imageSkipCounter = 0;
 
-      if(imageSkipCounter++ % 10 != 0)
+      if(imageSkipCounter++ % 30 != 0)
         return;
 
       float min, max;

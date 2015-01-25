@@ -15,8 +15,9 @@
 
 
 
+
 MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent), mZmqContext(1), mZmqSocket(mZmqContext, ZMQ_SUB), view(&scene), cloud(new pcl::PointCloud<pcl::PointXYZRGBA>)
+    : QMainWindow(parent), mZmqContext(1), mZmqSocket(mZmqContext, ZMQ_SUB), view(&scene)
 {
 	mZmqSocket.connect("tcp://127.0.0.1:5555");
     mZmqSocket.setsockopt( ZMQ_SUBSCRIBE, "", 0);
@@ -32,7 +33,7 @@ MainWindow::MainWindow(QWidget *parent)
 	QDockWidget *dockWidget = new QDockWidget(tr("Dock Widget"), this);
 	//dockWidget->setAllowedAreas(Qt::TopDockWidgetArea);
 	dockWidget->setWidget(mStatusText);
-	addDockWidget(Qt::RightDockWidgetArea, dockWidget);
+	//addDockWidget(Qt::RightDockWidgetArea, dockWidget);
 
     QDockWidget *dockWidget2 = new QDockWidget(tr("Dock Widget2"), this);
     //dockWidget2->setAllowedAreas(Qt::TopDockWidgetArea);
@@ -46,21 +47,19 @@ MainWindow::MainWindow(QWidget *parent)
     /**
         SETUP THE POINT CLOUD
     */    
-    viewer.reset (new pcl::visualization::PCLVisualizer ("viewer", false));
-
-    qvtkWidget = new QVTKWidget(this);
-    qvtkWidget->SetRenderWindow(viewer->getRenderWindow());
-    viewer->setupInteractor(qvtkWidget->GetInteractor (), qvtkWidget->GetRenderWindow ());
-
-    qvtkWidget->update ();
-    viewer->addPointCloud (cloud, "cloud");
-    viewer->resetCamera ();
-    qvtkWidget->update ();
+    growingRegion = new GrowingRegionPointCloudWidget(this);
+    planeSegments = new PlaneSegmentCloudWidget(this);
 
     QDockWidget *dockWidget3 = new QDockWidget(tr("Dock Widget3"), this);
     //dockWidget3->setAllowedAreas(Qt::TopDockWidgetArea);
-    dockWidget3->setWidget(qvtkWidget);
+    dockWidget3->setWidget(growingRegion);
     addDockWidget(Qt::RightDockWidgetArea, dockWidget3);
+
+
+    QDockWidget *dockWidget4 = new QDockWidget(tr("Dock Widget4"), this);
+    //dockWidget3->setAllowedAreas(Qt::TopDockWidgetArea);
+    dockWidget4->setWidget(planeSegments);
+    addDockWidget(Qt::RightDockWidgetArea, dockWidget4);
 
 
 
@@ -116,7 +115,7 @@ MainWindow::MainWindow(QWidget *parent)
 void MainWindow::DrawExploreChild(TrajectoryTreeNode* parent, TrajectoryTreeNode* node, int &id)
 {
     QColor color;
-    color.setHsvF( (id/1000.0) , 1.0, 1.0);
+    color.setHsvF( (id/2000.0) , 1.0, 1.0);
     id++;
 
     auto line = scene.addLine(parent->mPoint.x(), parent->mPoint.y(), node->mPoint.x(), node->mPoint.y(), QPen(color, 0));
@@ -137,11 +136,18 @@ MainWindow::~MainWindow()
 
 }
 
+#include <pcl/filters/passthrough.h>
+#include <pcl/search/kdtree.h>
+#include <pcl/segmentation/region_growing_rgb.h>
+#include <pcl/segmentation/region_growing.h>
+#include <pcl/features/normal_3d.h>
+
+#include <chrono>
+#include <ctime>
+
 void MainWindow::update()
 {
-    bool doneDepth = false;
 
-	//std::cout << "Reading bytes!\n";
 	zmq::message_t msg;
 	while(mZmqSocket.recv(&msg, ZMQ_DONTWAIT))
 	{
@@ -167,88 +173,7 @@ void MainWindow::update()
         }
         else if (id == 1)
         {
-            //std::vector<Eigen::Vector2d> waypoints;
-
-
-            /*
-            Eigen::Vector2d goal;
-            Eigen::Vector2d point;
-            std::complex<double> rotation;
-
-            result.get().via.array.ptr[0].convert(&goal);
-            result.get().via.array.ptr[1].convert(&point);
-            result.get().via.array.ptr[2].convert(&rotation);
-
-            TrajectoryPlanner planner(point, rotation, goal);
-            planner.run(2000);
-
-
-            for(auto& line : mLines)
-            {
-                scene.removeItem(line);
-                delete line;
-            }
-
-            std::cout << "Reading childs AAA\n";
-
-            mLines.clear();
-
-            int id2 = 0;
-            DrawExploreChild(planner.rootNode.get(), planner.rootNode->childs.front().get(), id2);
-            */
-
-            /*
-            TrajectoryPlanner planner(result.get());
-
-            for(auto& line : mLines)
-            {
-                scene.removeItem(line);
-                delete line;
-            }
-
-            std::cout << "Reading childs AAA\n";
-
-            mLines.clear();
-
-            int id2 = 0;
-            DrawExploreChild(planner.rootNode.get(), planner.rootNode->childs.front().get(), id2);
-            */
-
-
-            /*
-            Robot::State::MoveToWaypointTelemetry telemetry;
-            result.get().convert(&telemetry);
-
-            const int waypointsSize = telemetry.mWaypoints.size();
-
-            if(waypointsSize == 0)
-                return;
-
-            
-            QPainterPath path(QPointF(telemetry.mWaypoints[0].x(), telemetry.mWaypoints[0].y()));
-
-            for(int i = 1; i < waypointsSize; i++)
-            {
-                QPointF pt(telemetry.mWaypoints[i].x(), telemetry.mWaypoints[i].y());
-                path.lineTo(pt);
-
-                if((waypointsSize - i) == telemetry.mCurrentPoint)
-                {
-                    path.addEllipse(pt, 0.1, 0.1);
-                    path.lineTo(pt);
-                }
-            }
-
-            trajectoryPath->setPath(path);
-            */
-
-           /*
-            TrajectoryPlanner mPlanner(telemetry.mWaypoints[0], std::polar(M_PI/2.0, 1.0), {1.0,6.0});
-            mPlanner.run(2000);
-            int id = 0;
-
-            DrawExploreChild( mPlanner.rootNode.get(), mPlanner.rootNode->childs.front().get(), id );
-             */
+            //Receive path -- TODO
         }
         else if (id == 2)
         {
@@ -262,13 +187,13 @@ void MainWindow::update()
         }
         else if (id ==3)
         {
-            if(doneDepth)
-                continue;
+
 
             Robot::DepthImgData imgData;
             result.get().convert(&imgData);
 
             std::vector<unsigned char> blobData(imgData.width * imgData.height * 3);
+            double maxValue = *std::max_element( imgData.data.begin(), imgData.data.end() );
 
             for(int i = 0; i < imgData.width * imgData.height; i++)
             {
@@ -277,19 +202,19 @@ void MainWindow::update()
                 if(dist <= 0.0001)
                     dist = 5.0;
 
-                blobData[i*3] = blobData[i*3+1] = blobData[i*3+2] = (unsigned char)(dist / 5.0 * 255);
+                blobData[i*3] = blobData[i*3+1] = blobData[i*3+2] = (unsigned char)(dist / maxValue * 255);
             }
 
             QImage qImage(blobData.data(), imgData.width, imgData.height, QImage::Format_RGB888 );
             mDepthCamera->setPixmap(QPixmap::fromImage(qImage));
 
-            UpdatePointCloud(imgData, cloud);
+            pcl::PointCloud <pcl::PointXYZRGB>::Ptr imgCloud (new pcl::PointCloud <pcl::PointXYZRGB>);
 
-            viewer->updatePointCloud (cloud, "cloud");
-            //viewer->resetCamera ();
-            qvtkWidget->update ();
+            UpdatePointCloud(imgData, *imgCloud);
+            
+            growingRegion->ReceivePointCloud(imgCloud);
+            planeSegments->ReceivePointCloud(imgCloud);
 
-            doneDepth = true;
         }
         else 
         {
@@ -297,6 +222,8 @@ void MainWindow::update()
         }
 	}
 }
+
+
 
 void MainWindow::ReadLocation(const Robot::LocationDataPoint &historyPoint)
 {
@@ -335,3 +262,4 @@ int main(int argc, char *argv[])
 
     return a.exec();
 }
+

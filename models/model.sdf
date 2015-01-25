@@ -2,7 +2,7 @@
 <sdf version='1.4'>
   <model name="Kratos">
    
-   <static>false</static>
+   <static>true</static>
    <link name='chassis'>
     <pose>0 -0.33 0 0 0 0</pose>
 
@@ -15,7 +15,7 @@
       <geometry>
         <mesh>
           <scale>0.001 0.001 0.001</scale> <!-- the DAE is in millimeters. Gazebo is in meters. -->
-          <uri>model://gazebo/Prometheus.dae</uri>
+          <uri>model://models/Prometheus.dae</uri>
         </mesh>
       </geometry>
     </collision>
@@ -24,7 +24,7 @@
       <geometry>
         <mesh>
           <scale>0.001 0.001 0.001</scale>
-          <uri>model://gazebo/Prometheus.dae</uri>
+          <uri>model://models/Prometheus.dae</uri>
         </mesh>
       </geometry>
     </visual>
@@ -58,6 +58,7 @@
       </geometry>
     </visual>
 
+    <!--
     <visual name='camra_visual'>
       <pose>0 1.5 0.1 0 0 0</pose>
       <geometry>
@@ -66,6 +67,7 @@
         </sphere>
       </geometry>
     </visual>
+  -->
 
     <sensor type="depth" name="xtion_sensor">
       <pose>0 1 0.1 0 0 1.57</pose>
@@ -81,7 +83,7 @@
         </image>
         <clip>
           <near>0.05</near>
-          <far>5</far>
+          <far>50</far>
         </clip>
       </camera>
       <visualize>true</visualize>
