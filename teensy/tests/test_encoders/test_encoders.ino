@@ -12,9 +12,11 @@
 #include <Encoder.h>
 #include <Servo.h>
 
+boolean testDirectionPositive = false;
+
 Encoder wheelLeft(14, 15);
 Encoder wheelRight(16, 17);
-const int ticksPerRev = 23330;  // Determined experimentally
+const int ticksPerRev = 23300;  // Determined experimentally
 long oldLeft  = -999;
 long oldRight = -999;
 int leftTurns = 0;
@@ -57,7 +59,7 @@ void loop() {
   newLeft = wheelLeft.read();
   newRight = wheelRight.read();
   if (newLeft != oldLeft || newRight != oldRight) {
-    checkEncoderReset(newLeft, newRight);
+    testDirection(newLeft, newRight, oldLeft, oldRight);
     reportEncoder(newLeft, newRight);
   }
   
@@ -77,27 +79,51 @@ void loop() {
   }
 }
 
+// Checks that the encoders are always going in the testDirection
+void testDirection(int newLeft, int newRight, int oldLeft, int oldRight) {
+  boolean leftBad = false;
+  boolean rightBad = false;
+  if (testDirectionPositive) {
+    if (newLeft - oldLeft < 0) {
+      leftBad = true;
+    }
+    if (newRight - oldRight < 0) {
+      rightBad = true;
+    }
+  }
+  else {
+    if (newLeft - oldLeft > 0) {
+      leftBad = true;
+    }
+    if (newRight - oldRight > 0) {
+      rightBad = true;
+    }
+  }
+
+  if (leftBad) {
+    Serial.print("Fuckfuck - Left was bad. Old: "); Serial.print(oldLeft);
+    Serial.print(", New: "); Serial.println(newLeft);
+  }
+  if (rightBad) {
+    Serial.print("Fuckfuck - Right was bad. Old: "); Serial.print(oldRight);
+    Serial.print(", New: "); Serial.println(newRight);
+  }
+}
+
 // Checks whether the encoders have gone 360 deg and resets encoders if so
 void checkEncoderReset(int newLeft, int newRight) {
   if (abs(newLeft) >= ticksPerRev) {
     wheelLeft.write(newLeft % ticksPerRev);
-    if (newLeft > 0) leftTurns++;
-    else leftTurns--;
   }
   if (abs(newRight) >= ticksPerRev) {
     wheelRight.write(newRight % ticksPerRev);
-    if (newRight > 0) rightTurns++;
-    else rightTurns--;
   }
 }
 
 // Prints the encoder data for left and right wheels, resets the stored angle
 void reportEncoder(int newLeft, int newRight) {
-  Serial.print("Left = ");    Serial.print(newLeft);
-  Serial.print(", Right = "); Serial.println(newRight);
-  Serial.print("Left Turns = ");    Serial.print(leftTurns);
-  Serial.print(", Right Turns = "); Serial.println(rightTurns);
-  Serial.println("");
+//  Serial.print("Left = ");    Serial.print(newLeft);
+//  Serial.print(", Right = "); Serial.println(newRight);
   oldLeft = newLeft;
   oldRight = newRight;
 }
