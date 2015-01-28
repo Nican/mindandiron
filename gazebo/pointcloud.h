@@ -126,6 +126,17 @@ struct RegionGrowingSegmenter : public BaseGroundProcessor<PointCloud::Ptr>
 {
 	typedef pcl::PointCloud<pcl::PointXYZRGB> PointCloud;
 
+	int numberOfNeighbours;
+	double smoothnessThreshold;
+	double curvatureThreshold;
+
+	RegionGrowingSegmenter() :
+		numberOfNeighbours(60),
+		smoothnessThreshold(5.0),
+		curvatureThreshold(0.05)
+	{
+	}
+
 	virtual PointCloud::Ptr AsyncronousUpdate(PointCloud::Ptr imgCloud) override;
 };
 

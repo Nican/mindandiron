@@ -1,5 +1,6 @@
 #include "pointcloud.h"
 #include <QHBoxLayout>
+#include <QVBoxLayout>
 #include <QPushButton>
 #include <QDialog>
 
@@ -37,7 +38,7 @@ PointCloudWidget::PointCloudWidget(QWidget *parent)
     mDialog->setLayout(mDialogLayout);
 
 
-    QHBoxLayout *layout = new QHBoxLayout;
+    auto *layout = new QVBoxLayout;
     layout->addWidget(qvtkWidget);
     layout->addWidget(button);
 
@@ -59,18 +60,45 @@ void PointCloudWidget::OpenSettings()
 GrowingRegionPointCloudWidget::GrowingRegionPointCloudWidget(QWidget *parent) 
 : PointCloudWidget(parent)
 {
+    numberOfNeighbours = new QSpinBox(this);
+    numberOfNeighbours->setValue(segmenter.numberOfNeighbours);
+    mDialogLayout->addRow(tr("&Number Of Neighbours:"), numberOfNeighbours);
+    connect(numberOfNeighbours, SIGNAL(valueChanged(int)), this, SLOT(UpdateSettings()));
+
+    smoothnessThreshold = new QDoubleSpinBox(this);
+    smoothnessThreshold->setValue(segmenter.smoothnessThreshold);
+    mDialogLayout->addRow(tr("&Smoothness Threshold:"), smoothnessThreshold);
+    connect(smoothnessThreshold, SIGNAL(valueChanged(double)), this, SLOT(UpdateSettings()));
+
+    curvatureThreshold = new QDoubleSpinBox(this);
+    curvatureThreshold->setValue(segmenter.curvatureThreshold);
+    mDialogLayout->addRow(tr("&Curvature Threshold:"), curvatureThreshold);
+    connect(curvatureThreshold, SIGNAL(valueChanged(double)), this, SLOT(UpdateSettings()));
 }
 
 void GrowingRegionPointCloudWidget::ReceivePointCloud(Robot::PointCloud::Ptr &cloud)
 {
     if(segmenter.Update(cloud))
     {
+        if(!segmenter.lastProccessed)
+        {
+            std::cout << "Update failed????\n";
+            return;
+        }
+
         std::cout << "Updating the cloud view ("<< segmenter.lastProccessed->points.size() <<")!\n";
 
         viewer->updatePointCloud (segmenter.lastProccessed, "cloud");
         viewer->resetCamera ();
         qvtkWidget->update ();
     }
+}
+
+void GrowingRegionPointCloudWidget::UpdateSettings()
+{
+    segmenter.numberOfNeighbours = numberOfNeighbours->value();
+    segmenter.smoothnessThreshold = smoothnessThreshold->value();
+    segmenter.curvatureThreshold = curvatureThreshold->value();
 }
 
 

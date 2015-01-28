@@ -41,9 +41,16 @@ class GrowingRegionPointCloudWidget : public PointCloudWidget
 public:
 	Robot::RegionGrowingSegmenter segmenter;
 
+	QSpinBox* numberOfNeighbours;
+	QDoubleSpinBox* smoothnessThreshold;
+	QDoubleSpinBox* curvatureThreshold;
+
 	GrowingRegionPointCloudWidget(QWidget *parent = 0);
 
 	virtual void ReceivePointCloud(Robot::PointCloud::Ptr &cloud) override;
+
+public slots:
+	void UpdateSettings();
 };
 
 

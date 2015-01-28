@@ -11,11 +11,6 @@
 #include <QGridLayout>
 
 
-
-
-
-
-
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), mZmqContext(1), mZmqSocket(mZmqContext, ZMQ_SUB), view(&scene)
 {
@@ -62,11 +57,9 @@ MainWindow::MainWindow(QWidget *parent)
     addDockWidget(Qt::RightDockWidgetArea, dockWidget4);
 
 
-
-
-      /**
+    /**
         SETUP THE GRID
-      */
+    */
 
 	qreal windowSize = 10.0;
 	for(qreal x = -windowSize; x <= windowSize; x += 1.0)

@@ -1,5 +1,6 @@
 #include "pointcloud.h"
 
+#include <pcl/filters/voxel_grid.h>
 
 void UpdatePointCloud(const Robot::DepthImgData &imgData, pcl::PointCloud<pcl::PointXYZRGB> &cloud)
 {
@@ -69,12 +70,20 @@ namespace Robot
 
 PointCloud::Ptr RegionGrowingSegmenter::AsyncronousUpdate(PointCloud::Ptr imgCloud)
 {
-	pcl::search::Search<pcl::PointXYZRGB>::Ptr tree = boost::shared_ptr<pcl::search::Search<PointT> > (new pcl::search::KdTree<pcl::PointXYZRGB>);
+	PointCloud::Ptr imgCloud2(new PointCloud());
+
+	pcl::VoxelGrid<PointT> sor;
+	sor.setInputCloud (imgCloud);
+	sor.setLeafSize (0.01f, 0.01f, 0.01f);
+	sor.filter (*imgCloud2);
+
+
+	pcl::search::Search<pcl::PointXYZRGB>::Ptr tree = boost::shared_ptr<pcl::search::Search<PointT>>(new pcl::search::KdTree<pcl::PointXYZRGB>);
 
 	pcl::PointCloud <pcl::Normal>::Ptr normals (new pcl::PointCloud <pcl::Normal>);
 	pcl::NormalEstimation<pcl::PointXYZRGB, pcl::Normal> normal_estimator;
 	normal_estimator.setSearchMethod (tree);
-	normal_estimator.setInputCloud (imgCloud);
+	normal_estimator.setInputCloud (imgCloud2);
 	normal_estimator.setKSearch (50);
 	normal_estimator.compute (*normals);
 
@@ -84,12 +93,12 @@ PointCloud::Ptr RegionGrowingSegmenter::AsyncronousUpdate(PointCloud::Ptr imgClo
 	reg.setMinClusterSize (50);
 	reg.setMaxClusterSize (1000000);
 	reg.setSearchMethod (tree);
-	reg.setNumberOfNeighbours (30);
-	reg.setInputCloud (imgCloud);
+	reg.setNumberOfNeighbours (numberOfNeighbours);
+	reg.setInputCloud (imgCloud2);
 	//reg.setIndices (indices);
 	reg.setInputNormals (normals);
-	reg.setSmoothnessThreshold (6.0 / 180.0 * M_PI);
-	reg.setCurvatureThreshold (1.0);
+	reg.setSmoothnessThreshold (smoothnessThreshold / 180.0 * M_PI);
+	reg.setCurvatureThreshold (curvatureThreshold);
 
 	//std::chrono::time_point<std::chrono::system_clock> start, end;
 	//start = std::chrono::system_clock::now();
