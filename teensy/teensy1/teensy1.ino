@@ -20,12 +20,14 @@ long oldRight = -999;
 int leftTurns = 0;
 int rightTurns = 0;
 
-#define LEFT_CMD_IN     18  // Pin 2 on the receiver
-#define RIGHT_CMD_IN    19  // Pin 3 on the receiver
-#define AUTO_SWITCH_IN  20  // Pin 5 on the receiver
-#define PAUSE_SWITCH_IN 21  // Pin 6 on the receiver
-#define LEFT_OUT_PIN    22
-#define RIGHT_OUT_PIN   23
+#define LEFT_CMD_IN      18  // Pin 2 on the receiver
+#define RIGHT_CMD_IN     19  // Pin 3 on the receiver
+#define AUTO_SWITCH_IN   20  // Pin 5 on the receiver
+#define PAUSE_SWITCH_IN  21  // Pin 6 on the receiver
+#define LEFT_OUT_PIN     22
+#define RIGHT_OUT_PIN    23
+#define PAUSE_SWITCH_OUT 13  // Goes to the switch nMOS gate
+
 Servo servoLeft;
 Servo servoRight;
 int lastLeftCmd;
@@ -47,6 +49,7 @@ void setup() {
   pinMode(RIGHT_CMD_IN, INPUT);
   pinMode(AUTO_SWITCH_IN, INPUT);
   pinMode(PAUSE_SWITCH_IN, INPUT);
+  pinMode(PAUSE_SWITCH_OUT, OUTPUT);
   servoLeft.attach(LEFT_OUT_PIN); servoLeft.write(MIN_WHEEL_SPEED); lastLeftCmd = MIN_WHEEL_SPEED;
   servoRight.attach(RIGHT_OUT_PIN); servoRight.write(MIN_WHEEL_SPEED);
   lastRightCmd = MIN_WHEEL_SPEED;
@@ -74,6 +77,10 @@ void loop() {
 
   if (switchOn(PAUSE_SWITCH_IN)) {
     Serial.println("Pause is on!");  // TODO: Remove once tested
+    digitalWrite(PAUSE_SWITCH_OUT, LOW);
+  }
+  else {
+    digitalWrite(PAUSE_SWITCH_OUT, HIGH);
   }
 }
 
