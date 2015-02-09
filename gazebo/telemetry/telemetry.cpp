@@ -24,10 +24,11 @@ MainWindow::MainWindow(QWidget *parent)
 
 	mStatusText = new QLabel("AAA", this);
     mDepthCamera = new QLabel("AAA", this);
+    mAprilTag = new AprilTagLabel(this);
 
-	QDockWidget *dockWidget = new QDockWidget(tr("Dock Widget"), this);
+	//QDockWidget *dockWidget = new QDockWidget(tr("Dock Widget"), this);
 	//dockWidget->setAllowedAreas(Qt::TopDockWidgetArea);
-	dockWidget->setWidget(mStatusText);
+	//dockWidget->setWidget(mStatusText);
 	//addDockWidget(Qt::RightDockWidgetArea, dockWidget);
 
     QDockWidget *dockWidget2 = new QDockWidget(tr("Dock Widget2"), this);
@@ -35,8 +36,11 @@ MainWindow::MainWindow(QWidget *parent)
     dockWidget2->setWidget(mDepthCamera);
     addDockWidget(Qt::RightDockWidgetArea, dockWidget2);
 
-	setCentralWidget(&view);
+    setCentralWidget(mAprilTag);
+	//setCentralWidget(&view);
 	//setCentralWidget(new ViewerWidget());
+
+
 
 
     /**
@@ -194,6 +198,15 @@ void MainWindow::update()
             growingRegion->ReceivePointCloud(imgCloud);
             planeSegments->ReceivePointCloud(imgCloud);
 
+        }
+        else if (id == 4)
+        {
+            Robot::ImgData imgData;
+            result.get().convert(&imgData);
+
+            QImage qImage(imgData.data.data(), imgData.width, imgData.height, QImage::Format_RGB888 );
+
+            mAprilTag->ReadAprilTags(qImage);
         }
         else 
         {

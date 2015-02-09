@@ -9,8 +9,10 @@
 
 #include "gazebo/sensors/SensorManager.hh"
 #include "gazebo/sensors/DepthCameraSensor.hh"
+#include "gazebo/sensors/CameraSensor.hh"
 
 #include "gazebo/rendering/DepthCamera.hh"
+#include "gazebo/rendering/Camera.hh"
 
 #include "robot.h"
 
@@ -75,6 +77,8 @@ public:
     event::ConnectionPtr newDepthFrameConnection;
     event::ConnectionPtr newImageFrameConnection;
 
+    event::ConnectionPtr newAprilImageFrameConnection;
+
 
     physics::LinkPtr m_leftWheelLink;
     physics::LinkPtr m_rightWheelLink;
@@ -116,7 +120,7 @@ public:
 
         if(cast != nullptr )
         {
-          std::cout << "\tWe found our princess!\n";
+          //std::cout << "\tWe found our princess!\n";
 
           auto depthCamera = cast->GetDepthCamera();
           this->newDepthFrameConnection = depthCamera->ConnectNewDepthFrame(
@@ -130,8 +134,16 @@ public:
 
           cast->SetActive(true);
           m_depthCameraSensor = cast;
-          break;
+        }
 
+        auto camera_cast = boost::dynamic_pointer_cast<sensors::CameraSensor>(sensor);
+
+        if(camera_cast != nullptr)
+        {
+          auto camera = camera_cast->GetCamera();
+
+          this->newAprilImageFrameConnection = camera->ConnectNewImageFrame(
+            boost::bind(&Kratos::OnNewImageAprilTagFrame, this, _1, _2, _3, _4, _5));
         }
       }        
 
@@ -171,15 +183,24 @@ public:
 
     }
 
+    void OnNewImageAprilTagFrame(const unsigned char * image, unsigned int width, unsigned int height, unsigned int depth, const std::string &)
+    {
+      std::vector<unsigned char> imgData(width * height * depth);
+      assert(imgData.size() > 0);
+      memcpy( imgData.data(), image, imgData.size());
+
+      Robot::ImgData data;
+      data.width = width;
+      data.height = height;
+      data.data = imgData;
+
+      m_kratos->SendTelemetry(4, data);
+    }
+
     void OnNewDepthFrame(const float *_image,
     unsigned int _width, unsigned int _height,
     unsigned int _depth, const std::string &/*_format*/)
     {
-     static int imageSkipCounter = 0;
-
-      if(imageSkipCounter++ % 30 != 0)
-        return;
-
       float min, max;
       min = 1000;
       max = 0;
@@ -244,10 +265,6 @@ public:
                               unsigned int _depth,
                               const std::string &_format)
     {
-      static int imageSkipCounter = 0;
-
-      if(imageSkipCounter++ % 10 != 0)
-        return;
 
       //std::cout << "New image of format: " << _format << " (" << _width << "," << _height << "," << _depth << ")\n";
 

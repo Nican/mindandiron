@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<COLLADA xmlns="http://www.collada.org/2005/11/COLLADASchema" version="1.4.1">
+  <asset>
+    <contributor>
+      <author>Nican</author>
+      <authoring_tool>OpenCOLLADA2015</authoring_tool>
+      <comments>
+			ColladaMaya export options: 
+			bakeTransforms=0;relativePaths=0;copyTextures=0;exportTriangles=0;exportCgfxFileReferences=1;
+			isSampling=0;curveConstrainSampling=0;removeStaticCurves=1;exportPolygonMeshes=1;exportLights=1;
+			exportCameras=1;exportJointsAndSkin=1;exportAnimations=1;exportInvisibleNodes=0;exportDefaultCameras=0;
+			exportTexCoords=1;exportNormals=1;exportNormalsPerVertex=1;exportVertexColors=1;exportVertexColorsPerVertex=1;
+			exportTexTangents=0;exportTangents=0;exportReferencedMaterials=0;exportMaterialsOnly=0;
+			exportXRefs=1;dereferenceXRefs=1;exportCameraAsLookat=0;cameraXFov=0;cameraYFov=1;doublePrecision=0
+		</comments>
+      <source_data>file:///E:/Dropbox/WPI/NicanMaya/NicanMaya/scenes/kratos.mb</source_data>
+    </contributor>
+    <created>2015-02-07T17:58:53</created>
+    <modified>2015-02-07T17:58:53</modified>
+    <unit name="centimeter" meter="0.01"/>
+    <up_axis>Z_UP</up_axis>
+  </asset>
+  <library_materials>
+    <material id="lambert1" name="lambert1">
+      <instance_effect url="#lambert1-fx"/>
+    </material>
+  </library_materials>
+  <library_effects>
+    <effect id="lambert1-fx">
+      <profile_COMMON>
+        <technique sid="common">
+          <lambert>
+            <emission>
+              <color>0 0 0 1</color>
+            </emission>
+            <ambient>
+              <color>0 0 0 1</color>
+            </ambient>
+            <diffuse>
+              <color>0.4 0.4 0.4 1</color>
+            </diffuse>
+            <transparent opaque="RGB_ZERO">
+              <color>0 0 0 1</color>
+            </transparent>
+            <transparency>
+              <float>1</float>
+            </transparency>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+    </effect>
+  </library_effects>
+  <library_geometries>
+    <geometry id="MeshShape" name="MeshShape">
+      <mesh>
+        <source id="MeshShape-positions" name="MeshShape-positions">
+          <float_array id="MeshShape-positions-array" count="48">-1.925262 4.476746 0.1153195 -1.925262 4.476746 2.147339 2.138733 4.476746 0.1153042 2.138733 4.476746 2.147354 9.282242 1.383057 0.115365 9.282242 1.383057 2.147354 9.282242 -1.383057 0.115365 9.282242 -1.383057 2.147354 2.138733 -4.476746 0.1153042 2.138733 -4.476746 2.147354 -1.925262 -4.476746 0.1153195 -1.925262 -4.476746 2.147339 -3.227264 -2.285995 0.1153264 -3.227264 -2.285995 2.147324 -3.227264 2.285995 0.1153264 -3.227264 2.285995 2.147324</float_array>
+          <technique_common>
+            <accessor source="#MeshShape-positions-array" count="16" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="MeshShape-normals" name="MeshShape-normals">
+          <float_array id="MeshShape-normals-array" count="144">0 1 0 0 1 0 0 1 0 0 1 0 0.3974093 0.9176414 0 0.3974093 0.9176415 0 0.3974093 0.9176415 0 0.3974094 0.9176415 0 1 0 0 1 0 0 1 0 0 1 0 0 0.3974093 -0.9176414 0 0.3974094 -0.9176415 0 0.3974093 -0.9176415 0 0.3974093 -0.9176415 0 0 -1 0 0 -1 0 0 -1 0 0 -1 0 -0.8596404 -0.5108997 0 -0.8596404 -0.5108996 0 -0.8596404 -0.5108997 0 -0.8596404 -0.5108996 0 -1 0 0 -1 0 0 -1 0 0 -1 0 0 -0.8596404 0.5108995 0 -0.8596404 0.5108995 0 -0.8596404 0.5108995 0 -0.8596404 0.5108996 0 0 0 -1 0 0 -1 0 0 -1 0 0 -1 0 0 -1 0 0 -1 0 0 -0.9999999 0 0 -0.9999999 0 0 1 0 0 0.9999999 0 0 0.9999999 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1</float_array>
+          <technique_common>
+            <accessor source="#MeshShape-normals-array" count="48" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <vertices id="MeshShape-vertices" name="MeshShape-vertices">
+          <input semantic="POSITION" source="#MeshShape-positions"/>
+        </vertices>
+        <polylist material="initialShadingGroup" count="10">
+          <input semantic="VERTEX" source="#MeshShape-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#MeshShape-normals" offset="1"/>
+          <vcount>4 4 4 4 4 4 4 4 8 8</vcount>
+          <p>0 0 1 1 3 2 2 3 2 4 3 5 5 6 4 7 4 8 5 9 7 10 6 11 8 12 6 13 7 14 9 15 10 16 8 17 9 18 11 19 12 20 10 21 11 22 13 23 14 24 12 25 13 26 15 27 0 28 14 29 15 30 1 31 0 32 2 33 4 34 6 35 8 36 10 37 12 38 14 39 1 40 15 41 13 42 11 43 9 44 7 45 5 46 3 47</p>
+        </polylist>
+      </mesh>
+      <extra>
+        <technique profile="OpenCOLLADAMaya">
+          <originalMayaNodeId>MeshShape</originalMayaNodeId>
+          <double_sided>1</double_sided>
+        </technique>
+      </extra>
+    </geometry>
+  </library_geometries>
+  <library_visual_scenes>
+    <visual_scene id="VisualSceneNode" name="kratos">
+      <node id="PrometheusSolid_FIXED_Mesh" name="Mesh" type="NODE">
+        <translate sid="translate">0 0 0</translate>
+        <translate sid="rotatePivot">0 0 0.07532611</translate>
+        <rotate sid="rotateZ">0 0 1 0</rotate>
+        <rotate sid="rotateY">0 1 0 0</rotate>
+        <rotate sid="rotateX">1 0 0 0</rotate>
+        <translate sid="rotatePivotInverse">0 0 -0.07532611</translate>
+        <translate sid="scalePivot">0 0 0.07532611</translate>
+        <scale sid="scale">1 1 1</scale>
+        <translate sid="scalePivotInverse">0 0 -0.07532611</translate>
+        <instance_geometry url="#MeshShape">
+          <bind_material>
+            <technique_common>
+              <instance_material symbol="initialShadingGroup" target="#lambert1"/>
+            </technique_common>
+          </bind_material>
+        </instance_geometry>
+        <extra>
+          <technique profile="OpenCOLLADAMaya">
+            <originalMayaNodeId>Mesh</originalMayaNodeId>
+          </technique>
+        </extra>
+      </node>
+    </visual_scene>
+  </library_visual_scenes>
+  <scene>
+    <instance_visual_scene url="#VisualSceneNode"/>
+  </scene>
+</COLLADA>

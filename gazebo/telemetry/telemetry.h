@@ -7,6 +7,7 @@
 #include "pointcloud.h"
 
 
+#include "qr.cpp"
 
 
 
@@ -33,6 +34,7 @@ public:
 	QGraphicsPolygonItem* mRobotInstance;
 	QLabel* mStatusText;
 	QLabel* mDepthCamera;
+	AprilTagLabel* mAprilTag;
 
 	Robot::LocationHistory mHistory;
 

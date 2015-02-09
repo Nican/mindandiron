@@ -8,11 +8,7 @@
         <uri>model://ground_plane</uri>
       </include>
       -->
-      <include>
-        <uri>model://models</uri>
-        <name>kratos</name>
-        <pose>0.0 0 0.1 0 0 0</pose>
-      </include>
+
 
       <model name='ground_plane'>
         <static>1</static>
@@ -50,6 +46,57 @@
                 <name>Gazebo/Grey</name>
               </script>
             </material>
+          </visual>
+          <velocity_decay>
+            <linear>0</linear>
+            <angular>0</angular>
+          </velocity_decay>
+          <self_collide>0</self_collide>
+          <kinematic>0</kinematic>
+          <gravity>1</gravity>
+        </link>
+      </model>
+
+      <include>
+        <uri>model://models</uri>
+        <name>kratos</name>
+        <pose>0 3.094 -0.1 0 0 0</pose>
+      </include>
+
+       <model name='kratos_plataform'>
+        <static>1</static>
+        <pose>0 3.094 -0.388255 0 0 0</pose>
+        <link name='link'>
+          <collision name='collision'>
+            <geometry>
+              <mesh>
+                <scale>100 100 100</scale>
+                <uri>model://models/kratos_plataform3.dae</uri>
+              </mesh>
+            </geometry>
+            <surface>
+              <friction>
+                <ode>
+                  <mu>100</mu>
+                  <mu2>50</mu2>
+                </ode>
+              </friction>
+              <contact>
+                <ode/>
+              </contact>
+              <bounce/>
+            </surface>
+            <max_contacts>10</max_contacts>
+          </collision>
+          <visual name='visual'>
+            <cast_shadows>0</cast_shadows>
+            <geometry>
+              <mesh>
+                <scale>100 100 100</scale>
+                <uri>model://models/kratos_plataform4.dae</uri>
+              </mesh>
+            </geometry>
+
           </visual>
           <velocity_decay>
             <linear>0</linear>
