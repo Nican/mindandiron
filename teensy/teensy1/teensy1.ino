@@ -20,12 +20,10 @@ Encoder wheelLeft(14, 15);
 Encoder wheelRight(16, 17);
 const int ticksPerRev = 23330;  // Determined experimentally
 const int encoderHistLength = 5;
-long oldLeft[encoderHistLength] = {-999, -999, -999, -999, -999};
-long oldRight[encoderHistLength] = {-999, -999, -999, -999, -999};
-int leftTurns = 0;
-int rightTurns = 0;
-int leftVelocity = 0;
-int rightVelocity = 0;
+volatile long oldLeft[encoderHistLength] = {-999, -999, -999, -999, -999};
+volatile long oldRight[encoderHistLength] = {-999, -999, -999, -999, -999};
+volatile int leftVelocity = 0;
+volatile int rightVelocity = 0;
 
 #define LEFT_CMD_IN      18  // Pin 2 on the receiver
 #define RIGHT_CMD_IN     19  // Pin 3 on the receiver
@@ -123,33 +121,6 @@ void reportVelocity(int newLeft, int newRight) {
   }
   leftVelocity = leftSum / (encoderHistLength - 1);
   rightVelocity = rightSum / (encoderHistLength - 1);
-}
-
-// Checks whether the encoders have gone 360 deg and resets encoders if so
-// Only useful when calculating position
-void checkEncoderForTurnsAndReset(int newLeft, int newRight) {
-  if (abs(newLeft) >= ticksPerRev) {
-    wheelLeft.write(newLeft % ticksPerRev);
-    if (newLeft > 0) leftTurns++;
-    else leftTurns--;
-  }
-  if (abs(newRight) >= ticksPerRev) {
-    wheelRight.write(newRight % ticksPerRev);
-    if (newRight > 0) rightTurns++;
-    else rightTurns--;
-  }
-}
-
-// Prints the encoder data for left and right wheels, resets the stored angle
-// Only useful when calculating position
-void reportEncoderTurns(int newLeft, int newRight) {
-  Serial.print("Left = ");    Serial.print(newLeft);
-  Serial.print(", Right = "); Serial.println(newRight);
-  Serial.print("Left Turns = ");    Serial.print(leftTurns);
-  Serial.print(", Right Turns = "); Serial.println(rightTurns);
-  Serial.println("");
-  oldLeft[0] = newLeft;
-  oldRight[0] = newRight;
 }
 
 // Checks whether an RC switch is on/off and returns a boolean
