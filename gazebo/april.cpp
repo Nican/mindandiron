@@ -45,10 +45,12 @@ void BaseStationDetector::Update(cv::Mat input)
 				if(tag.mId != detection.id)
 					continue;
 
+				double rotation = mRobot->mMotion.mAprilServo->GetPosition();
 				std::cout << "Found tag (" << tag.mId << "): \n";
+				std::cout << "\t Rotation of camera at: " << rotation << "\n";
 
 				Affine3d cameraTransformation;
-				cameraTransformation.linear() = AngleAxisd(-M_PI, Vector3d::UnitZ()).toRotationMatrix();
+				cameraTransformation.linear() = AngleAxisd(rotation, Vector3d::UnitZ()).toRotationMatrix();
 				cameraTransformation.translation() = Vector3d(0.6, 0.0, 0.6);
 
 				Affine3d affine = DetectionToAffine(detection);
