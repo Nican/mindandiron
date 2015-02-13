@@ -26,9 +26,8 @@
 #include <pcl/segmentation/planar_region.h>
 
 
-#include <future>
-
 #include "robot.h"
+#include "util.h"
 
 void UpdatePointCloud(const Robot::DepthImgData &imgData, pcl::PointCloud<pcl::PointXYZRGB> &cloud);
 
@@ -78,51 +77,7 @@ typedef pcl::PointXYZRGB PointT;
 typedef pcl::PointCloud<PointT> PointCloud;
 typedef std::vector<pcl::PlanarRegion<PointT>, Eigen::aligned_allocator<pcl::PlanarRegion<PointT>>> RegionsType;
 
-template <typename T>
-struct BaseGroundProcessor 
-{
-	T lastProccessed;
-
-	std::future<T> segmentFuture;
-
-	bool Update(PointCloud::Ptr cloud)
-	{
-		if(segmentFuture.valid())
-		{
-			auto status = segmentFuture.wait_for(std::chrono::seconds(0));
-
-			if(status != std::future_status::ready)
-				return false;
-
-			//std::cout << "Updated out cloud!\n";
-			lastProccessed = segmentFuture.get();
-			segmentFuture = std::future<T>();
-
-			return true;
-		}
-
-		if(!segmentFuture.valid())
-		{
-			//std::cout << "Future does not have a valid state. Begin to process\n";
-
-			segmentFuture = std::async(std::launch::async, [this, cloud](){
-				auto val = this->AsyncronousUpdate(cloud);
-				//std::cout << "Finished async proccessing\n";
-
-				return val;
-			});
-
-		//std::cout << "Future state: " << segmentFuture->valid() << "\n";
-		}
-
-		return false;
-	}
-
-	virtual T AsyncronousUpdate(PointCloud::Ptr cloud) = 0;
-};
-
-
-struct RegionGrowingSegmenter : public BaseGroundProcessor<PointCloud::Ptr>
+struct RegionGrowingSegmenter : public BaseGroundProcessor<PointCloud::Ptr, PointCloud::Ptr>
 {
 	typedef pcl::PointCloud<pcl::PointXYZRGB> PointCloud;
 
@@ -140,7 +95,7 @@ struct RegionGrowingSegmenter : public BaseGroundProcessor<PointCloud::Ptr>
 	virtual PointCloud::Ptr AsyncronousUpdate(PointCloud::Ptr imgCloud) override;
 };
 
-struct MultiPlaneSegmenter : public BaseGroundProcessor<RegionsType>
+struct MultiPlaneSegmenter : public BaseGroundProcessor<PointCloud::Ptr, RegionsType>
 {
 	float threshold;
 	float maxDepthChangeFactor;

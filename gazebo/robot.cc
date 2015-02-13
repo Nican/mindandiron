@@ -4,7 +4,7 @@
 #include <algorithm>
 #include <stdlib.h>
 #include "trajectory.h"
-
+#include "util.h"
 
 using namespace Robot;
 
@@ -18,6 +18,8 @@ Kratos::Kratos(const RobotMotion& motion, const RobotSensors& sensors)
 	//mState.reset(new State::MoveToWaypoint(this));
 	mState.reset(new State::MoveForward(this));
 	mState->Initialize();
+
+	mBaseStation.reset(new BaseStationDetector(this));
 	
 }
 
@@ -41,8 +43,54 @@ void Kratos::Update(double simTime)
 	SendTelemetry(0, historyPoint);
 
 	mCurTime = simTime - mStartSimTime;
-
+	UpdateCameraRotation();
 	mState->Think();
 
 	mLastSimTime = simTime;
+
+
+
+}
+
+void Kratos::UpdateCameraRotation()
+{
+	Eigen::Vector3d pos = mSensors.mTRS->GetPosition();
+
+	//Update the april tag camera
+	//For now {-1.4, 0} is about where the tags are
+	Eigen::Vector2d target = Eigen::Vector2d(-1.4, 0) - pos.head<2>();
+	double angle2 = M_PI; 
+
+	//Avoid singularities
+	if(target.norm() > 0.01)
+		angle2 = std::atan2(target.y(), target.x());
+
+	mMotion.mAprilServo->SetPosition(angle2);
+}
+
+void Kratos::ReceiveDepth(const DepthImgData &depthData)
+{
+	SendTelemetry(3, depthData);
+}
+
+void Kratos::ReceiveKinectImage(const ImgData &imageData)
+{
+	SendTelemetry(2, imageData);
+}
+
+void Kratos::ReceiveAprilImage(const ImgData &imageData)
+{
+	SendTelemetry(4, imageData);
+
+	//Work around for the const cast
+	auto copiedData = imageData.data;
+
+	cv::Mat mat(
+		imageData.height, 
+		imageData.width, 
+		CV_8UC3, 
+		copiedData.data(), 
+		imageData.data.size() / imageData.height);
+
+	mBaseStation->Update(mat.clone());
 }

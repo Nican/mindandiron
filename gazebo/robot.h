@@ -6,6 +6,8 @@
 #include "msgpack.h"
 #include "state.h"
 
+#include "april.h"
+
 namespace Robot
 {
 
@@ -32,6 +34,17 @@ public:
 typedef std::shared_ptr<TotalRoboticStation> TotalRoboticStationPtr;
 
 
+class AprilTagServo
+{
+public:
+
+	virtual double GetPosition() const = 0; 
+	virtual void SetPosition(double radians) = 0;
+};
+
+typedef std::shared_ptr<AprilTagServo> AprilTagServoPtr;
+
+
 class RobotSensors
 {
 public:
@@ -47,6 +60,8 @@ class RobotMotion
 public:
 	WheelPtr mLeftWheel;
 	WheelPtr mRightWheel;
+
+	AprilTagServoPtr mAprilServo;
 };
 
 class LocationDataPoint
@@ -87,6 +102,8 @@ public:
 	std::vector<LocationDataPoint> mPoints;
 };
 
+class BaseStationDetector;
+
 /**
 	Main class for the robot
 */
@@ -106,7 +123,7 @@ public:
 
 	std::shared_ptr<State::Base> mState;
 
-
+	std::shared_ptr<BaseStationDetector> mBaseStation;
 
 	double mCurTime;
 
@@ -114,9 +131,15 @@ public:
 
 	void Update(double simTime);
 
+	void ReceiveDepth(const DepthImgData &depthData);
+	void ReceiveKinectImage(const ImgData &imageData);
+	void ReceiveAprilImage(const ImgData &imageData);
+
+	void UpdateCameraRotation();
+
 
 	template<typename T> 
-	void SendTelemetry(char id, T obj)
+	void SendTelemetry(char id, const T obj)
 	{
 		msgpack::sbuffer sbuf;
 		sbuf.write(&id, sizeof(id));

@@ -18,5 +18,5 @@ $ make
 $ sudo make install
 
 
-sudo apt-get install libzmqpp-dev qt5-default
-
+sudo apt-get install libzmqpp-dev libv4l-dev
+http://people.csail.mit.edu/kaess/apriltags/
