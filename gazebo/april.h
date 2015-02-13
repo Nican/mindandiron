@@ -53,22 +53,7 @@ struct BaseStationDetector
 
 	double lastDetectionTime;
 
-	BaseStationDetector(Kratos* robot) : mRobot(robot),
-		m_tagSize(0.704),
-		m_fx(1129),
-		m_fy(1084),
-		m_px(1920/2),
-		m_py(1080/2)
-	{
-		BaseStationTagInfo leftTag(0);
-		leftTag.affine.translation() = Eigen::Vector3d(-1.0565, 0.5, 1.068);
-		tags.push_back(leftTag);
-
-
-		BaseStationTagInfo rightTag(13);
-		rightTag.affine.translation() = Eigen::Vector3d(-1.0565, -0.5, 1.068);
-		tags.push_back(rightTag);
-	}
+	BaseStationDetector(Kratos* robot);
 
 	void Update(cv::Mat input);
 
