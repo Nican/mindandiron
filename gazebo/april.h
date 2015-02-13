@@ -1,6 +1,7 @@
 #pragma once
 
 #include "util.h"
+#include "robot.h"
 
 #include "opencv2/opencv.hpp"
 #include "AprilTags/TagDetector.h"
@@ -15,4 +16,75 @@ struct QRTagFinder : public BaseGroundProcessor<cv::Mat, std::vector<AprilTags::
 
 	//Run on a different thread
 	virtual std::vector<AprilTags::TagDetection> AsyncronousUpdate(cv::Mat input) override;
+};
+
+namespace Robot {
+
+class Kratos;
+
+struct BaseStationTagInfo
+{
+	int mId;
+
+	//Matrix that transforms a point from the center of the base station
+	//to the tag location
+	Eigen::Affine3d affine;
+
+	BaseStationTagInfo(int id) : mId(id), affine(Eigen::Affine3d::Identity())
+	{
+	}
+};
+
+/*
+	Detect the base station through april tags
+*/
+struct BaseStationDetector
+{
+	Kratos* mRobot;
+	QRTagFinder finder;
+
+	std::vector<BaseStationTagInfo> tags;
+
+	double m_tagSize; // April tag side length in meters of square black frame
+	double m_fx; // camera focal length in pixels
+	double m_fy;
+	double m_px; // camera principal point
+	double m_py;
+
+	double lastDetectionTime;
+
+	BaseStationDetector(Kratos* robot) : mRobot(robot),
+		m_tagSize(0.704),
+		m_fx(1129),
+		m_fy(1084),
+		m_px(1920/2),
+		m_py(1080/2)
+	{
+		BaseStationTagInfo leftTag(0);
+		leftTag.affine.translation() = Eigen::Vector3d(-1.0565, 0.5, 1.068);
+		tags.push_back(leftTag);
+
+
+		BaseStationTagInfo rightTag(13);
+		rightTag.affine.translation() = Eigen::Vector3d(-1.0565, -0.5, 1.068);
+		tags.push_back(rightTag);
+	}
+
+	void Update(cv::Mat input);
+
+	Eigen::Affine3d DetectionToAffine(const AprilTags::TagDetection &detection)
+	{
+		Eigen::Vector3d translation;
+		Eigen::Matrix3d rotation;
+		detection.getRelativeTranslationRotation(m_tagSize, m_fx, m_fy, m_px, m_py, translation, rotation);
+
+		Eigen::Affine3d affine;
+		affine.translation() = translation;
+		affine.linear() = rotation;
+
+		return affine;	
+	}
+
+};
+
 };

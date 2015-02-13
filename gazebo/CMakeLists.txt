@@ -36,11 +36,11 @@ include_directories(${GAZEBO_INCLUDE_DIRS})
 link_directories(${GAZEBO_LIBRARY_DIRS})
 
 add_library(kratos_base SHARED robot.cc trajectory.cpp state.cc pointcloud.cpp april.cpp)
-target_link_libraries(kratos_base ${Boost_LIBRARIES} ${OpenCV_LIBS}  ${PCL_LIBRARIES} zmq msgpack Box2D)
+target_link_libraries(kratos_base apriltags ${Boost_LIBRARIES} ${OpenCV_LIBS}  ${PCL_LIBRARIES} zmq msgpack Box2D)
 
 
 add_library(kratos SHARED gazebo.cc)
-target_link_libraries(kratos ${Boost_LIBRARIES} ${GAZEBO_LIBRARIES}  kratos_base)
+target_link_libraries(kratos ${Boost_LIBRARIES} ${GAZEBO_LIBRARIES} kratos_base)
 
 #add_library(kratos_camera SHARED camera.cpp)
 #target_link_libraries(kratos_camera ${Boost_LIBRARIES} ${GAZEBO_LIBRARIES} DepthCameraPlugin)
@@ -59,7 +59,7 @@ ADD_DEFINITIONS(${QT_DEFINITIONS})
 #QT5_WRAP_CPP(kratos_telemetry telemetry.h)
 ADD_EXECUTABLE(kratos_telemetry telemetry/telemetry.cpp telemetry/pointcloud.cpp)
 #osg osgQt osgWidget osgViewer osgUtil osgGA osgDB
-TARGET_LINK_LIBRARIES(kratos_telemetry ${QT_LIBRARIES}  kratos_base ${VTK_LIBRARIES} apriltags) #Qt5::Widgets Qt5::OpenGL
+TARGET_LINK_LIBRARIES(kratos_telemetry ${QT_LIBRARIES}  kratos_base ${VTK_LIBRARIES}) #Qt5::Widgets Qt5::OpenGL
 
 #ADD_EXECUTABLE(box2dtest box2dtest.cpp)
 #TARGET_LINK_LIBRARIES(box2dtest Box2D)

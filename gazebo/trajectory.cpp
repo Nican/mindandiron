@@ -1,10 +1,7 @@
 #include "trajectory.h"
 #include <iostream>
+#include "util.h"
 
-static Complex rotationToCompex(double theta)
-{
-	return std::polar<double>(1.0, theta);
-}
 
 
 

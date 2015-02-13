@@ -2,6 +2,7 @@
 
 #include <future>
 #include <memory>
+#include <complex>
 
 template <typename T, typename U>
 struct BaseGroundProcessor 
@@ -47,3 +48,8 @@ struct BaseGroundProcessor
 
 	virtual U AsyncronousUpdate(T input) = 0;
 };
+
+inline std::complex<double> rotationToCompex(double theta)
+{
+	return std::polar<double>(1.0, theta);
+}

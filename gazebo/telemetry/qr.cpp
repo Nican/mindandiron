@@ -61,24 +61,22 @@ public:
 			std::cout << "Finished calcualting QR code. Found " << detections.size() << " entries.\n";
 
 			for (int i=0; i<detections.size(); i++) {
-
+				/*
 				for( double principal = 1000; principal<= 2000; principal += 100 )
 				{
+					Eigen::Vector3d translation;
+		    		Eigen::Matrix3d rotation;
+		    		detections[i].getRelativeTranslationRotation(m_tagSize, principal, principal, m_px, m_py, translation, rotation);
 
+		    		cout << principal << endl;
+		    		cout << "\tdistance=" << translation.norm()
+				         << "m, x=" << translation(0)
+				         << ", y=" << translation(1)
+				         << ", z=" << translation(2) << endl;
 
-				Eigen::Vector3d translation;
-	    		Eigen::Matrix3d rotation;
-	    		detections[i].getRelativeTranslationRotation(m_tagSize, principal, principal, m_px, m_py, translation, rotation);
+			    }*/
 
-	    		cout << principal << endl;
-	    		cout << "\tdistance=" << translation.norm()
-			         << "m, x=" << translation(0)
-			         << ", y=" << translation(1)
-			         << ", z=" << translation(2) << endl;
-
-			    }
-
-		      //print_detection(detections[i]);
+		      	print_detection(detections[i]);
 		    }
 		}
 

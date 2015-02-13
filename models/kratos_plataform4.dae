@@ -198,7 +198,7 @@
   </library_effects>
   <library_images>
     <image id="file3" name="file3">
-      <init_from>Tag36h11_1.png</init_from>
+      <init_from>Tag36h11_0.png</init_from>
       <extra>
         <technique profile="OpenCOLLADAMaya">
           <dgnode_type>kFile</dgnode_type>
@@ -208,7 +208,7 @@
       </extra>
     </image>
     <image id="file4" name="file4">
-      <init_from>Tag36h11_1.png</init_from>
+      <init_from>Tag36h11_13.png</init_from>
       <extra>
         <technique profile="OpenCOLLADAMaya">
           <dgnode_type>kFile</dgnode_type>

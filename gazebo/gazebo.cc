@@ -72,6 +72,33 @@ public:
 };
 
 
+class AprilTagCameraMotorGazebo : public Robot::AprilTagServo
+{
+public:
+
+  physics::EntityPtr mEntity;
+
+  AprilTagCameraMotorGazebo(physics::EntityPtr entity) : mEntity(entity)
+  {
+  }
+
+  virtual double GetPosition() const override
+  {
+    auto pose = mEntity->GetRelativePose();
+
+    return pose.rot.GetYaw();
+  }
+
+  virtual void SetPosition(double radians) override
+  {
+    auto pose = mEntity->GetRelativePose();
+    pose.rot.SetFromEuler( pose.rot.GetPitch(), pose.rot.GetRoll(), radians );
+
+    mEntity->SetRelativePose(pose);
+  }
+};
+
+
   class Kratos : public ModelPlugin
   {
     event::ConnectionPtr newDepthFrameConnection;
@@ -107,6 +134,8 @@ public:
       assert(m_leftWheelJoint);
       assert(m_rightWheelJoint);
 
+      auto aprilMotor = _parent->GetLink("april_tag_link");
+
 
       for(sensors::SensorPtr &sensor : sensors::SensorManager::Instance()->GetSensors())
       {
@@ -115,8 +144,6 @@ public:
         //auto sensor2 = sensor.get();
         //auto cast = dynamic_cast<sensors::DepthCameraSensor*>(sensor2);
         auto cast = boost::dynamic_pointer_cast<sensors::DepthCameraSensor>(sensor);
-
-        std::cout << "Cast value to: " << cast << "\n";
 
         if(cast != nullptr )
         {
@@ -147,24 +174,6 @@ public:
         }
       }        
 
-      //for(int i = 0; i < _parent->GetChildCount (); i++)
-      //{
-      //  std::cout << "Child: " << _parent->GetChild(i)->GetName() << "\n";
-      //}
-
-      /*
-      auto link = _parent->GetLink("hokuyo::link");
-      assert(link);
-      assert(link->GetSensorCount () > 0);
-
-      m_sensor = boost::dynamic_pointer_cast<sensors::RaySensor>(sensors::get_sensor(link->GetSensorName(0)));
-      assert(m_sensor);
-    */
-      //this->node->Subscribe(m_sensor->GetTopic(), &Kratos::OnScan, this);
-    
-
-      //std::cout << "Set the force for" << m_leftWheelJoint << std::endl;
-
       // Listen to the updathtope event. This event is broadcast every
       // simulation iteration.
       this->updateConnection = event::Events::ConnectWorldUpdateBegin(
@@ -176,11 +185,11 @@ public:
 
       motion.mLeftWheel = std::make_shared<WheelJoint>(m_leftWheelJoint);
       motion.mRightWheel = std::make_shared<WheelJoint>(m_rightWheelJoint);
+      motion.mAprilServo = std::make_shared<AprilTagCameraMotorGazebo>(aprilMotor);
 
       sensors.mTRS = std::make_shared<TRSGazebo>(this->model);
 
       m_kratos.reset(new Robot::Kratos(motion, sensors));
-
     }
 
     void OnNewImageAprilTagFrame(const unsigned char * image, unsigned int width, unsigned int height, unsigned int depth, const std::string &)
@@ -194,13 +203,15 @@ public:
       data.height = height;
       data.data = imgData;
 
-      m_kratos->SendTelemetry(4, data);
+      
+      m_kratos->ReceiveAprilImage(data);
     }
 
     void OnNewDepthFrame(const float *_image,
     unsigned int _width, unsigned int _height,
     unsigned int _depth, const std::string &/*_format*/)
     {
+      /*
       float min, max;
       min = 1000;
       max = 0;
@@ -211,10 +222,7 @@ public:
         if (_image[i] < min)
           min = _image[i];
       }
-
-     
-      int index =  ((_height * 0.5) * _width) + _width * 0.5;
-      //printf("W[%u] H[%u] MidPoint[%d] Dist[%f] Min[%f] Max[%f]\n", _width, _height, index, _image[index], min, max);
+      */
 
       Robot::DepthImgData image;
       image.data.resize(_width * _height);
@@ -226,32 +234,8 @@ public:
       {
         image.data[i] = _image[i];
       }
-      //memcpy( image.data.data(), _image, image.data.size());
 
-      m_kratos->SendTelemetry(3, image);
-
-      /*
-       std::vector<unsigned char> imgData(_width * _height * _depth * 3);
-       //memcpy( imgData.data(), _image, imgData.size());
-
-       for(int i = 0; i < (_width * _height); i++)
-       {
-          float dist = _image[i];
-
-          if(dist <= 0.0001)
-            dist = 5.0;
-
-          imgData[i*3] = imgData[i*3+1] = imgData[i*3+2] = (unsigned char)(dist / 5.0 * 255);
-       }
-
-       Robot::ImgData data;
-       data.width = _width;
-       data.height = _height;
-       data.data = imgData;
-
-       m_kratos->SendTelemetry(3, data);
-       */
-         
+      m_kratos->ReceiveDepth(image);
 
       /*rendering::Camera::SaveFrame(_image, this->width,
         this->height, this->depth, this->format,
@@ -265,9 +249,6 @@ public:
                               unsigned int _depth,
                               const std::string &_format)
     {
-
-      //std::cout << "New image of format: " << _format << " (" << _width << "," << _height << "," << _depth << ")\n";
-
       std::vector<unsigned char> imgData(_width * _height * _depth);
       assert(imgData.size() > 0);
       memcpy( imgData.data(), _image, imgData.size());
@@ -277,7 +258,7 @@ public:
       data.height = _height;
       data.data = imgData;
 
-      m_kratos->SendTelemetry(2, data);
+      m_kratos->ReceiveKinectImage(data);
 
       /*rendering::Camera::SaveFrame(_image, this->width,
         this->height, this->depth, this->format,
@@ -285,25 +266,11 @@ public:
         */
     }
 
-
-    void OnScan(ConstLaserScanStampedPtr &_msg)
-    {
-      
-    }
-
     int counter;
 
     // Called by the world update start event
     public: void OnUpdate(const common::UpdateInfo &info)
-    {
-      //std::cout << "UPDATED LIN VEL" << std::endl;
-      // Apply a small linear velocity to the model.
-      //this->model->SetLinearVel(math::Vector3(.03, 0, 0));
-      //m_rightWheelLink->AddRelativeTorque(math::Vector3(10,0,0));
-
-      
-      //m_leftWheelJoint->SetForce(1, 0.2);
-      
+    {      
       m_kratos->Update(info.simTime.Double());
 
       
