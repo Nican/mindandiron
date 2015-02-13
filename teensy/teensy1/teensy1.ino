@@ -11,21 +11,28 @@
 
 #include <Encoder.h>
 #include <Servo.h>
+#include <TimerOne.h>
+
+int isSystemPaused = 0;
+int isSystemAuto = 0;
 
 Encoder wheelLeft(14, 15);
 Encoder wheelRight(16, 17);
 const int ticksPerRev = 23330;  // Determined experimentally
-long oldLeft  = -999;
-long oldRight = -999;
+const int encoderHistLength = 5;
+long oldLeft[encoderHistLength] = {-999, -999, -999, -999, -999};
+long oldRight[encoderHistLength] = {-999, -999, -999, -999, -999};
 int leftTurns = 0;
 int rightTurns = 0;
+int leftVelocity = 0;
+int rightVelocity = 0;
 
 #define LEFT_CMD_IN      18  // Pin 2 on the receiver
 #define RIGHT_CMD_IN     19  // Pin 3 on the receiver
 #define AUTO_SWITCH_IN   20  // Pin 5 on the receiver
 #define PAUSE_SWITCH_IN  21  // Pin 6 on the receiver
-#define LEFT_OUT_PIN     22
-#define RIGHT_OUT_PIN    23
+#define LEFT_OUT_PIN     23
+#define RIGHT_OUT_PIN    22
 #define PAUSE_SWITCH_OUT 13  // Goes to the switch nMOS gate
 
 Servo servoLeft;
@@ -40,7 +47,8 @@ const int MID_SIGNAL = 1525;
 const int MIN_SIGNAL = 1100;
 const int IN_DEADBAND = 100;
 const int OUT_DEADBAND = 2;
-const float INTERP_SLOPE = (MAX_WHEEL_SPEED - MIN_WHEEL_SPEED) / (float)(MAX_SIGNAL - MID_SIGNAL);
+const float INTERP_SLOPE = (MAX_WHEEL_SPEED - MIN_WHEEL_SPEED) /
+                           (float)(MAX_SIGNAL - MID_SIGNAL);
 const float INTERP_OFFSET = MIN_WHEEL_SPEED - (MID_SIGNAL * INTERP_SLOPE);
 
 void setup() {
@@ -50,42 +58,76 @@ void setup() {
   pinMode(AUTO_SWITCH_IN, INPUT);
   pinMode(PAUSE_SWITCH_IN, INPUT);
   pinMode(PAUSE_SWITCH_OUT, OUTPUT);
-  servoLeft.attach(LEFT_OUT_PIN); servoLeft.write(MIN_WHEEL_SPEED); lastLeftCmd = MIN_WHEEL_SPEED;
+  servoLeft.attach(LEFT_OUT_PIN); servoLeft.write(MIN_WHEEL_SPEED);
+  lastLeftCmd = MIN_WHEEL_SPEED;
   servoRight.attach(RIGHT_OUT_PIN); servoRight.write(MIN_WHEEL_SPEED);
   lastRightCmd = MIN_WHEEL_SPEED;
 }
 
 void loop() {
+  // DEAL WITH THE ENCODERS
   long newLeft, newRight;
   newLeft = wheelLeft.read();
   newRight = wheelRight.read();
-  if (newLeft != oldLeft || newRight != oldRight) {
-    checkEncoderReset(newLeft, newRight);
-    reportEncoder(newLeft, newRight);
+  reportVelocity(newLeft, newRight);
+
+  // DEAL WITH PAUSING
+  if (switchOn(PAUSE_SWITCH_IN)) {
+    if (!isSystemPaused) {
+      isSystemPaused = 1;
+      digitalWrite(PAUSE_SWITCH_OUT, LOW);
+    }
   }
-  
+  else {
+    if (isSystemPaused) {
+      isSystemPaused = 0;
+      digitalWrite(PAUSE_SWITCH_OUT, HIGH);
+    }
+  }
+
+  // DEAL WITH COMPUTER COMMANDS
   if (switchOn(AUTO_SWITCH_IN)) {
-    Serial.println("Auto is on!");  // TODO: Remove once tested
+    // TODO: Fill with computer commands
+    if (!isSystemAuto) {
+      servoLeft.write(MIN_WHEEL_SPEED);
+      servoRight.write(MIN_WHEEL_SPEED);
+      isSystemAuto = 1;
+    }
   }
   else {
     lastLeftCmd = passThroughRC(servoLeft, LEFT_CMD_IN, lastLeftCmd);
     lastRightCmd = passThroughRC(servoRight, RIGHT_CMD_IN, lastRightCmd);
-//    Serial.print("Left motor set to "); Serial.println(lastLeftCmd);
-//    Serial.print("Right motor set to "); Serial.println(lastRightCmd);
-//    Serial.println();
+    if (isSystemAuto) {
+      isSystemAuto = 0;
+    }
   }
 
-  if (switchOn(PAUSE_SWITCH_IN)) {
-    Serial.println("Pause is on!");  // TODO: Remove once tested
-    digitalWrite(PAUSE_SWITCH_OUT, LOW);
+  printDataToComputer();
+
+}
+
+// Averages the last encoder counts and reports velocity
+void reportVelocity(int newLeft, int newRight) {
+  for (int i = encoderHistLength - 1; i > 0; i--) {
+    oldLeft[i] = oldLeft[i - 1];
+    oldRight[i] = oldRight[i - 1];
   }
-  else {
-    digitalWrite(PAUSE_SWITCH_OUT, HIGH);
+  oldLeft[0] = newLeft;
+  oldRight[0] = newRight;
+
+  int leftSum = 0;
+  int rightSum = 0;
+  for (int i = 0; i < (encoderHistLength - 2); i++) {
+    leftSum += oldLeft[i] - oldLeft[i + 1];
+    rightSum += oldRight[i] - oldRight[i + 1];
   }
+  leftVelocity = leftSum / (encoderHistLength - 1);
+  rightVelocity = rightSum / (encoderHistLength - 1);
 }
 
 // Checks whether the encoders have gone 360 deg and resets encoders if so
-void checkEncoderReset(int newLeft, int newRight) {
+// Only useful when calculating position
+void checkEncoderForTurnsAndReset(int newLeft, int newRight) {
   if (abs(newLeft) >= ticksPerRev) {
     wheelLeft.write(newLeft % ticksPerRev);
     if (newLeft > 0) leftTurns++;
@@ -99,14 +141,15 @@ void checkEncoderReset(int newLeft, int newRight) {
 }
 
 // Prints the encoder data for left and right wheels, resets the stored angle
-void reportEncoder(int newLeft, int newRight) {
+// Only useful when calculating position
+void reportEncoderTurns(int newLeft, int newRight) {
   Serial.print("Left = ");    Serial.print(newLeft);
   Serial.print(", Right = "); Serial.println(newRight);
   Serial.print("Left Turns = ");    Serial.print(leftTurns);
   Serial.print(", Right Turns = "); Serial.println(rightTurns);
   Serial.println("");
-  oldLeft = newLeft;
-  oldRight = newRight;
+  oldLeft[0] = newLeft;
+  oldRight[0] = newRight;
 }
 
 // Checks whether an RC switch is on/off and returns a boolean
@@ -122,10 +165,15 @@ bool switchOn(int switchPin) {
 int passThroughRC(Servo servo, int pin, int lastCmd) {
   int duration = pulseIn(pin, HIGH);
   int cmd;
+
+  // Brakes the robot when in the deadband
   if (within(duration, MID_SIGNAL, IN_DEADBAND)) {
     cmd = MIN_WHEEL_SPEED;
   }
   else {
+    // Adjusts the duration to prevent a jump on either side of the deadband
+    if (duration > MID_SIGNAL) { duration -= IN_DEADBAND; }
+    else { duration += IN_DEADBAND; }
     cmd = INTERP_SLOPE * duration + INTERP_OFFSET;
   }
   
@@ -144,3 +192,11 @@ bool within(int value, int goal, int offset) {
   }
   return false;
 }
+
+void printDataToComputer() {
+  Serial.print("LVEL,"); Serial.print(leftVelocity);
+  Serial.print(",RVEL,"); Serial.print(rightVelocity);
+  Serial.print(",PAUSE,"); Serial.print(isSystemPaused);
+  Serial.print(",AUTO,"); Serial.println(isSystemAuto);
+}
+
