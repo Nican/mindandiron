@@ -9,13 +9,25 @@
  * http://www.pjrc.com/teensy/td_libs_Encoder.html
  */
 
+#include <TimerOne.h>
 #include <Encoder.h>
 #include <Servo.h>
-#include <TimerOne.h>
+
+
+#define VELOCITY_PERIOD_MICRO 10000  // Period of vel calc, microseconds
+#define LEFT_CMD_IN      18  // Pin 2 on the receiver
+#define RIGHT_CMD_IN     19  // Pin 3 on the receiver
+#define AUTO_SWITCH_IN   20  // Pin 5 on the receiver
+#define PAUSE_SWITCH_IN  21  // Pin 6 on the receiver
+#define LEFT_OUT_PIN     23
+#define RIGHT_OUT_PIN    22
+#define PAUSE_SWITCH_OUT 13  // Goes to the switch nMOS gate
+
 
 int isSystemPaused = 0;
 int isSystemAuto = 0;
 
+// ENCODER SETUP
 Encoder wheelLeft(14, 15);
 Encoder wheelRight(16, 17);
 const int ticksPerRev = 23330;  // Determined experimentally
@@ -25,14 +37,7 @@ volatile long oldRight[encoderHistLength] = {-999, -999, -999, -999, -999};
 volatile int leftVelocity = 0;
 volatile int rightVelocity = 0;
 
-#define LEFT_CMD_IN      18  // Pin 2 on the receiver
-#define RIGHT_CMD_IN     19  // Pin 3 on the receiver
-#define AUTO_SWITCH_IN   20  // Pin 5 on the receiver
-#define PAUSE_SWITCH_IN  21  // Pin 6 on the receiver
-#define LEFT_OUT_PIN     23
-#define RIGHT_OUT_PIN    22
-#define PAUSE_SWITCH_OUT 13  // Goes to the switch nMOS gate
-
+// DRIVE SETUP
 Servo servoLeft;
 Servo servoRight;
 int lastLeftCmd;
@@ -50,6 +55,8 @@ const float INTERP_SLOPE = (MAX_WHEEL_SPEED - MIN_WHEEL_SPEED) /
 const float INTERP_OFFSET = MIN_WHEEL_SPEED - (MID_SIGNAL * INTERP_SLOPE);
 
 void setup() {
+  Timer1.initialize(VELOCITY_PERIOD_MICRO);
+  Timer1.attachInterrupt(calculateVelocity);
   Serial.begin(9600);
   pinMode(LEFT_CMD_IN, INPUT);
   pinMode(RIGHT_CMD_IN, INPUT);
@@ -63,12 +70,6 @@ void setup() {
 }
 
 void loop() {
-  // DEAL WITH THE ENCODERS
-  long newLeft, newRight;
-  newLeft = wheelLeft.read();
-  newRight = wheelRight.read();
-  reportVelocity(newLeft, newRight);
-
   // DEAL WITH PAUSING
   if (switchOn(PAUSE_SWITCH_IN)) {
     if (!isSystemPaused) {
@@ -101,17 +102,16 @@ void loop() {
   }
 
   printDataToComputer();
-
 }
 
 // Averages the last encoder counts and reports velocity
-void reportVelocity(int newLeft, int newRight) {
+void calculateVelocity(void) {
   for (int i = encoderHistLength - 1; i > 0; i--) {
     oldLeft[i] = oldLeft[i - 1];
     oldRight[i] = oldRight[i - 1];
   }
-  oldLeft[0] = newLeft;
-  oldRight[0] = newRight;
+  oldLeft[0] = wheelLeft.read();;
+  oldRight[0] = wheelRight.read();;
 
   int leftSum = 0;
   int rightSum = 0;
@@ -119,6 +119,7 @@ void reportVelocity(int newLeft, int newRight) {
     leftSum += oldLeft[i] - oldLeft[i + 1];
     rightSum += oldRight[i] - oldRight[i + 1];
   }
+
   leftVelocity = leftSum / (encoderHistLength - 1);
   rightVelocity = rightSum / (encoderHistLength - 1);
 }
@@ -148,8 +149,7 @@ int passThroughRC(Servo servo, int pin, int lastCmd) {
     cmd = INTERP_SLOPE * duration + INTERP_OFFSET;
   }
   
-  if (within(cmd, MIN_WHEEL_SPEED, (MAX_WHEEL_SPEED - MIN_WHEEL_SPEED)) &&
-      !within(cmd, lastCmd, OUT_DEADBAND)) {
+  if (within(cmd, MIN_WHEEL_SPEED, (MAX_WHEEL_SPEED - MIN_WHEEL_SPEED))) {
     servo.write(cmd);
     return cmd;
   }
