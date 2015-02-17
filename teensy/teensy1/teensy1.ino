@@ -15,11 +15,11 @@
 
 
 #define VELOCITY_PERIOD_MICRO 10000  // Period of vel calc, microseconds
-#define LEFT_CMD_IN      12  // Pin 2 on the receiver
-#define RIGHT_CMD_IN     11  // Pin 3 on the receiver
+#define LEFT_CMD_IN      11  // Pin 2 on the receiver
+#define RIGHT_CMD_IN     12  // Pin 3 on the receiver
 #define AUTO_SWITCH_IN   10  // Pin 5 on the receiver
-#define LEFT_OUT_PIN     3
-#define RIGHT_OUT_PIN    2
+#define LEFT_OUT_PIN     2
+#define RIGHT_OUT_PIN    3
 #define PAUSE_SWITCH_OUT 13  // Goes to the switch nMOS gate
 
 
