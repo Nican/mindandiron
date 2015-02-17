@@ -15,12 +15,11 @@
 
 
 #define VELOCITY_PERIOD_MICRO 10000  // Period of vel calc, microseconds
-#define LEFT_CMD_IN      18  // Pin 2 on the receiver
-#define RIGHT_CMD_IN     19  // Pin 3 on the receiver
-#define AUTO_SWITCH_IN   20  // Pin 5 on the receiver
-#define PAUSE_SWITCH_IN  21  // Pin 6 on the receiver
-#define LEFT_OUT_PIN     23
-#define RIGHT_OUT_PIN    22
+#define LEFT_CMD_IN      12  // Pin 2 on the receiver
+#define RIGHT_CMD_IN     11  // Pin 3 on the receiver
+#define AUTO_SWITCH_IN   10  // Pin 5 on the receiver
+#define LEFT_OUT_PIN     3
+#define RIGHT_OUT_PIN    2
 #define PAUSE_SWITCH_OUT 13  // Goes to the switch nMOS gate
 
 
@@ -61,7 +60,6 @@ void setup() {
   pinMode(LEFT_CMD_IN, INPUT);
   pinMode(RIGHT_CMD_IN, INPUT);
   pinMode(AUTO_SWITCH_IN, INPUT);
-  pinMode(PAUSE_SWITCH_IN, INPUT);
   pinMode(PAUSE_SWITCH_OUT, OUTPUT);
   servoLeft.attach(LEFT_OUT_PIN); servoLeft.write(MIN_WHEEL_SPEED);
   lastLeftCmd = MIN_WHEEL_SPEED;
@@ -70,20 +68,6 @@ void setup() {
 }
 
 void loop() {
-  // DEAL WITH PAUSING
-  if (switchOn(PAUSE_SWITCH_IN)) {
-    if (!isSystemPaused) {
-      isSystemPaused = 1;
-      digitalWrite(PAUSE_SWITCH_OUT, LOW);
-    }
-  }
-  else {
-    if (isSystemPaused) {
-      isSystemPaused = 0;
-      digitalWrite(PAUSE_SWITCH_OUT, HIGH);
-    }
-  }
-
   // DEAL WITH COMPUTER COMMANDS
   if (switchOn(AUTO_SWITCH_IN)) {
     // TODO: Fill with computer commands
@@ -167,7 +151,6 @@ bool within(int value, int goal, int offset) {
 void printDataToComputer() {
   Serial.print("LVEL,"); Serial.print(leftVelocity);
   Serial.print(",RVEL,"); Serial.print(rightVelocity);
-  Serial.print(",PAUSE,"); Serial.print(isSystemPaused);
   Serial.print(",AUTO,"); Serial.println(isSystemAuto);
 }
 
