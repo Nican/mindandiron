@@ -149,8 +149,8 @@ bool within(int value, int goal, int offset) {
 }
 
 void printDataToComputer() {
-  Serial.print("LVEL,"); Serial.print(leftVelocity);
-  Serial.print(",RVEL,"); Serial.print(rightVelocity);
-  Serial.print(",AUTO,"); Serial.println(isSystemAuto);
+  Serial.print("LVEL\t"); Serial.print(leftVelocity);
+  Serial.print("\tRVEL\t"); Serial.print(rightVelocity);
+  Serial.print("\tAUTO\t"); Serial.println(isSystemAuto);
 }
 
