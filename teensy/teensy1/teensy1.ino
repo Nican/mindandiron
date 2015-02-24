@@ -15,6 +15,8 @@
 #include <TimerOne.h>
 #include <TimerThree.h>
 
+#include "accelerometer.c"
+
 
 #define VELOCITY_PERIOD_MICRO 10000  // Period of vel calc, microseconds
 #define PID_PERIOD_MICRO      10000  // Period of wheel PID, microseconds
@@ -39,12 +41,6 @@ volatile long oldLeft[encoderHistLength] = {-999, -999, -999, -999, -999};
 volatile long oldRight[encoderHistLength] = {-999, -999, -999, -999, -999};
 double leftVelocity = 0;
 double rightVelocity = 0;
-
-// ACCELEROMETER SETUP
-int accelerometerAxes[3] = {0, 0, 0};
-const int accelerometerXPin = A9;
-const int accelerometerYPin = A8;
-const int accelerometerZPin = A7;
 
 // DRIVE SETUP
 int isSystemAuto = 0;
@@ -140,20 +136,6 @@ void loop() {
 }
 
 
-void readAccelerometer() {
-    accelerometerAxes[0] = readAccelerometerSingleAxis(accelerometerXPin);
-    accelerometerAxes[1] = readAccelerometerSingleAxis(accelerometerYPin);
-    accelerometerAxes[2] = readAccelerometerSingleAxis(accelerometerZPin);
-}
-
-
-// TODO: Make more complex with conversions/filtering after testing
-int readAccelerometerSingleAxis(int pin) {
-    int val = analogRead(pin);
-    return val;
-}
-
-
 void readComputerCommands() {
     char incomingByte;
     int tabCounter = 0;
@@ -207,7 +189,7 @@ int boundCollectorSignal(int cmd) {
 int boundSorterSignal(int cmd) {
     // Decided to treat out-of-bound commands as illegitimate. Could
     // implement this as a clamp function as needed
-    if (cmd >= 0 && < NUM_SORTER_SLOTS) { return cmd; }
+    if (cmd >= 0 && cmd < NUM_SORTER_SLOTS) { return cmd; }
     else { return 0; }
 }
 
@@ -231,8 +213,8 @@ void commandCollector(int cmd) {
 
 // TODO: put in a timer loop?
 void commandSorter(int slot) {
-    if (slot >= 0 && < NUM_SORTER_SLOTS) {
-        int currentPosition = sorterEncoder.read()
+    if (slot >= 0 && slot < NUM_SORTER_SLOTS) {
+        int currentPosition = sorterEncoder.read();
         int sortError = sorterSlotPositions[slot] - currentPosition;
         if (abs(sortError) > sorterDeadband) {
             servoSorter.write(
