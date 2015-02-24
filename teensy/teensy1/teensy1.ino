@@ -17,7 +17,7 @@
 
 
 #define VELOCITY_PERIOD_MICRO 10000  // Period of vel calc, microseconds
-#define PID_PERIOD_MICRO      5000  // Period of wheel PID, microseconds
+#define PID_PERIOD_MICRO      10000  // Period of wheel PID, microseconds
 #define LEFT_CMD_IN      11  // Pin 2 on the receiver
 #define RIGHT_CMD_IN     12  // Pin 3 on the receiver
 #define AUTO_SWITCH_IN   10  // Pin 5 on the receiver
@@ -63,10 +63,10 @@ const float INTERP_OFFSET = MIN_SERVO_SPEED - (MID_SIGNAL * INTERP_SLOPE);
 
 // WHEEL PID SETUP
 const double Kp = 0;  // Proportional PI constant for wheel velocity
-const double Ki = -0.0005;  // Integral PI constant for wheel velocity
+const double Ki = -0.001;  // Integral PI constant for wheel velocity
 int leftVelocitySetpoint = 100;   // Velocity setpoint from the computer
 int rightVelocitySetpoint = -100;  // Velocity setpoint from the computer
-const int integralBounds = 100000;  // To prevent wild reactions
+const int integralBounds = 100 * abs(1 / Ki);  // To prevent wild reactions
 volatile int leftIntegralError = 0;
 volatile int rightIntegralError = 0;
 volatile int leftAutoWheelCmd = 0; 
@@ -209,7 +209,9 @@ void calculateWheelPIDControl() {
     leftAutoWheelCmd = calcServoCmdFromDesiredVelocity(Kp * leftError +
                                                        Ki * leftIntegralError);
     int rightError = rightVelocitySetpoint - rightVelocity;
-    rightIntegralError += rightError;
+    if (!(abs(rightIntegralError + rightError) > integralBounds)) {
+        rightIntegralError += rightError;
+    }
     rightAutoWheelCmd = calcServoCmdFromDesiredVelocity(Kp * rightError +
                                                         Ki * rightIntegralError);
 }
