@@ -64,8 +64,9 @@ const float INTERP_OFFSET = MIN_SERVO_SPEED - (MID_SIGNAL * INTERP_SLOPE);
 // WHEEL PID SETUP
 const double Kp = 0;  // Proportional PI constant for wheel velocity
 const double Ki = -0.001;  // Integral PI constant for wheel velocity
-int leftVelocitySetpoint = 100;   // Velocity setpoint from the computer
-int rightVelocitySetpoint = -100;  // Velocity setpoint from the computer
+int leftVelocitySetpoint = 0;   // Velocity setpoint from the computer
+int rightVelocitySetpoint = 0;  // Velocity setpoint from the computer
+const int maxWheelSpeed = 130;
 const int integralBounds = 100 * abs(1 / Ki);  // To prevent wild reactions
 volatile int leftIntegralError = 0;
 volatile int rightIntegralError = 0;
@@ -101,9 +102,7 @@ void setup() {
 void loop() {
     readAccelerometer();  // Updates the accelerometerAxes variable
 
-    // TODO: READ COMPUTER COMMANDS
-    // leftComputerWheelCommand = X     // Uncomment when cmds from comp. come
-    // rightComputerWheelCommand = X    // Uncomment when cmds from comp. come
+    readComputerCommands();
     if (switchOn(AUTO_SWITCH_IN)) {
         if (!isSystemAuto) {
             leftIntegralError = 0;  // Resets integral when starting AUTO
@@ -121,7 +120,6 @@ void loop() {
             leftVelocitySetpoint -= 20;
             isSystemAuto = 0;
         }
-        Serial.print("leftVelocitySetpoint: "); Serial.println(leftVelocitySetpoint);
         lastLeftCmd = passThroughRC(servoLeft, LEFT_CMD_IN, lastLeftCmd);
         lastRightCmd = passThroughRC(servoRight, RIGHT_CMD_IN, lastRightCmd);
     }
@@ -134,6 +132,38 @@ void readAccelerometer() {
     accelerometerAxes[0] = readAccelerometerSingleAxis(accelerometerXPin);
     accelerometerAxes[1] = readAccelerometerSingleAxis(accelerometerYPin);
     accelerometerAxes[2] = readAccelerometerSingleAxis(accelerometerZPin);
+}
+
+
+void readComputerCommands() {
+    char incomingByte;
+    int tabCounter = 0;
+    int leftVelocityCmd = 0;
+    int rightVelocityCmd = 0;
+    while (Serial.available()) {
+        incomingByte = Serial.read();
+        if (incomingByte == '\t') {
+            if (tabCounter == 0) {
+                leftVelocityCmd = Serial.parseInt();  // 0 when passed a non-int
+            }
+            else if (tabCounter == 2) {
+                rightVelocityCmd = Serial.parseInt();  // 0 when passed a non-int
+            }
+            tabCounter++;
+        }
+    }
+    if (tabCounter == 4) {
+        leftVelocitySetpoint = boundVelocity(leftVelocityCmd);
+        rightVelocitySetpoint = boundVelocity(rightVelocityCmd);
+    }
+}
+
+
+int boundVelocity(int cmd) {
+    // Decided to treat out-of-bound commands as illegitimate to prevent
+    // runaways. Could implement this as a clamp function as needed
+    if (abs(cmd) > maxWheelSpeed) { return 0; }
+    else { return cmd; }
 }
 
 
@@ -223,7 +253,6 @@ int calcServoCmdFromDesiredVelocity(int cmd) {
     cmd += MIN_SERVO_SPEED;
     if (cmd > MAX_SERVO_SPEED) { cmd = MAX_SERVO_SPEED; }
     if (cmd < (2 * MIN_SERVO_SPEED - MAX_SERVO_SPEED)) { cmd = MIN_SERVO_SPEED; }
-// Serial.print("Commanding motor: "); Serial.println(cmd);
     return cmd;
 }
 
@@ -245,4 +274,5 @@ void printDataToComputer() {
     Serial.print("\tAZ\t"); Serial.print(accelerometerAxes[2]);
     Serial.print("\tAUTO\t"); Serial.println(isSystemAuto);
 }
+
 
