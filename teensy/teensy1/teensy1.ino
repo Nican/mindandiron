@@ -28,7 +28,7 @@
 #define COLLECTOR_OUT_B  6   // Goes to one side of the collector
 
 
-// ENCODER SETUP
+// WHEEL ENCODER SETUP
 Encoder wheelLeft(17, 16);
 Encoder wheelRight(14, 15);
 const int ticksPerRev = 23330;  // Determined experimentally
@@ -73,6 +73,9 @@ volatile int rightIntegralError = 0;
 volatile int leftAutoWheelCmd = 0; 
 volatile int rightAutoWheelCmd = 0;
 
+// COLLECTOR AND SORTER SETUP
+int collectorAutoCmd = 0;
+
 
 void setup() {
     Serial.begin(9600);
@@ -101,8 +104,8 @@ void setup() {
 
 void loop() {
     readAccelerometer();  // Updates the accelerometerAxes variable
+    readComputerCommands();  // Updates the xxxxVelocitySetpoint variables
 
-    readComputerCommands();
     if (switchOn(AUTO_SWITCH_IN)) {
         if (!isSystemAuto) {
             leftIntegralError = 0;  // Resets integral when starting AUTO
@@ -110,14 +113,12 @@ void loop() {
             isSystemAuto = 1;
         }
         else {
-          // TODO: Fill with computer commands
-          servoLeft.write(leftAutoWheelCmd);      // Uncomment when cmds from comp. come
-          servoRight.write(rightAutoWheelCmd);    // Uncomment when cmds from comp. come
+          servoLeft.write(leftAutoWheelCmd);
+          servoRight.write(rightAutoWheelCmd);
         }
     }
     else {
         if (isSystemAuto) {
-            leftVelocitySetpoint -= 20;
             isSystemAuto = 0;
         }
         lastLeftCmd = passThroughRC(servoLeft, LEFT_CMD_IN, lastLeftCmd);
