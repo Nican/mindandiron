@@ -12,7 +12,7 @@
     <pose>0 0 0 0 0 0</pose>
 
     <inertial>
-      <pose>0 0.5 0.1 0 -0 0</pose>
+      <pose>0.5 0 0.1 0 0 0</pose>
       <mass>10</mass>
     </inertial>
 
@@ -35,10 +35,10 @@
     </visual>
 
     <collision name='caster_collision'>
-      <pose>0.8 0 -0.057 0 0 0</pose>
+      <pose>0.8 0 -0.1 0 0 0</pose>
       <geometry>
         <sphere>
-          <radius>.05</radius>
+          <radius>.057</radius>
         </sphere>
       </geometry>
 
@@ -55,10 +55,10 @@
     </collision>
 
     <visual name='caster_visual'>
-      <pose>0.8 0 -0.057 0 0 0</pose>
+      <pose>0.8 0 -0.1 0 0 0</pose>
       <geometry>
         <sphere>
-          <radius>.05</radius>
+          <radius>.057</radius>
         </sphere>
       </geometry>
     </visual>
@@ -135,7 +135,20 @@
     </sensor>
 
 
-  </link>
+  </link> 
+
+  <joint type="revolute" name="april_tag_hinge">
+    <pose>0 0 0 0 0 0</pose>
+    <child>april_tag_link</child>
+    <parent>chassis</parent>
+    <axis>
+      <xyz>0 0 0</xyz>
+      <dynamics>
+        <friction>20.0</friction>
+        <damping>20.0</damping>
+      </dynamics>
+    </axis>
+  </joint>
 
 
 
@@ -212,7 +225,7 @@
     <child>left_wheel</child>
     <parent>chassis</parent>
     <axis>
-      <xyz>1 0 0</xyz>
+      <xyz>0 1 0</xyz>
       <dynamics>
         <friction>20.0</friction>
         <damping>20.0</damping>
@@ -225,7 +238,7 @@
     <child>right_wheel</child>
     <parent>chassis</parent>
     <axis>
-      <xyz>1 0 0</xyz>
+      <xyz>0 1 0</xyz>
       <dynamics>
         <friction>20.0</friction>
         <damping>20.0</damping>

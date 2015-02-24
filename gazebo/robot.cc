@@ -16,7 +16,7 @@ Kratos::Kratos(const RobotMotion& motion, const RobotSensors& sensors)
 	mZmqSocket.bind ("tcp://*:5555");
 
 	//mState.reset(new State::MoveToWaypoint(this));
-	mState.reset(new State::MoveForward(this));
+	mState.reset(new State::ReturnToBase(this));
 	mState->Initialize();
 
 	mBaseStation.reset(new BaseStationDetector(this));
@@ -55,6 +55,7 @@ void Kratos::Update(double simTime)
 void Kratos::UpdateCameraRotation()
 {
 	Eigen::Vector3d pos = mSensors.mTRS->GetPosition();
+	double rotation = mSensors.mTRS->GetOrientation();
 
 	//Update the april tag camera
 	//For now {-1.4, 0} is about where the tags are
@@ -65,7 +66,9 @@ void Kratos::UpdateCameraRotation()
 	if(target.norm() > 0.01)
 		angle2 = std::atan2(target.y(), target.x());
 
-	mMotion.mAprilServo->SetPosition(angle2);
+	//std::cout << "A: " << angle2 << "\t" << rotation << "\n";
+
+	mMotion.mAprilServo->SetPosition(angle2 - rotation + M_PI/2);
 }
 
 void Kratos::ReceiveDepth(const DepthImgData &depthData)

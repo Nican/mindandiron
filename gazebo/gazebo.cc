@@ -36,7 +36,7 @@ public:
 
   virtual void SetForce(double force) override
   {
-    mJoint->SetForce(0, -force);
+    mJoint->SetForce(0, force);
   }
 
 };
@@ -56,6 +56,16 @@ public:
   virtual Eigen::Vector3d GetPosition() const override
   {
     math::Vector3 pos = mEntity->GetWorldPose().pos - startPose.pos;
+    auto station = GetBaseStation();
+
+    if(station != nullptr)
+    {
+      pos = mEntity->GetWorldPose().pos - station->GetWorldPose().pos;
+    }
+    else
+    {
+      std::cerr << "Did not find the base station 'kratos_plataform' when grabing the position from TRS\n";
+    }
 
     return Eigen::Vector3d(pos.x, pos.y, pos.z);
   }
@@ -68,6 +78,11 @@ public:
     auto p1 = quat * Eigen::Vector3d(0,1,0);
 
     return std::atan2(p1.y(), p1.x());
+  }
+
+  physics::EntityPtr GetBaseStation() const
+  {
+    return mEntity->GetWorld()->GetEntity("kratos_plataform");
   }
 };
 

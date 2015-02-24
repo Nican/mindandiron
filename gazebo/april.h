@@ -52,23 +52,13 @@ struct BaseStationDetector
 	double m_py;
 
 	double lastDetectionTime;
+	Eigen::Affine3d mBaseTransformation;
 
 	BaseStationDetector(Kratos* robot);
 
 	void Update(cv::Mat input);
 
-	Eigen::Affine3d DetectionToAffine(const AprilTags::TagDetection &detection)
-	{
-		Eigen::Vector3d translation;
-		Eigen::Matrix3d rotation;
-		detection.getRelativeTranslationRotation(m_tagSize, m_fx, m_fy, m_px, m_py, translation, rotation);
-
-		Eigen::Affine3d affine;
-		affine.translation() = translation;
-		affine.linear() = rotation;
-
-		return affine;	
-	}
+	Eigen::Affine3d DetectionToAffine(const AprilTags::TagDetection &detection);
 
 };
 
