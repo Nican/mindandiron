@@ -76,13 +76,13 @@ volatile int leftAutoWheelCmd = 0;
 volatile int rightAutoWheelCmd = 0;
 
 // COLLECTOR AND SORTER SETUP
-Encoder sorterEncoder(18, 19);  // NOT YET WIRED
+Encoder sorterEncoder(18, 19);  // NOT YET WIRED. TODO: Redo with actual system
 int collectorAutoCmd = 0;
 int sorterAutoSlot = 0;  // 10 discrete slots (position control)
 const double sorterKp = 0.1;
 const int sorterDeadband = 5;  // Allowable slop
 const int sorterSlotPositions[NUM_SORTER_SLOTS] =
-    {0, 50, 100, 150, 200, 250, 300, 350, 400, 450};
+    {0, 410, 820, 1230, 1640, 2050, 2460, 2870, 3280, 3690};  // TODO: Redo with actual system
 
 
 void setup() {
