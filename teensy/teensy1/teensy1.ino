@@ -26,12 +26,14 @@
 #define SORTER_OUT_PIN   4   // PWM control on the sorter
 #define COLLECTOR_OUT_A  5   // Goes to one side of the collector
 #define COLLECTOR_OUT_B  6   // Goes to one side of the collector
+#define WHEEL_TICKS_PER_REV  23330  // Determined experimentally for encoder
+#define SORTER_TICKS_PER_REV 4095   // Determined experimentally for encoder
+#define NUM_SORTER_SLOTS 10  // Number of slots in the sorter
 
 
 // WHEEL ENCODER SETUP
 Encoder wheelLeft(17, 16);
 Encoder wheelRight(14, 15);
-const int ticksPerRev = 23330;  // Determined experimentally
 const int encoderHistLength = 5;
 volatile long oldLeft[encoderHistLength] = {-999, -999, -999, -999, -999};
 volatile long oldRight[encoderHistLength] = {-999, -999, -999, -999, -999};
@@ -74,7 +76,13 @@ volatile int leftAutoWheelCmd = 0;
 volatile int rightAutoWheelCmd = 0;
 
 // COLLECTOR AND SORTER SETUP
+Encoder sorterEncoder(18, 19);  // NOT YET WIRED
 int collectorAutoCmd = 0;
+int sorterAutoSlot = 0;  // 10 discrete slots (position control)
+const double sorterKp = 0.1;
+const int sorterDeadband = 5;  // Allowable slop
+const int sorterSlotPositions[NUM_SORTER_SLOTS] =
+    {0, 50, 100, 150, 200, 250, 300, 350, 400, 450};
 
 
 void setup() {
@@ -85,9 +93,8 @@ void setup() {
     pinMode(RIGHT_CMD_IN, INPUT);
     pinMode(AUTO_SWITCH_IN, INPUT);
     pinMode(COLLECTOR_OUT_A, OUTPUT);
-    digitalWrite(COLLECTOR_OUT_A, LOW);
     pinMode(COLLECTOR_OUT_B, OUTPUT);
-    digitalWrite(COLLECTOR_OUT_B, LOW);
+    commandCollector(0);  // 0 stops the collector (drives both pins LOW)
     servoLeft.attach(LEFT_OUT_PIN); servoLeft.write(MIN_SERVO_SPEED);
     lastLeftCmd = MIN_SERVO_SPEED;
     servoRight.attach(RIGHT_OUT_PIN); servoRight.write(MIN_SERVO_SPEED);
@@ -104,7 +111,9 @@ void setup() {
 
 void loop() {
     readAccelerometer();  // Updates the accelerometerAxes variable
-    readComputerCommands();  // Updates the xxxxVelocitySetpoint variables
+    readComputerCommands();  // Updates leftVelocitySetpoint
+                             //         rightVelocitySetpoint
+                             //         collectorAutoCmd
 
     if (switchOn(AUTO_SWITCH_IN)) {
         if (!isSystemAuto) {
@@ -115,6 +124,8 @@ void loop() {
         else {
           servoLeft.write(leftAutoWheelCmd);
           servoRight.write(rightAutoWheelCmd);
+          commandCollector(collectorAutoCmd);
+          // commandSorter(sorterAutoSlot);  Uncomment when wired up
         }
     }
     else {
@@ -136,26 +147,43 @@ void readAccelerometer() {
 }
 
 
+// TODO: Make more complex with conversions/filtering after testing
+int readAccelerometerSingleAxis(int pin) {
+    int val = analogRead(pin);
+    return val;
+}
+
+
 void readComputerCommands() {
     char incomingByte;
     int tabCounter = 0;
     int leftVelocityCmd = 0;
     int rightVelocityCmd = 0;
+    int collectorCmd = 0;
+    int sorterCmd = 0;
     while (Serial.available()) {
         incomingByte = Serial.read();
         if (incomingByte == '\t') {
             if (tabCounter == 0) {
-                leftVelocityCmd = Serial.parseInt();  // 0 when passed a non-int
+                leftVelocityCmd = Serial.parseInt();  // 0 when passed non-int
             }
             else if (tabCounter == 2) {
-                rightVelocityCmd = Serial.parseInt();  // 0 when passed a non-int
+                rightVelocityCmd = Serial.parseInt();
+            }
+            else if (tabCounter == 4) {
+                collectorCmd = Serial.parseInt();
+            }
+            else if (tabCounter == 6) {
+                sorterCmd = Serial.parseInt();
             }
             tabCounter++;
         }
     }
-    if (tabCounter == 4) {
+    if (tabCounter == 8) {
         leftVelocitySetpoint = boundVelocity(leftVelocityCmd);
         rightVelocitySetpoint = boundVelocity(rightVelocityCmd);
+        collectorAutoCmd = boundCollectorSignal(collectorCmd);
+        sorterAutoSlot = boundSorterSignal(sorterCmd);
     }
 }
 
@@ -168,10 +196,49 @@ int boundVelocity(int cmd) {
 }
 
 
-// TODO: Make more complex with conversions/filtering after testing
-int readAccelerometerSingleAxis(int pin) {
-    int val = analogRead(pin);
-    return val;
+int boundCollectorSignal(int cmd) {
+    // Decided to treat out-of-bound commands as illegitimate. Could
+    // implement this as a clamp function as needed
+    if (abs(cmd) > 1) { return 0; }
+    else { return cmd; }
+}
+
+
+int boundSorterSignal(int cmd) {
+    // Decided to treat out-of-bound commands as illegitimate. Could
+    // implement this as a clamp function as needed
+    if (cmd >= 0 && < NUM_SORTER_SLOTS) { return cmd; }
+    else { return 0; }
+}
+
+
+// Drives collector in for 1, out for -1, and stops for 0
+void commandCollector(int cmd) {
+    if (cmd > 0) {
+        digitalWrite(COLLECTOR_OUT_A, HIGH);
+        digitalWrite(COLLECTOR_OUT_B, LOW);
+    }
+    else if (cmd < 0) {
+        digitalWrite(COLLECTOR_OUT_A, LOW);
+        digitalWrite(COLLECTOR_OUT_B, HIGH);
+    }
+    else {
+        digitalWrite(COLLECTOR_OUT_A, LOW);
+        digitalWrite(COLLECTOR_OUT_B, LOW);
+    }
+}
+
+
+// TODO: put in a timer loop?
+void commandSorter(int slot) {
+    if (slot >= 0 && < NUM_SORTER_SLOTS) {
+        int currentPosition = sorterEncoder.read()
+        int sortError = sorterSlotPositions[slot] - currentPosition;
+        if (abs(sortError) > sorterDeadband) {
+            servoSorter.write(
+                calcServoCmdFromDesiredVelocity(sorterKp * sortError));
+        }
+    }
 }
 
 
@@ -275,5 +342,3 @@ void printDataToComputer() {
     Serial.print("\tAZ\t"); Serial.print(accelerometerAxes[2]);
     Serial.print("\tAUTO\t"); Serial.println(isSystemAuto);
 }
-
-

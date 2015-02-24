@@ -7,11 +7,14 @@ def main():
 	cycleCounts = 50
 	Lcmd = 0
 	Rcmd = -0
+	Collector = 0
+	Sorter = 0
 	while(True):
 		print(ser.readline())
 		if counter % cycleCounts == 0:
 			print('WRITING DATA TO TEENSY')
-			ser.write('LVEL\t%s\tRVEL\t%s\tEND' % (Lcmd, Rcmd))
+			ser.write('LVEL\t%s\tRVEL\t%s\tCOLL\t%s\tSORT\t%s\tEND'
+					  % (Lcmd, Rcmd, Collector, Sorter))
 			Lcmd += 10
 			if Lcmd > 130:
 				Lcmd = -130
