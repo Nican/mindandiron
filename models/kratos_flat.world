@@ -4,63 +4,20 @@
       <include>
         <uri>model://sun</uri>
       </include>
-
-      <model name='ground_plane'>
-        <static>1</static>
-        <link name='link'>
-          <collision name='collision'>
-            <geometry>
-              <mesh>
-                <uri>model://models/course_1.DAE</uri>
-              </mesh>
-            </geometry>
-            <surface>
-              <friction>
-                <ode>
-                  <mu>100</mu>
-                  <mu2>50</mu2>
-                </ode>
-              </friction>
-              <contact>
-                <ode/>
-              </contact>
-              <bounce/>
-            </surface>
-            <max_contacts>10</max_contacts>
-          </collision>
-          <visual name='visual'>
-            <cast_shadows>0</cast_shadows>
-            <geometry>
-              <mesh>
-                <uri>model://models/course_1.DAE</uri>
-              </mesh>
-            </geometry>
-            <material>
-              <script>
-                <uri>file://media/materials/scripts/gazebo.material</uri>
-                <name>Gazebo/Grey</name>
-              </script>
-            </material>
-          </visual>
-          <velocity_decay>
-            <linear>0</linear>
-            <angular>0</angular>
-          </velocity_decay>
-          <self_collide>0</self_collide>
-          <kinematic>0</kinematic>
-          <gravity>1</gravity>
-        </link>
-      </model>
+       
+      <include>
+        <uri>model://ground_plane</uri>
+      </include>
 
       <include>
         <uri>model://models</uri>
         <name>kratos</name>
-        <pose>-0.404146 3.094 -0.0 0 0 0</pose>
+        <pose>2 0 0.359637 0 0 0</pose> <!-- -0.404146 -->
       </include>
 
        <model name='kratos_plataform'>
         <static>1</static>
-        <pose>0 3.094 -0.359637 0 0 0</pose>
+        <pose>0 0 0 0 0 0</pose>
         <link name='link'>
           <collision name='collision'>
             <geometry>

@@ -27,7 +27,6 @@ public:
 
 class MoveForward : public Base
 {
-
 public:
 	MoveForward(Kratos* robot) : Base(robot)
 	{
@@ -36,6 +35,29 @@ public:
 	virtual void Initialize() override;
 	virtual void Think() override;
 };
+
+enum class ReturnToBaseStage
+{
+	PositionAfar,
+	Alignmenet, 
+	BackingUp
+};
+
+class ReturnToBase : public Base
+{
+	double mStateStartTime;
+
+	ReturnToBaseStage mStage;
+
+public:
+	ReturnToBase(Kratos* robot) : Base(robot), mStage(ReturnToBaseStage::PositionAfar)
+	{
+	}
+
+	virtual void Initialize() override;
+	virtual void Think() override;
+};
+
 
 
 

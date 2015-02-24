@@ -24,6 +24,111 @@ void MoveForward::Think()
 
 
 
+void ReturnToBase::Initialize()
+{
+	std::cout << "Starting returning to base routine\n";
+
+	mStateStartTime = mRobot->mCurTime;
+}
+
+void ReturnToBase::Think()
+{
+	double progress = mRobot->mCurTime - mStateStartTime;
+
+	if(progress < 1.0)
+	{
+		mRobot->mMotion.mLeftWheel->SetForce(50.0);
+		mRobot->mMotion.mRightWheel->SetForce(48.0);
+		return;
+	}
+
+	if(mStage == ReturnToBaseStage::PositionAfar)
+	{
+		static double nextThink = 0.0;
+
+		if(progress < nextThink)
+		{
+			return;
+		}
+		nextThink = progress + 1.5 ;
+
+
+
+		static const Eigen::Vector3d goal(3.0, 0, 0);
+
+		auto baseStationTrans = mRobot->mBaseStation->mBaseTransformation;
+
+		auto goal2 = baseStationTrans.linear() * goal;
+		double angle = mRobot->mSensors.mTRS->GetOrientation();
+
+		Eigen::Vector2d diff2 = goal2.head<2>() - baseStationTrans.translation().head<2>();
+		double desiredAngle = std::atan2(diff2.y(), diff2.x());
+		double angleDiff = fmod(desiredAngle - angle, M_PI / 2.0);
+
+		if(diff2.norm() < 0.5)
+		{
+		//	return;
+		}
+
+		auto inverse = baseStationTrans.inverse();
+
+		auto q1 = baseStationTrans.linear() * Eigen::Vector3d(0,1,0);
+		auto q2 = inverse.linear() * Eigen::Vector3d(0,1,0);
+
+		//std::cout << "Robot: \n";
+		//std::cout << "\t R: \t" << mRobot->mSensors.mTRS->GetPosition().transpose()  << " ("<< mRobot->mSensors.mTRS->GetOrientation() <<")\n";
+		//std::cout << "\t T: \t" << baseStationTrans.translation().transpose() << " ("<< std::atan2(q1.y(), q1.x()) <<")\n";
+		//std::cout << "\t I: \t" << inverse.translation().transpose()  << " ("<< std::atan2(q2.y(), q2.x()) <<")\n";
+		//std::cout << "\t G: \t" << goal2.transpose() << "\n"; 
+
+		/*
+		double factor = 40.0;
+
+		if(angleDiff < 0.01)
+		{
+			mRobot->mMotion.mLeftWheel->SetForce(36);
+			mRobot->mMotion.mRightWheel->SetForce(40);
+		}
+		else if(angleDiff > 0.01)
+		{
+			mRobot->mMotion.mLeftWheel->SetForce(40);
+			mRobot->mMotion.mRightWheel->SetForce(36);
+		} 
+		else 
+		{
+			mRobot->mMotion.mLeftWheel->SetForce(40);
+			mRobot->mMotion.mRightWheel->SetForce(40);
+		}
+		*/
+
+
+
+		//auto b2 = baseStationTrans 
+
+
+		//auto diff = baseStationTrans.inverse() *  goal - baseStationTrans.translation();
+
+
+
+		//goal = baseStationTrans.translation() + Vector3d();
+
+		//std::cout << "Transformation: " << diff.transpose() << "\n\t" << baseStationTrans.transpose() << "\n" ;
+
+	}
+
+	/*
+	else 
+	{
+		mRobot->mMotion.mLeftWheel->SetForce(0.0);
+		mRobot->mMotion.mRightWheel->SetForce(0.0);
+	}
+	*/
+
+}
+
+
+
+
 void MoveToWaypoint::Initialize()
 {
 
@@ -52,7 +157,7 @@ void MoveToWaypoint::Think()
 
 		//std::cout << "\tAngle diff: " << diff2.transpose() << std::endl;
 		
-		double factor = 4.0 * 10.0;
+		double factor = 40.0;
 
 		if(angleDiff < 0.01)
 		{
