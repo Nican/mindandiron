@@ -15,8 +15,6 @@
 #include <TimerOne.h>
 #include <TimerThree.h>
 
-#include "accelerometer.c"
-
 
 #define VELOCITY_PERIOD_MICRO 10000  // Period of vel calc, microseconds
 #define PID_PERIOD_MICRO      10000  // Period of wheel PID, microseconds
@@ -80,6 +78,9 @@ const int sorterDeadband = 5;  // Allowable slop
 const int sorterSlotPositions[NUM_SORTER_SLOTS] =
     {0, 410, 820, 1230, 1640, 2050, 2460, 2870, 3280, 3690};  // TODO: Redo with actual system
 
+// ACCELEROMETER SETUP
+int accelerometerAxes[3] = {0, 0, 0};  // Stores {x, y, z} accelerometer data
+
 
 void setup() {
     Serial.begin(9600);
@@ -106,7 +107,7 @@ void setup() {
 
 
 void loop() {
-    readAccelerometer();  // Updates the accelerometerAxes variable
+    readAccelerometer(accelerometerAxes);  // Updates accelerometerAxes
     readComputerCommands();  // Updates leftVelocitySetpoint
                              //         rightVelocitySetpoint
                              //         collectorAutoCmd
@@ -324,3 +325,4 @@ void printDataToComputer() {
     Serial.print("\tAZ\t"); Serial.print(accelerometerAxes[2]);
     Serial.print("\tAUTO\t"); Serial.println(isSystemAuto);
 }
+
