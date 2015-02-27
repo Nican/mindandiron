@@ -1,6 +1,10 @@
 // Put professional header here
 // Include some type of copyright
 
+
+const int maxWheelSpeed = 130;
+
+
 // Reads the serial port for a computer command and sets the given int values
 void readComputerCommands(int *leftVelocitySetpoint,
                           int *rightVelocitySetpoint,

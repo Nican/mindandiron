@@ -2,7 +2,7 @@
 // Include some type of copyright
 
 Encoder sorterEncoder(18, 19);  // TODO(Eric): Redo with actual system
-const double sorterKp = 0.1;
+const double sorterKp    = 0.1;
 const int sorterDeadband = 5;  // Allowable slop
 
 // TODO(Eric): Redo with actual system
