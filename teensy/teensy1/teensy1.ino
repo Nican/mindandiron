@@ -1,3 +1,7 @@
+// Put professional header here
+// Include some type of copyright
+
+
 /*
  * Teensy 1
  *     Reads the encoders on the wheels and prints position to serial
@@ -10,161 +14,89 @@
  */
 
 
-#include <TimerOne.h>
 #include <Encoder.h>
 #include <Servo.h>
+#include <TimerOne.h>
+#include <TimerThree.h>
+
+#include "collector_sorter_includes.h"
+#include "rc_includes.h"
 
 
 #define VELOCITY_PERIOD_MICRO 10000  // Period of vel calc, microseconds
-#define LEFT_CMD_IN      11  // Pin 2 on the receiver
-#define RIGHT_CMD_IN     12  // Pin 3 on the receiver
-#define AUTO_SWITCH_IN   10  // Pin 5 on the receiver
-#define LEFT_OUT_PIN     3   // PWM control on the left wheel
-#define RIGHT_OUT_PIN    2   // PWM control on the right wheel
-#define SORTER_OUT_PIN   4   // PWM control on the sorter
-#define COLLECTOR_OUT_A  5   // Goes to one side of the collector
-#define COLLECTOR_OUT_B  6   // Goes to one side of the collector
+#define PID_PERIOD_MICRO      10000  // Period of wheel PID, microseconds
+#define WHEEL_TICKS_PER_REV  23330  // Determined experimentally for encoder
 
-
-int isSystemPaused = 0;
-int isSystemAuto = 0;
-
-// ENCODER SETUP
-Encoder wheelLeft(17, 16);
-Encoder wheelRight(14, 15);
-const int ticksPerRev = 23330;  // Determined experimentally
-const int encoderHistLength = 5;
-volatile long oldLeft[encoderHistLength] = {-999, -999, -999, -999, -999};
-volatile long oldRight[encoderHistLength] = {-999, -999, -999, -999, -999};
-volatile int leftVelocity = 0;
-volatile int rightVelocity = 0;
 
 // DRIVE SETUP
+int isSystemAuto = 0;
 Servo servoLeft;
 Servo servoRight;
-Servo servoSorter;
 int lastLeftCmd;
 int lastRightCmd;
 
-const int MAX_WHEEL_SPEED = 115;
-const int MIN_WHEEL_SPEED = 95;
-const int MAX_SIGNAL = 1950;
-const int MID_SIGNAL = 1525;
-const int MIN_SIGNAL = 1100;
-const int IN_DEADBAND = 100;
-const int OUT_DEADBAND = 2;
-const float INTERP_SLOPE = (MAX_WHEEL_SPEED - MIN_WHEEL_SPEED) /
-                                                     (float)(MAX_SIGNAL - MID_SIGNAL);
-const float INTERP_OFFSET = MIN_WHEEL_SPEED - (MID_SIGNAL * INTERP_SLOPE);
+// WHEEL PID SETUP
+int leftVelocitySetpoint = 0;   // Velocity setpoint from the computer
+int rightVelocitySetpoint = 0;  // Velocity setpoint from the computer
+
+// COLLECTOR AND SORTER SETUP
+Servo servoSorter;
+int collectorAutoCmd = 0;
+int sorterAutoSlot = 0;  // 10 discrete slots (position control)
 
 
 void setup() {
-    Timer1.initialize(VELOCITY_PERIOD_MICRO);
-    Timer1.attachInterrupt(calculateVelocity);
     Serial.begin(9600);
+
+    // DRIVE SETUP
     pinMode(LEFT_CMD_IN, INPUT);
     pinMode(RIGHT_CMD_IN, INPUT);
     pinMode(AUTO_SWITCH_IN, INPUT);
     pinMode(COLLECTOR_OUT_A, OUTPUT);
-    digitalWrite(COLLECTOR_OUT_A, LOW);
     pinMode(COLLECTOR_OUT_B, OUTPUT);
-    digitalWrite(COLLECTOR_OUT_B, LOW);
-    servoLeft.attach(LEFT_OUT_PIN); servoLeft.write(MIN_WHEEL_SPEED);
-    lastLeftCmd = MIN_WHEEL_SPEED;
-    servoRight.attach(RIGHT_OUT_PIN); servoRight.write(MIN_WHEEL_SPEED);
-    lastRightCmd = MIN_WHEEL_SPEED;
-    servoSorter.attach(SORTER_OUT_PIN); servoSorter.write(MIN_WHEEL_SPEED);
+    commandCollector(0);  // 0 stops the collector (drives both pins LOW)
+    servoLeft.attach(LEFT_OUT_PIN); servoLeft.write(MIN_SERVO_SPEED);
+    lastLeftCmd = MIN_SERVO_SPEED;
+    servoRight.attach(RIGHT_OUT_PIN); servoRight.write(MIN_SERVO_SPEED);
+    lastRightCmd = MIN_SERVO_SPEED;
+    servoSorter.attach(SORTER_OUT_PIN); servoSorter.write(MIN_SERVO_SPEED);
+    Timer1.initialize(VELOCITY_PERIOD_MICRO);
+    Timer1.attachInterrupt(calculateVelocity);
+
+    // WHEEL PID SETUP
+    Timer3.initialize(PID_PERIOD_MICRO);
+    Timer3.attachInterrupt(calculateWheelPIDControl);
 }
 
 
 void loop() {
-    // DEAL WITH COMPUTER COMMANDS
+    readAccelerometer();  // Updates accelerometerAxes
+    readComputerCommands(&leftVelocitySetpoint,
+                         &rightVelocitySetpoint,
+                         &collectorAutoCmd,
+                         &sorterAutoSlot);
+    setLeftWheelPIDSetpoint(leftVelocitySetpoint);
+    setRightWheelPIDSetpoint(rightVelocitySetpoint);
+
     if (switchOn(AUTO_SWITCH_IN)) {
-        // TODO: Fill with computer commands
         if (!isSystemAuto) {
-            servoLeft.write(MIN_WHEEL_SPEED);
-            servoRight.write(MIN_WHEEL_SPEED);
+            resetWheelIntegralError();  // Resets integral when starting AUTO
             isSystemAuto = 1;
+        } else {
+          servoLeft.write(getLeftAutoWheelCmd());
+          servoRight.write(getRightAutoWheelCmd());
+          commandCollector(collectorAutoCmd);
+          // commandSorter(servoSorter, sorterAutoSlot);  Uncomment when wired
         }
-    }
-    else {
-     lastLeftCmd = passThroughRC(servoLeft, LEFT_CMD_IN, lastLeftCmd);
-     lastRightCmd = passThroughRC(servoRight, RIGHT_CMD_IN, lastRightCmd);
+    } else {
         if (isSystemAuto) {
             isSystemAuto = 0;
         }
+        lastLeftCmd = passThroughRC(servoLeft, LEFT_CMD_IN, lastLeftCmd);
+        lastRightCmd = passThroughRC(servoRight, RIGHT_CMD_IN, lastRightCmd);
     }
-    printDataToComputer();
-}
 
-
-// Averages the last encoder counts and reports velocity
-void calculateVelocity(void) {
-    for (int i = encoderHistLength - 1; i > 0; i--) {
-        oldLeft[i] = oldLeft[i - 1];
-        oldRight[i] = oldRight[i - 1];
-    }
-    oldLeft[0] = wheelLeft.read();;
-    oldRight[0] = wheelRight.read();;
-
-    int leftSum = 0;
-    int rightSum = 0;
-    for (int i = 0; i < (encoderHistLength - 2); i++) {
-        leftSum += oldLeft[i] - oldLeft[i + 1];
-        rightSum += oldRight[i] - oldRight[i + 1];
-    }
-    leftVelocity = leftSum / (encoderHistLength - 1);
-    rightVelocity = rightSum / (encoderHistLength - 1);
-}
-
-
-// Checks whether an RC switch is on/off and returns a boolean
-bool switchOn(int switchPin) {
-    int duration = pulseIn(switchPin, HIGH);
-    if (duration > MID_SIGNAL) {
-        return true;
-    }
-    return false;
-}
-
-
-// Interpolates the input RC values as servo values for the motors
-int passThroughRC(Servo servo, int pin, int lastCmd) {
-    int duration = pulseIn(pin, HIGH);
-    int cmd;
-
-    // Brakes the robot when in the deadband
-    if (within(duration, MID_SIGNAL, IN_DEADBAND)) {
-        cmd = MIN_WHEEL_SPEED;
-    }
-    else {
-        // Adjusts the duration to prevent a jump on either side of the deadband
-        if (duration > MID_SIGNAL) { duration -= IN_DEADBAND; }
-        else { duration += IN_DEADBAND; }
-        cmd = INTERP_SLOPE * duration + INTERP_OFFSET;
-    }
-    
-    if (within(cmd, MIN_WHEEL_SPEED, (MAX_WHEEL_SPEED - MIN_WHEEL_SPEED))) {
-        servo.write(cmd);
-        return cmd;
-    }
-    else {
-        return lastCmd;
-    }
-}
-
-
-// Checks whether the given value is within a given offset from a goal value
-bool within(int value, int goal, int offset) {
-    if ((goal + offset > value) && (goal - offset < value)) {
-        return true;
-    }
-    return false;
-}
-
-
-void printDataToComputer() {
-    Serial.print("LVEL,"); Serial.print(leftVelocity);
-    Serial.print(",RVEL,"); Serial.print(rightVelocity);
-    Serial.print(",AUTO,"); Serial.println(isSystemAuto);
+    printDataToComputer(getLeftVelocity(), getRightVelocity(),
+                        getAX(), getAY(), getAZ(),
+                        isSystemAuto);
 }
