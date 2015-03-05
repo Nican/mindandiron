@@ -1,5 +1,9 @@
   <sdf version="1.4">
     <world name="default">
+
+      <physics type="ode">
+        <real_time_update_rate>3000.0</real_time_update_rate>
+      </physics>
   
       <include>
         <uri>model://sun</uri>
@@ -12,7 +16,7 @@
       <include>
         <uri>model://models</uri>
         <name>kratos</name>
-        <pose>2 0 0.359637 0 0 0</pose> <!-- -0.404146 -->
+        <pose>5.0 0 0.29 0 0 0</pose>
       </include>
 
        <model name='kratos_plataform'>

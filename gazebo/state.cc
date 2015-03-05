@@ -35,10 +35,17 @@ void ReturnToBase::Think()
 {
 	double progress = mRobot->mCurTime - mStateStartTime;
 
-	if(progress < 1.0)
+	if(progress < 8.0)
 	{
+		//std::cout << "Moving forward\n";
 		mRobot->mMotion.mLeftWheel->SetForce(50.0);
-		mRobot->mMotion.mRightWheel->SetForce(48.0);
+		mRobot->mMotion.mRightWheel->SetForce(47.0);
+		return;
+	}
+
+	if(progress < 1600.0)
+	{
+		//std::cout << "Solution: " << mRobot->mBaseStation->mSolution.transpose() << "\n";
 		return;
 	}
 
@@ -50,7 +57,7 @@ void ReturnToBase::Think()
 		{
 			return;
 		}
-		nextThink = progress + 1.5 ;
+		nextThink = progress + 1.5;
 
 
 

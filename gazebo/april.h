@@ -53,6 +53,7 @@ struct BaseStationDetector
 
 	double lastDetectionTime;
 	Eigen::Affine3d mBaseTransformation;
+	Eigen::Vector2d mSolution;
 
 	BaseStationDetector(Kratos* robot);
 

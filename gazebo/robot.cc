@@ -59,7 +59,7 @@ void Kratos::UpdateCameraRotation()
 
 	//Update the april tag camera
 	//For now {-1.4, 0} is about where the tags are
-	Eigen::Vector2d target = Eigen::Vector2d(-1.4, 0) - pos.head<2>();
+	Eigen::Vector2d target = Eigen::Vector2d(-1.0, 0) - pos.head<2>();
 	double angle2 = M_PI; 
 
 	//Avoid singularities

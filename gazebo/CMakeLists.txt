@@ -8,7 +8,7 @@ find_package(Qt4 REQUIRED)
 find_package (VTK REQUIRED)
 #find_package(Qt5Widgets)
 #find_package(Qt5OpenGL)
-find_package(PCL 1.8.0 EXACT REQUIRED)
+find_package(PCL 1.7.2 EXACT REQUIRED)
 find_package(OpenCV)
 #find_package(apriltags REQUIRED)
 #find_package(osg)
@@ -26,7 +26,11 @@ set  (VTK_LIBRARIES   vtkRendering vtkGraphics vtkHybrid QVTK)
 
 include_directories(${Boost_INCLUDE_DIRS})
 include_directories(${Eigen_INCLUDE_DIRS})
+include_directories(/usr/local/include/libfreenect2/tinythread/)
+#include_directories(include)
+
 link_directories(${Boost_LIBRARY_DIRS})
+#link_directories(lib)
 
 #include (FindPkgConfig)
 #if (PKG_CONFIG_FOUND)
@@ -51,6 +55,14 @@ target_link_libraries(kratos ${Boost_LIBRARIES} ${GAZEBO_LIBRARIES} kratos_base)
 #target_link_libraries(kratos_camera ${Boost_LIBRARIES} ${GAZEBO_LIBRARIES} DepthCameraPlugin)
 
 
+ADD_EXECUTABLE(Protonect
+  Protonect.cpp
+)
+  
+TARGET_LINK_LIBRARIES(Protonect
+  freenect2 ${OPENCL_LIBRARIES} kratos_base
+)
+
 
 
 # Find includes in corresponding build directories
@@ -65,6 +77,12 @@ ADD_DEFINITIONS(${QT_DEFINITIONS})
 ADD_EXECUTABLE(kratos_telemetry telemetry/telemetry.cpp telemetry/pointcloud.cpp)
 #osg osgQt osgWidget osgViewer osgUtil osgGA osgDB
 TARGET_LINK_LIBRARIES(kratos_telemetry ${QT_LIBRARIES}  kratos_base ${VTK_LIBRARIES}) #Qt5::Widgets Qt5::OpenGL
+
+
+
+ADD_EXECUTABLE(kratos_robot realrobot.cpp)
+TARGET_LINK_LIBRARIES(kratos_robot ${QT_LIBRARIES} freenect2 kratos_base)
+
 
 #ADD_EXECUTABLE(box2dtest box2dtest.cpp)
 #TARGET_LINK_LIBRARIES(box2dtest Box2D)
