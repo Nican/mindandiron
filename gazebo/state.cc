@@ -33,24 +33,21 @@ void ReturnToBase::Initialize()
 
 void ReturnToBase::Think()
 {
+	using namespace Eigen;
 	double progress = mRobot->mCurTime - mStateStartTime;
 
-	if(progress < 8.0)
+	if(progress < 10.0)
 	{
-		//std::cout << "Moving forward\n";
+		//Just getting off center somewhere
 		mRobot->mMotion.mLeftWheel->SetForce(50.0);
 		mRobot->mMotion.mRightWheel->SetForce(47.0);
 		return;
 	}
 
-	if(progress < 1600.0)
-	{
-		//std::cout << "Solution: " << mRobot->mBaseStation->mSolution.transpose() << "\n";
-		return;
-	}
-
+	//Get ourselves in front of the base station
 	if(mStage == ReturnToBaseStage::PositionAfar)
 	{
+		/*
 		static double nextThink = 0.0;
 
 		if(progress < nextThink)
@@ -58,78 +55,101 @@ void ReturnToBase::Think()
 			return;
 		}
 		nextThink = progress + 1.5;
-
-
-
-		static const Eigen::Vector3d goal(3.0, 0, 0);
-
-		auto baseStationTrans = mRobot->mBaseStation->mBaseTransformation;
-
-		auto goal2 = baseStationTrans.linear() * goal;
-		double angle = mRobot->mSensors.mTRS->GetOrientation();
-
-		Eigen::Vector2d diff2 = goal2.head<2>() - baseStationTrans.translation().head<2>();
-		double desiredAngle = std::atan2(diff2.y(), diff2.x());
-		double angleDiff = fmod(desiredAngle - angle, M_PI / 2.0);
-
-		if(diff2.norm() < 0.5)
-		{
-		//	return;
-		}
-
-		auto inverse = baseStationTrans.inverse();
-
-		auto q1 = baseStationTrans.linear() * Eigen::Vector3d(0,1,0);
-		auto q2 = inverse.linear() * Eigen::Vector3d(0,1,0);
-
-		//std::cout << "Robot: \n";
-		//std::cout << "\t R: \t" << mRobot->mSensors.mTRS->GetPosition().transpose()  << " ("<< mRobot->mSensors.mTRS->GetOrientation() <<")\n";
-		//std::cout << "\t T: \t" << baseStationTrans.translation().transpose() << " ("<< std::atan2(q1.y(), q1.x()) <<")\n";
-		//std::cout << "\t I: \t" << inverse.translation().transpose()  << " ("<< std::atan2(q2.y(), q2.x()) <<")\n";
-		//std::cout << "\t G: \t" << goal2.transpose() << "\n"; 
-
-		/*
-		double factor = 40.0;
-
-		if(angleDiff < 0.01)
-		{
-			mRobot->mMotion.mLeftWheel->SetForce(36);
-			mRobot->mMotion.mRightWheel->SetForce(40);
-		}
-		else if(angleDiff > 0.01)
-		{
-			mRobot->mMotion.mLeftWheel->SetForce(40);
-			mRobot->mMotion.mRightWheel->SetForce(36);
-		} 
-		else 
-		{
-			mRobot->mMotion.mLeftWheel->SetForce(40);
-			mRobot->mMotion.mRightWheel->SetForce(40);
-		}
 		*/
 
+		//Run straight to our desired location
+		static const Vector2d goal(2.5, 0);
 
+		Vector2d current = mRobot->mSensors.mTRS->GetPosition().head<2>();
+		Vector2d diff = goal - current;
 
-		//auto b2 = baseStationTrans 
+		if(diff.norm() < 0.1)
+		{
+			//Go to next stage
+			mStage = ReturnToBaseStage::Alignmenet;
+			return;
+		}
 
+		double targetAngle = std::atan2(diff.y(), diff.x());
+		double currentAngle = mRobot->mSensors.mTRS->GetOrientation();
 
-		//auto diff = baseStationTrans.inverse() *  goal - baseStationTrans.translation();
+		Complex targetAngle2 = rotationToCompex(targetAngle);
+		Complex currentAngle2 = rotationToCompex(currentAngle);
 
+		Complex diff2 = targetAngle2 * std::conj(currentAngle2);
+		double diffAngle = std::atan2(diff2.imag(), diff2.real()); //A value between pi and -pi
 
+		//std::cout << "Current: " << current.transpose() << "\t" << goal.transpose() << "\n";
+		//std::cout << "Diff: " << currentAngle << "\t" << targetAngle << "\t" << diffAngle << "\n";
 
-		//goal = baseStationTrans.translation() + Vector3d();
+		//If we are not alligned to go towards the goal
+		if(std::abs(diffAngle) > (5*M_PI/180))
+		{
+			if(diffAngle < 0)
+			{
+				mRobot->mMotion.mLeftWheel->SetForce(30.0);
+				mRobot->mMotion.mRightWheel->SetForce(-30.0);
+			}
+			else
+			{
+				mRobot->mMotion.mLeftWheel->SetForce(-30.0);
+				mRobot->mMotion.mRightWheel->SetForce(30.0);
+			}
 
-		//std::cout << "Transformation: " << diff.transpose() << "\n\t" << baseStationTrans.transpose() << "\n" ;
+			return;
+		}
 
+		mRobot->mMotion.mLeftWheel->SetForce(30.0);
+		mRobot->mMotion.mRightWheel->SetForce(30.0);
+
+		
 	}
 
-	/*
-	else 
+	if( mStage == ReturnToBaseStage::Alignmenet )
 	{
-		mRobot->mMotion.mLeftWheel->SetForce(0.0);
-		mRobot->mMotion.mRightWheel->SetForce(0.0);
+		Complex targetAngle2(1, 0); //Pointing outwards
+		Complex currentAngle2 = rotationToCompex(mRobot->mSensors.mTRS->GetOrientation());
+		Complex diff2 = targetAngle2 * std::conj(currentAngle2);
+		double diffAngle = std::atan2(diff2.imag(), diff2.real()); 
+
+		if(std::abs(diffAngle) > (5*M_PI/180))
+		{
+			if(diffAngle < 0)
+			{
+				mRobot->mMotion.mLeftWheel->SetForce(30.0);
+				mRobot->mMotion.mRightWheel->SetForce(-30.0);
+			}
+			else
+			{
+				mRobot->mMotion.mLeftWheel->SetForce(-30.0);
+				mRobot->mMotion.mRightWheel->SetForce(30.0);
+			}
+
+			return;
+		}
+		else 
+		{
+			mStage = ReturnToBaseStage::BackingUp;
+			return;
+		}
 	}
-	*/
+
+
+	if( mStage == ReturnToBaseStage::BackingUp )
+	{
+		static const Vector2d goal2(-0.5, 0);
+		Vector2d current = mRobot->mSensors.mTRS->GetPosition().head<2>();
+		Vector2d diff = goal2 - current;
+
+		if(std::abs(diff.x()) > 0.05)
+		{
+			mRobot->mMotion.mLeftWheel->SetForce(-20.0);
+			mRobot->mMotion.mRightWheel->SetForce(-20.0);
+		}
+
+		std::cout << "Diff " << diff.transpose() << "\n";
+
+	}
 
 }
 

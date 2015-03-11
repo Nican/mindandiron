@@ -75,7 +75,7 @@ public:
     const auto pose = mEntity->GetWorldPose();
     Eigen::Quaterniond quat(pose.rot.w, pose.rot.x, pose.rot.y, pose.rot.z);
 
-    auto p1 = quat * Eigen::Vector3d(0,1,0);
+    auto p1 = quat * Eigen::Vector3d(1,0,0);
 
     return std::atan2(p1.y(), p1.x());
   }
@@ -245,7 +245,7 @@ public:
       image.height = _height;
       image.hfov = m_depthCameraSensor->GetDepthCamera()->GetHFOV().Radian();
 
-      for(int i = 0; i < (_width * _height); i++)
+      for(std::size_t i = 0; i < (_width * _height); i++)
       {
         image.data[i] = _image[i];
       }
@@ -286,27 +286,7 @@ public:
     // Called by the world update start event
     public: void OnUpdate(const common::UpdateInfo &info)
     {      
-      m_kratos->Update(info.simTime.Double());
-
-      
-      if(counter++ % 100 == 0)
-      {
-        double rightVel = m_rightWheelJoint->GetVelocity(0xDEADBEEF); //Ugh, the parameter is useless. 
-        double leftVel = m_leftWheelJoint->GetVelocity(0xDEADBEEF);
-
-        //std::cout << "Velocity: " << leftVel << "\t" << rightVel << std::endl;
-        /*
-        std::vector<double> pieces;
-        m_sensor->GetRanges(pieces);
-
-        for(double dis : pieces)
-        {
-          std::cout << dis << ", ";
-        }
-        std::cout << "\n";
-*/
-      }
-      
+      m_kratos->Update(info.simTime.Double());      
     }
 
     // Pointer to the model

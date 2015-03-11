@@ -68,7 +68,7 @@ void Kratos::UpdateCameraRotation()
 
 	//std::cout << "A: " << angle2 << "\t" << rotation << "\n";
 
-	mMotion.mAprilServo->SetPosition(angle2 - rotation + M_PI/2);
+	//mMotion.mAprilServo->SetPosition(angle2 - rotation + M_PI/2);
 }
 
 void Kratos::ReceiveDepth(const DepthImgData &depthData)
@@ -95,5 +95,5 @@ void Kratos::ReceiveAprilImage(const ImgData &imageData)
 		copiedData.data(), 
 		imageData.data.size() / imageData.height);
 
-	mBaseStation->Update(mat.clone());
+	//mBaseStation->Update(mat.clone());
 }

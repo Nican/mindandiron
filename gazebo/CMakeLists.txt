@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8.11 FATAL_ERROR)
 
-ADD_DEFINITIONS(-std=c++11)
+ADD_DEFINITIONS(-std=c++11 -Wall)
 
 find_package(Boost REQUIRED COMPONENTS system)
 find_package(Eigen3 REQUIRED)
@@ -53,16 +53,6 @@ target_link_libraries(kratos ${Boost_LIBRARIES} ${GAZEBO_LIBRARIES} kratos_base)
 
 #add_library(kratos_camera SHARED camera.cpp)
 #target_link_libraries(kratos_camera ${Boost_LIBRARIES} ${GAZEBO_LIBRARIES} DepthCameraPlugin)
-
-
-ADD_EXECUTABLE(Protonect
-  Protonect.cpp
-)
-  
-TARGET_LINK_LIBRARIES(Protonect
-  freenect2 ${OPENCL_LIBRARIES} kratos_base
-)
-
 
 
 # Find includes in corresponding build directories

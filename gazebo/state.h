@@ -21,7 +21,10 @@ public:
 	virtual void Initialize() = 0;
 	virtual void Think() = 0;
 
-	virtual std::shared_ptr<msgpack::sbuffer> GetTelemetry(){};
+	virtual std::shared_ptr<msgpack::sbuffer> GetTelemetry()
+	{
+		return nullptr;
+	};
 };
 
 
@@ -64,7 +67,7 @@ public:
 class MoveToWaypointTelemetry
 {
 public:
-	int mCurrentPoint;
+	std::size_t mCurrentPoint;
 	std::vector<Eigen::Vector2d> mWaypoints;
 
 	MSGPACK_DEFINE(mCurrentPoint, mWaypoints);
@@ -75,7 +78,7 @@ class MoveToWaypoint : public Base
 protected:
 	std::shared_ptr<TrajectoryPlanner> mPlanner;
 	std::vector<TrajectoryTreeNode*> mPath;
-	int mCurrentPoint;
+	std::size_t mCurrentPoint;
 
 	double lastReplan;
 
