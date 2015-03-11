@@ -7,6 +7,7 @@
 #define LEFT_CMD_IN      11  // Pin 2 on the receiver
 #define RIGHT_CMD_IN     12  // Pin 3 on the receiver
 #define AUTO_SWITCH_IN   10  // Pin 5 on the receiver
+#define AUTO_SWITCH_OUT  
 #define LEFT_OUT_PIN     3   // PWM control on the left wheel
 #define RIGHT_OUT_PIN    2   // PWM control on the right wheel
 #define MAX_SERVO_SPEED 115
