@@ -175,10 +175,11 @@ void MainWindow::update()
             Robot::DepthImgData imgData;
             result.get().convert(&imgData);
 
+            auto size = imgData.data.size();
             std::vector<unsigned char> blobData(imgData.width * imgData.height * 3);
             double maxValue = *std::max_element( imgData.data.begin(), imgData.data.end() );
 
-            for(int i = 0; i < imgData.width * imgData.height; i++)
+            for(std::size_t i = 0; i < size; i++)
             {
                 float dist = imgData.data[i];
 
@@ -188,6 +189,8 @@ void MainWindow::update()
                 blobData[i*3] = blobData[i*3+1] = blobData[i*3+2] = (unsigned char)(dist / maxValue * 255);
             }
 
+            //std::cout << "The max val is: " << maxValue << "\n";
+
             QImage qImage(blobData.data(), imgData.width, imgData.height, QImage::Format_RGB888 );
             mDepthCamera->setPixmap(QPixmap::fromImage(qImage));
 
@@ -196,7 +199,7 @@ void MainWindow::update()
             UpdatePointCloud(imgData, *imgCloud);
             
             growingRegion->ReceivePointCloud(imgCloud);
-            planeSegments->ReceivePointCloud(imgCloud);
+            //planeSegments->ReceivePointCloud(imgCloud);
 
         }
         else if (id == 4)

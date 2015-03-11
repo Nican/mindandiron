@@ -86,7 +86,7 @@ void GrowingRegionPointCloudWidget::ReceivePointCloud(Robot::PointCloud::Ptr &cl
             return;
         }
 
-        std::cout << "Updating the cloud view ("<< segmenter.lastProccessed->points.size() <<")!\n";
+        //std::cout << "Updating the cloud view ("<< segmenter.lastProccessed->points.size() <<")!\n";
 
         viewer->updatePointCloud (segmenter.lastProccessed, "cloud");
         viewer->resetCamera ();
@@ -202,8 +202,8 @@ void PlaneSegmentCloudWidget::ReceivePointCloud(Robot::PointCloud::Ptr &cloud)
             //        viewer.addPolygon<PointT> (approx_contour_const, 0.5 * red[i], 0.5 * grn[i], 0.5 * blu[i], name);
             for (unsigned idx = 0; idx < approx_contour->points.size (); ++idx)
             {
-                sprintf (name, "approx_plane_%02d_%03d", int (i), int(idx));
-                viewer->addLine (approx_contour->points [idx], approx_contour->points [(idx+1)%approx_contour->points.size ()], 0.5 * red[i], 0.5 * grn[i], 0.5 * blu[i], name);
+                //sprintf (name, "approx_plane_%02d_%03d", int (i), int(idx));
+                //viewer->addLine (approx_contour->points [idx], approx_contour->points [(idx+1)%approx_contour->points.size ()], 0.5 * red[i], 0.5 * grn[i], 0.5 * blu[i], name);
             }
         }
 

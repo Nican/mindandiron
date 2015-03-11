@@ -4,7 +4,7 @@
 
 void UpdatePointCloud(const Robot::DepthImgData &imgData, pcl::PointCloud<pcl::PointXYZRGB> &cloud)
 {
-	cloud.points.resize(0);
+	//cloud.points.resize(0);
 	cloud.is_dense = true;
 	cloud.width = imgData.width;
 	cloud.height = imgData.height;
@@ -15,24 +15,26 @@ void UpdatePointCloud(const Robot::DepthImgData &imgData, pcl::PointCloud<pcl::P
 	double hfov = imgData.hfov;
 	double fl = ((double)imgData.width) / (2.0 *tan(hfov/2.0));
 
+	//double fl2 = ((double)imgData.height) / (2.0 *tan(60.0/2.0));
+
 	// convert depth to point cloud
 	cloud.points.resize(imgData.data.size());
 	for (uint32_t j=0; j<imgData.height; j++)
 	{
 		double pAngle;
 
-		if (imgData.height>1) 
+		//if (imgData.height>1) 
 			pAngle = ((double)j - 0.5*(double)(imgData.height-1)) / fl; //atan2( (double)j - 0.5*(double)(imgData.height-1), fl);
-		else            
-			pAngle = 0.0;
+		//else            
+		//	pAngle = 0.0;
 
 		for (uint32_t i=0; i<imgData.width; i++)
 		{
 			double yAngle;
-			if (imgData.width>1) 
+			//if (imgData.width>1) 
 				yAngle = ((double)i - 0.5*(double)(imgData.width-1)) / fl; //atan2( (double)i - 0.5*(double)(imgData.width-1), fl);
-			else            
-				yAngle = 0.0;
+			//else            
+			//	yAngle = 0.0;
 
 			double depth = imgData.data[index++]; // + 0.0*this->myParent->GetNearClip();
 
@@ -74,9 +76,10 @@ PointCloud::Ptr RegionGrowingSegmenter::AsyncronousUpdate(PointCloud::Ptr imgClo
 
 	pcl::VoxelGrid<PointT> sor;
 	sor.setInputCloud (imgCloud);
-	sor.setLeafSize (0.01f, 0.01f, 0.01f);
+	sor.setLeafSize (0.02f, 0.02f, 0.02f);
 	sor.filter (*imgCloud2);
 
+	std::cout << "Running point cloud with: " << numberOfNeighbours << "/" << smoothnessThreshold << "/" << curvatureThreshold << "\n";
 
 	pcl::search::Search<pcl::PointXYZRGB>::Ptr tree = boost::shared_ptr<pcl::search::Search<PointT>>(new pcl::search::KdTree<pcl::PointXYZRGB>);
 
@@ -150,13 +153,13 @@ RegionsType MultiPlaneSegmenter::AsyncronousUpdate(PointCloud::Ptr imgCloud)
 	//char name[1024];
 
 	pcl::PointCloud<pcl::Normal>::Ptr normal_cloud (new pcl::PointCloud<pcl::Normal>);
-	double normal_start = pcl::getTime ();
+	//double normal_start = pcl::getTime ();
 	ne.setInputCloud (imgCloud);
 	ne.compute (*normal_cloud);
-	double normal_end = pcl::getTime ();
-	std::cout << "Normal Estimation took " << double (normal_end - normal_start) << std::endl;
+	//double normal_end = pcl::getTime ();
+	//std::cout << "Normal Estimation took " << double (normal_end - normal_start) << std::endl;
 
-	double plane_extract_start = pcl::getTime ();
+	//double plane_extract_start = pcl::getTime ();
 	mps.setInputNormals (normal_cloud);
 	mps.setInputCloud (imgCloud);
 
