@@ -15,6 +15,7 @@ find_package(OpenCV)
 
 include_directories (${PCL_INCLUDE_DIRS})
 link_directories    (${PCL_LIBRARY_DIRS})
+link_directories    (lib)
 add_definitions     (${PCL_DEFINITIONS})
 
 message(STATUS "PCL_DEFINITIONS=${PCL_DEFINITIONS}")

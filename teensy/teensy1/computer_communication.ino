@@ -77,8 +77,10 @@ int boundSorterSignal(int cmd) {
 void printDataToComputer(int leftVelocity, int rightVelocity,
                          int aX, int aY, int aZ,
                          int isAuto) {
+    // LVEL and RVEL are in ticks/sec
     Serial.print("LVEL\t"); Serial.print(leftVelocity);
     Serial.print("\tRVEL\t"); Serial.print(rightVelocity);
+    // 
     Serial.print("\tAX\t"); Serial.print(aX);
     Serial.print("\tAY\t"); Serial.print(aY);
     Serial.print("\tAZ\t"); Serial.print(aZ);
