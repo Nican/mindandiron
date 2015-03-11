@@ -7,7 +7,7 @@
 #include <vector>
 #include <map>
 
-#include "AprilTags/TagDetection.h"
+#include "TagDetection.h"
 using namespace std;
 
 namespace AprilTags {
