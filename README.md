@@ -44,5 +44,5 @@ $ make
 $ sudo make install
 
 
-sudo apt-get install libzmqpp-dev libv4l-dev
+sudo apt-get install libzmqpp-dev libv4l-dev build-essential
 http://people.csail.mit.edu/kaess/apriltags/

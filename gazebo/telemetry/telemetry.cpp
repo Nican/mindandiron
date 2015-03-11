@@ -1,5 +1,5 @@
 #include "telemetry.h"
-#include "trajectory.h"
+#include "../trajectory.h"
 
 #include <iostream>
 

@@ -3,7 +3,7 @@
 #include <QObject>
 #include <QTimer>
 #include <iostream>
-#include "robot.h"
+#include "../robot.h"
 #include <mutex>
 
 #include <libfreenect2/libfreenect2.hpp>

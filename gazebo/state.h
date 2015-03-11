@@ -1,5 +1,5 @@
 #pragma once
-#include <trajectory.h>
+#include "trajectory.h"
 
 namespace Robot {
 

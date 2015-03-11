@@ -1,39 +1,44 @@
 <?xml version='1.0'?>
 <sdf version='1.4'>
-  <model name="Kratos">
+  <model name="Kratos2">
    
-   <static>true</static>
+   <static>false</static>
+
+
+  <!-----------------------------------------
+          BODY
+  ------------------------------------------->
    <link name='chassis'>
-    <pose>0 -0.33 0 0 0 0</pose>
+    <pose>0 0 0 0 0 0</pose>
 
     <inertial>
-      <pose>0 0.5 0.1 0 -0 0</pose>
+      <pose>0.5 0 0.1 0 0 0</pose>
       <mass>10</mass>
     </inertial>
 
     <collision name='collision'>
       <geometry>
-        <mesh>
-          <scale>0.001 0.001 0.001</scale> <!-- the DAE is in millimeters. Gazebo is in meters. -->
-          <uri>model://models/Prometheus.dae</uri>
+        <box>
+          <size>10 10 10</size>
         </mesh>
       </geometry>
     </collision>
 
     <visual name='visual'>
       <geometry>
+        <pose>0.93 0 0 0 0 0</pose>
         <mesh>
-          <scale>0.001 0.001 0.001</scale>
-          <uri>model://models/Prometheus.dae</uri>
+          <scale>1.14 1.21 0.3</scale>
+          <uri>model://models/kratos2.dae</uri>
         </mesh>
       </geometry>
     </visual>
 
     <collision name='caster_collision'>
-      <pose>0 1.05 -0.057 0 0 0</pose>
+      <pose>0.8 0 -0.1 0 0 0</pose>
       <geometry>
         <sphere>
-          <radius>.05</radius>
+          <radius>.057</radius>
         </sphere>
       </geometry>
 
@@ -50,18 +55,27 @@
     </collision>
 
     <visual name='caster_visual'>
-      <pose>0 1.05 -0.057 0 0 0</pose>
+      <pose>0.8 0 -0.1 0 0 0</pose>
       <geometry>
         <sphere>
-          <radius>.05</radius>
+          <radius>.057</radius>
         </sphere>
       </geometry>
     </visual>
 
+   <visual name='depth_visual'>
+      <pose>0.7 0 0.8 0 0.52359878 0</pose>
+      <geometry>
+        <box>
+          <size>0.2 0.1 0.1</size>
+        </box>
+      </geometry>
+    </visual>
+
     <sensor type="depth" name="xtion_sensor">
-      <pose>0 1 0.1 0 0 1.57</pose>
+      <pose>0.7 0 0.8 0 0.52359878 0</pose>
       <always_on>true</always_on>
-      <update_rate>20.0</update_rate>
+      <update_rate>1.0</update_rate>
       <topic>tteesstt</topic>
       <camera>
         <horizontal_fov>1.047</horizontal_fov>
@@ -72,18 +86,78 @@
         </image>
         <clip>
           <near>0.05</near>
-          <far>50</far>
+          <far>5</far>
         </clip>
       </camera>
       <visualize>true</visualize>
-
+      <!-- <plugin name='libkratos_camera' filename='libkratos_camera.so'/>-->
     </sensor>
+
+
+
+
   </link>
 
 
+  <!-----------------------------------------
+          April Tag Camera
+  ------------------------------------------->
+
+  <link name="april_tag_link">
+    <pose>0.6 0.0 0.6 0 0 3.14</pose>
+
+    <visual name='depth_visual'>
+      <pose>0 0 0 0 0 0</pose>
+      <geometry>
+        <box>
+          <size>0.2 0.1 0.1</size>
+        </box>
+      </geometry>
+    </visual>
+
+
+    <sensor type="camera" name="camera1">
+      <pose>0 0 0 0 0 0</pose>
+      <always_on>true</always_on>
+      <update_rate>1.0</update_rate>
+      <camera name="head">
+        <horizontal_fov>1.2291</horizontal_fov>
+        <image>
+          <width>1920</width>
+          <height>1080</height>
+          <format>R8G8B8</format>
+        </image>
+        <clip>
+          <near>0.02</near>
+          <far>300</far>
+        </clip>
+      </camera>
+    </sensor>
+
+
+  </link> 
+
+  <joint type="revolute" name="april_tag_hinge">
+    <pose>0 0 0 0 0 0</pose>
+    <child>april_tag_link</child>
+    <parent>chassis</parent>
+    <axis>
+      <xyz>0 0 0</xyz>
+      <dynamics>
+        <friction>20.0</friction>
+        <damping>20.0</damping>
+      </dynamics>
+    </axis>
+  </joint>
+
+
+
+  <!-----------------------------------------
+          WHEELS
+  ------------------------------------------->
 
   <link name="left_wheel">
-    <pose>0.31 0.0 0.05 0 1.5707 0</pose>
+    <pose>0.0 0.31 0.0 1.5707 1.5707 0</pose>
     <collision name="collision">
       <geometry>
         <cylinder>
@@ -115,7 +189,7 @@
   </link>
 
   <link name="right_wheel">
-    <pose>-0.31 0.0 0.05 0 1.5707 0</pose>
+    <pose>0.0 -0.31 0.0 1.5707 1.5707 0</pose>
     <collision name="collision">
       <geometry>
         <cylinder>
@@ -147,11 +221,11 @@
   </link>
 
   <joint type="revolute" name="left_wheel_hinge">
-    <pose>0 0 -0.03 0 0 0</pose>
+    <pose>0 0 0 0 0 0</pose>
     <child>left_wheel</child>
     <parent>chassis</parent>
     <axis>
-      <xyz>1 0 0</xyz>
+      <xyz>0 1 0</xyz>
       <dynamics>
         <friction>20.0</friction>
         <damping>20.0</damping>
@@ -160,17 +234,19 @@
   </joint>
 
   <joint type="revolute" name="right_wheel_hinge">
-    <pose>0 0 0.03 0 0 0</pose>
+    <pose>0 0 0 0 0 0</pose>
     <child>right_wheel</child>
     <parent>chassis</parent>
     <axis>
-      <xyz>1 0 0</xyz>
+      <xyz>0 1 0</xyz>
       <dynamics>
         <friction>20.0</friction>
         <damping>20.0</damping>
       </dynamics>
     </axis>
   </joint>
+
+
 
   <plugin name="kratos" filename="libkratos.so"/>
 </model>
