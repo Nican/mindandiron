@@ -3,9 +3,9 @@
 #include "../april.h"
 
 #include "opencv2/opencv.hpp"
-#include "AprilTags/TagDetector.h"
-#include "AprilTags/Tag16h5.h"
-#include "AprilTags/Tag36h11.h"
+#include "../AprilTags/TagDetector.h"
+#include "../AprilTags/Tag16h5.h"
+#include "../AprilTags/Tag36h11.h"
 
 #ifndef PI
 const double PI = 3.14159265358979323846;

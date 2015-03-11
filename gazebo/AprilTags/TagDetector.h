@@ -5,9 +5,9 @@
 
 #include "opencv2/opencv.hpp"
 
-#include "AprilTags/TagDetection.h"
-#include "AprilTags/TagFamily.h"
-#include "AprilTags/FloatImage.h"
+#include "TagDetection.h"
+#include "TagFamily.h"
+#include "FloatImage.h"
 
 namespace AprilTags {
 

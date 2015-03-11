@@ -3,7 +3,7 @@
 
 #include <vector>
 
-#include "AprilTags/FloatImage.h"
+#include "FloatImage.h"
 
 namespace AprilTags {
 
