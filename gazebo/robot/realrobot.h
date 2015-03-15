@@ -36,6 +36,9 @@ public:
 signals:
     void receiveColorImage(Robot::ImgData mat);
     void receiveDepthImage(Robot::DepthImgData mat);
+    
+private:
+    Q_DISABLE_COPY(KratosKinect)
 
 };
 

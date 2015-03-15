@@ -134,7 +134,7 @@ bool KratosKinect::onNewFrame(libfreenect2::Frame::Type type, libfreenect2::Fram
 
 };
 
-RealRobot::RealRobot()
+RealRobot::RealRobot() : mKinect(nullptr)
 {
 
 
@@ -162,15 +162,16 @@ RealRobot::RealRobot()
     if(dev == nullptr)
 	{
 		std::cout << "no device connected or failure opening the default one!" << std::endl;
-	    return;
 	}
-
-	mKinect = new KratosKinect(dev, this);
-	mKinect->requestDepthFrame();
-	
-	QObject::connect(timer, SIGNAL(timeout()), this, SLOT(showGPS()));
-	QObject::connect(mKinect, SIGNAL(receiveColorImage(Robot::ImgData)), this, SLOT(receiveColorImage2(Robot::ImgData)));
-	QObject::connect(mKinect, SIGNAL(receiveDepthImage(Robot::DepthImgData)), this, SLOT(receiveDepthImage2(Robot::DepthImgData)));
+	else
+	{
+		mKinect = new KratosKinect(dev, this);
+		mKinect->requestDepthFrame();
+		
+		QObject::connect(timer, SIGNAL(timeout()), this, SLOT(showGPS()));
+		QObject::connect(mKinect, SIGNAL(receiveColorImage(Robot::ImgData)), this, SLOT(receiveColorImage2(Robot::ImgData)));
+		QObject::connect(mKinect, SIGNAL(receiveDepthImage(Robot::DepthImgData)), this, SLOT(receiveDepthImage2(Robot::DepthImgData)));
+	}
 
 }
 
@@ -185,7 +186,9 @@ void RealRobot::receiveDepthImage2(Robot::DepthImgData image)
 {
 	std::cout << "Sending frame out!\n";
 	//std::cout << "Received depth image2\t" << QThread::currentThreadId() << "\n";	
-	m_kratos->ReceiveDepth(image);
+
+	if(m_kratos != nullptr)
+		m_kratos->ReceiveDepth(image);
 }
 
 
