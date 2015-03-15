@@ -4,6 +4,7 @@
 #include <QTimer>
 #include <iostream>
 #include "../robot.h"
+#include "teensey.h"
 #include <mutex>
 
 #include <libfreenect2/libfreenect2.hpp>
@@ -45,6 +46,7 @@ class RealRobot : public QObject
 
     libfreenect2::Freenect2 freenect2;
     KratosKinect* mKinect;
+    Robot::Teensey* mTeensey;
   	//libfreenect2::Freenect2Device *dev;
 
     std::shared_ptr<Robot::Kratos> m_kratos;
