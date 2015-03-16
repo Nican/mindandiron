@@ -31,6 +31,7 @@ public:
 
   virtual double GetRotationVelocity() const override
   {
+    //std::cout << "Angle: " << mJoint->GetAngle(1).Radian() << "\n";
     return mJoint->GetVelocity(0xDEADBEEF);
   }
 
@@ -64,7 +65,13 @@ public:
     }
     else
     {
-      std::cerr << "Did not find the base station 'kratos_plataform' when grabing the position from TRS\n";
+      static bool showedWarning = false;
+
+      if(!showedWarning)
+      {
+        showedWarning = true;
+        std::cerr << "Did not find the base station 'kratos_plataform' when grabing the position from TRS\n";
+      }
     }
 
     return Eigen::Vector3d(pos.x, pos.y, pos.z);
@@ -205,6 +212,7 @@ public:
       sensors.mTRS = std::make_shared<TRSGazebo>(this->model);
 
       m_kratos.reset(new Robot::Kratos(motion, sensors));
+      m_kratos->mOdometry.mPosition = sensors.mTRS->GetPosition().head<2>();
     }
 
     void OnNewImageAprilTagFrame(const unsigned char * image, unsigned int width, unsigned int height, unsigned int depth, const std::string &)
@@ -281,12 +289,32 @@ public:
         */
     }
 
-    int counter;
+    double nextTickerUpdate;
+    double lastLeftWheelAngle;
+    double lastRightWheelAngle;
 
     // Called by the world update start event
     public: void OnUpdate(const common::UpdateInfo &info)
     {      
-      m_kratos->Update(info.simTime.Double());      
+      double simTime = info.simTime.Double();
+      m_kratos->Update(simTime);
+
+      if(simTime > nextTickerUpdate)
+      {
+        nextTickerUpdate = simTime + 0.1;
+
+        double currentLeft = m_leftWheelJoint->GetAngle(1).Radian();
+        double currentRight = m_rightWheelJoint->GetAngle(1).Radian();
+
+        //One full rotation should be 23330 ticks
+        int leftTicks = static_cast<int>((currentLeft - lastLeftWheelAngle) / (M_PI*2) * 23330.0);
+        int rightTicks = static_cast<int>((currentRight - lastRightWheelAngle) / (M_PI*2) * 23330.0);
+
+        m_kratos->ReceiveWheelTicks(leftTicks, rightTicks);
+
+        lastLeftWheelAngle = currentLeft;
+        lastRightWheelAngle = currentRight;
+      }
     }
 
     // Pointer to the model

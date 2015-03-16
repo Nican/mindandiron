@@ -147,7 +147,7 @@ void ReturnToBase::Think()
 			mRobot->mMotion.mRightWheel->SetForce(-20.0);
 		}
 
-		std::cout << "Diff " << diff.transpose() << "\n";
+		//std::cout << "Diff " << diff.transpose() << "\n";
 
 	}
 

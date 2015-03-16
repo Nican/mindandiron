@@ -5,7 +5,7 @@
 #include <zmq.hpp>
 #include "msgpack.h"
 #include "state.h"
-
+#include "odometry.h"
 #include "april.h"
 
 namespace Robot
@@ -125,6 +125,8 @@ public:
 
 	std::shared_ptr<BaseStationDetector> mBaseStation;
 
+	Odometry mOdometry;
+
 	double mCurTime;
 
 	Kratos(const RobotMotion& motion, const RobotSensors& sensors);
@@ -136,6 +138,8 @@ public:
 	void ReceiveAprilImage(const ImgData &imageData);
 
 	void UpdateCameraRotation();
+
+	void ReceiveWheelTicks(int leftTicks, int rightTicks);
 
 
 	template<typename T> 
