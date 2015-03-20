@@ -19,7 +19,7 @@ void readComputerCommands(int *camServoSetpoint) {
             tabCounter++;
         }
     }
-    if (tabCounter == 8) {
+    if (tabCounter == 2) {
         *camServoSetpoint = boundCamServoCmd(camServoCmd);
     }
 }

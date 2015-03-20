@@ -80,7 +80,6 @@ void printDataToComputer(int leftPosition, int rightPosition,
     // LVEL and RVEL are in ticks/sec
     Serial.print("LPOS\t"); Serial.print(leftPosition);
     Serial.print("\tRPOS\t"); Serial.print(rightPosition);
-    // 
     Serial.print("\tAX\t"); Serial.print(aX);
     Serial.print("\tAY\t"); Serial.print(aY);
     Serial.print("\tAZ\t"); Serial.print(aZ);

@@ -40,7 +40,7 @@ void loop(){
     if (getAuto()) {
         Herkulex.moveOneAngle(camServoID, camServoSetpoint, 1000, LED_BLUE);
     } else {
-        Herkulex.moveOneAngle(camServoID, 0, 1000, LED_BLUE);
+        Herkulex.moveOneAngle(camServoID, 0, 1000, LED_GREEN);
     }
 
     printDataToComputer(Herkulex.getAngle(camServoID), getPaused());
