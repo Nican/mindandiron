@@ -14,6 +14,7 @@ int getPaused() {
 }
 
 
+// TODO: (Eric) Make getAuto a combination of pause and report from Arduino
 int getAuto() {
     return digitalRead(PAUSE_IN_PIN);
 }
