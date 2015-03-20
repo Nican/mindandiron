@@ -36,3 +36,11 @@ double getLeftVelocity() {
 double getRightVelocity() {
     return rightVelocity;
 }
+
+int getLeftPosition() {
+    return wheelLeft.read();
+}
+
+int getRightPosition() {
+    return wheelRight.read();
+}

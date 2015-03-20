@@ -96,7 +96,7 @@ void loop() {
         lastRightCmd = passThroughRC(servoRight, RIGHT_CMD_IN, lastRightCmd);
     }
 
-    printDataToComputer(getLeftVelocity(), getRightVelocity(),
+    printDataToComputer(getLeftPosition(), getRightPosition(),
                         getAX(), getAY(), getAZ(),
                         isSystemAuto);
 }
