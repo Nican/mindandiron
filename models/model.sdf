@@ -157,7 +157,7 @@
   ------------------------------------------->
 
   <link name="left_wheel">
-    <pose>0.0 0.35 0.0 1.5707 1.5707 0</pose>
+    <pose>0.0 0.345 0.0 1.5707 1.5707 0</pose>
     <collision name="collision">
       <geometry>
         <cylinder>
@@ -189,11 +189,11 @@
   </link>
 
   <link name="right_wheel">
-    <pose>0.0 -0.35 0.0 1.5707 1.5707 0</pose>
+    <pose>0.0 -0.345 0.0 1.5707 1.5707 0</pose>
     <collision name="collision">
       <geometry>
         <cylinder>
-          <radius>.157</radius>
+          <radius>.155</radius>
           <length>.065</length>
         </cylinder>
       </geometry>
@@ -213,7 +213,7 @@
     <visual name="visual">
       <geometry>
         <cylinder>
-          <radius>.157</radius>
+          <radius>.155</radius>
           <length>.065</length>
         </cylinder>
       </geometry>

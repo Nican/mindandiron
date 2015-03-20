@@ -10,8 +10,13 @@ using namespace Robot;
 
 
 
-Kratos::Kratos(const RobotMotion& motion, const RobotSensors& sensors) 
-	: mMotion(motion), mSensors(sensors), mStartSimTime(0.0), mZmqContext(1), mZmqSocket(mZmqContext, ZMQ_PUB)
+Kratos::Kratos(const RobotMotion& motion, const RobotSensors& sensors) : 	
+	mMotion(motion), 
+	mSensors(sensors), 
+	mStartSimTime(0.0), 
+	mZmqContext(1), 
+	mZmqSocket(mZmqContext, ZMQ_PUB),
+	mOdometry(0.69)
 {
 	mZmqSocket.bind ("tcp://*:5555");
 
@@ -47,9 +52,6 @@ void Kratos::Update(double simTime)
 	mState->Think();
 
 	mLastSimTime = simTime;
-
-
-
 }
 
 void Kratos::UpdateCameraRotation()
@@ -69,6 +71,23 @@ void Kratos::UpdateCameraRotation()
 	//std::cout << "A: " << angle2 << "\t" << rotation << "\n";
 
 	//mMotion.mAprilServo->SetPosition(angle2 - rotation + M_PI/2);
+}
+
+void Kratos::ReceiveWheelTicks(int leftTicks, int rightTicks)
+{
+	double leftRevolutions = static_cast<double>(leftTicks) / 23330.0;
+	double rightRevolutions = static_cast<double>(rightTicks) / 23330.0;
+
+	double leftDistance = leftRevolutions * 0.31 * M_PI;
+	double rightDistance = rightRevolutions * 0.31 * M_PI;
+
+	mOdometry.Update(leftDistance, rightDistance);
+
+	Eigen::Vector2d pos = mSensors.mTRS->GetPosition().head<2>();
+	Eigen::Vector2d diff = mOdometry.mPosition - pos;
+
+	std::cout << "Measured Position:\t" << mOdometry.mPosition.transpose() << "\n";
+	std::cout << "Error:\t" << diff.transpose() << "\n";
 }
 
 void Kratos::ReceiveDepth(const DepthImgData &depthData)

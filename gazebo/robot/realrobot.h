@@ -4,6 +4,7 @@
 #include <QTimer>
 #include <iostream>
 #include "../robot.h"
+#include "teensey.h"
 #include <mutex>
 
 #include <libfreenect2/libfreenect2.hpp>
@@ -35,6 +36,9 @@ public:
 signals:
     void receiveColorImage(Robot::ImgData mat);
     void receiveDepthImage(Robot::DepthImgData mat);
+    
+private:
+    Q_DISABLE_COPY(KratosKinect)
 
 };
 
@@ -45,6 +49,7 @@ class RealRobot : public QObject
 
     libfreenect2::Freenect2 freenect2;
     KratosKinect* mKinect;
+    Robot::Teensey* mTeensey;
   	//libfreenect2::Freenect2Device *dev;
 
     std::shared_ptr<Robot::Kratos> m_kratos;
