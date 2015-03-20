@@ -10,13 +10,14 @@ void setupRC() {
 
 
 int getPaused() {
-    return !digitalRead(PAUSE_IN_PIN);
+    return !digitalRead(PAUSE_IN_PIN);  // PAUSE _IN_PIN high when running, low when paused
 }
 
 
-// TODO: (Eric) Make getAuto a combination of pause and report from Arduino
 int getAuto() {
-    return digitalRead(PAUSE_IN_PIN);
+    int paused = getPaused();  // PAUSE _IN_PIN high when running, low when paused
+    int auto_on = digitalRead(AUTO_IN_PIN);
+    return auto_on && !paused;
 }
 
 
