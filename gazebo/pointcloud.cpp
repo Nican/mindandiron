@@ -28,9 +28,9 @@ void UpdatePointCloud(const Robot::DepthImgData &imgData, pcl::PointCloud<pcl::P
 		//else            
 		//	pAngle = 0.0;
 
-		for (uint32_t i=0; i<imgData.width; i++)
-		{
-			double yAngle;
+			for (uint32_t i=0; i<imgData.width; i++)
+			{
+				double yAngle;
 			//if (imgData.width>1) 
 				yAngle = ((double)i - 0.5*(double)(imgData.width-1)) / fl; //atan2( (double)i - 0.5*(double)(imgData.width-1), fl);
 			//else            
@@ -68,10 +68,9 @@ void UpdatePointCloud(const Robot::DepthImgData &imgData, pcl::PointCloud<pcl::P
 
 namespace Robot
 {
-
-
 PointCloud::Ptr RegionGrowingSegmenter::AsyncronousUpdate(PointCloud::Ptr imgCloud)
 {
+	using namespace Eigen;
 	PointCloud::Ptr imgCloud2(new PointCloud());
 
 	pcl::VoxelGrid<PointT> sor;
@@ -79,7 +78,16 @@ PointCloud::Ptr RegionGrowingSegmenter::AsyncronousUpdate(PointCloud::Ptr imgClo
 	sor.setLeafSize (0.02f, 0.02f, 0.02f);
 	sor.filter (*imgCloud2);
 
-	std::cout << "Running point cloud with: " << numberOfNeighbours << "/" << smoothnessThreshold << "/" << curvatureThreshold << "\n";
+
+	//Rotate back the camera angle
+	const Eigen::Affine3f transform(AngleAxisf(0.52359878, Vector3f::UnitX()));
+
+	for(auto &point : imgCloud2->points)
+	{
+		point.getVector3fMap() = transform * point.getVector3fMap();
+	}
+
+//std::cout << "Running point cloud with: " << numberOfNeighbours << "/" << smoothnessThreshold << "/" << curvatureThreshold << "\n";
 
 	pcl::search::Search<pcl::PointXYZRGB>::Ptr tree = boost::shared_ptr<pcl::search::Search<PointT>>(new pcl::search::KdTree<pcl::PointXYZRGB>);
 
@@ -98,36 +106,126 @@ PointCloud::Ptr RegionGrowingSegmenter::AsyncronousUpdate(PointCloud::Ptr imgClo
 	reg.setSearchMethod (tree);
 	reg.setNumberOfNeighbours (numberOfNeighbours);
 	reg.setInputCloud (imgCloud2);
-	//reg.setIndices (indices);
 	reg.setInputNormals (normals);
 	reg.setSmoothnessThreshold (smoothnessThreshold / 180.0 * M_PI);
 	reg.setCurvatureThreshold (curvatureThreshold);
 
-	//std::chrono::time_point<std::chrono::system_clock> start, end;
-	//start = std::chrono::system_clock::now();
+//std::chrono::time_point<std::chrono::system_clock> start, end;
+//start = std::chrono::system_clock::now();
 
 	std::vector <pcl::PointIndices> clusters;
 	reg.extract (clusters);
 
-	//pcl::PointIndices floorIndicies;
-	//reg.getSegmentFromPoint( imgData.width * 500 + imgData.width / 2 , floorIndicies);
+	if (clusters.empty ())
+		return nullptr;
 
-	// pcl::PointCloud <pcl::PointXYZRGB>::Ptr imgCloud2 (new pcl::PointCloud <pcl::PointXYZRGB>(*imgCloud, floorIndicies.indices));
+	auto colored_cloud = (new pcl::PointCloud<pcl::PointXYZRGB>)->makeShared ();
+
+	colored_cloud->width = imgCloud2->width;
+	colored_cloud->height = imgCloud2->height;
+	colored_cloud->is_dense = false;
+
+	for(auto& i_point : imgCloud2->points )
+	{
+		pcl::PointXYZRGB point;
+		point.x = *(i_point.data);
+		point.y = *(i_point.data + 1);
+		point.z = *(i_point.data + 2);
+		point.r = 0;
+		point.g = 0;
+		point.b = 0;
+		colored_cloud->points.push_back (point);
+	}
+
+	std::vector<Eigen::Vector2f> badPoints; 
+
+	for(auto &segment : clusters)
+	{
+		const auto segmentSize = segment.indices.size();
+		if(segmentSize < 100)
+			continue;
+
+		Eigen::Vector3f min(100,100,100);
+		Eigen::Vector3f max(-100,-100,-100);
+
+		for(auto &index : segment.indices)
+		{
+			auto pt = colored_cloud->points[index].getVector3fMap();
+
+			min = min.cwiseMin(pt);
+			max = max.cwiseMax(pt);
+		}
+
+		//std::cout << "Segment " << " (" << segment.indices.size() << ")\n";
+		//std::cout << "\tmin: " << min.transpose() << "\n";
+		//std::cout << "\tmax: " << max.transpose() << "\n";
+		//std::cout << "\t volume: " << (min-max).prod() << "\n\n";
+
+		size_t pointUpCount = 0;
+		size_t sampleSize = std::min<size_t>(200, segmentSize);
+		for(size_t i = 0; i < segmentSize; i += segmentSize / sampleSize)
+		{
+			auto pt = normals->points[segment.indices[i]].getNormalVector3fMap();
+
+			if((pt - Eigen::Vector3f(0,1,0)).norm() < 0.3 )
+				pointUpCount++;
+			//std::cout << "Normal: " << segment.indices[i] << "| \t" << pt.transpose() << "\n";
+		}
+
+		uint8_t r = 0, g = 0, b = 0;
+		if( pointUpCount < sampleSize / 2) //max.y() > -0.6)
+		{
+			r = 255;
+
+			//It is a blocking item
+			for(auto &index : segment.indices)
+			{
+				const auto& pt = colored_cloud->points[index].getVector3fMap();
+				badPoints.emplace_back(pt.x(), pt.z());
+			}
+		} 
+		else 
+		{
+			g = 255;
+		}
+
+		for(auto &index : segment.indices)
+		{
+			colored_cloud->points[index].r = r;
+			colored_cloud->points[index].g = g;
+			colored_cloud->points[index].b = b;
+		}
+	}
+
+	//We want to transform the points from x=-2.5...2.5 and z=0...5 
+	//To a 2d image, 512x512 
+	MatrixXi walkabilityMap = MatrixXi::Zero(512, 512);
+	Affine2f toImageTransform = Scaling(512.0f / 5.0f, 512.0f / 5.0f) * Translation2f(2.5f, 0.0f);
+
+	for(const auto& pt : badPoints)
+	{
+		Vector2i imagePt = (toImageTransform * pt).cast<int>();
+
+		if(imagePt.x() < 0 || imagePt.x() > walkabilityMap.rows())
+			continue;
+
+		if(imagePt.y() < 0 || imagePt.y() > walkabilityMap.cols())
+			continue;
+
+		walkabilityMap(imagePt.x(), imagePt.y()) = 1.0;
+	}
 
 
-	//end = std::chrono::system_clock::now();
 
-	//std::chrono::duration<double> elapsed_seconds = end-start;
-	// std::time_t end_time = std::chrono::system_clock::to_time_t(end);
+	for(auto &point : colored_cloud->points)
+	{
+		if(point.r == 0 && point.g == 0 && point.b == 0)
+		{
+			point.x = point.y = point.z = std::numeric_limits<double>::quiet_NaN();
+		}
+	}
 
-	//std::cout << "finished computation at " << std::ctime(&end_time) << "elapsed time: " << elapsed_seconds.count() << "s\n";
-
-	//filterPointCloud(imgCloud, *cloud, filter);
-
-	auto newCloud = reg.getColoredCloud ();
-	assert(newCloud != nullptr);
-
-	return newCloud;
+	return colored_cloud;
 }
 
 

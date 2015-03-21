@@ -62,6 +62,16 @@ public:
 };
 
 
+class Explore : public Base
+{
+public:
+	Explore(Kratos* robot) : Base(robot)
+	{
+	}
+
+	virtual void Initialize() override;
+	virtual void Think() override;
+};
 
 
 class MoveToWaypointTelemetry
