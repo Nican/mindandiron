@@ -61,11 +61,18 @@ sudo apt-get install -y subversion
 sudo apt-get install -y htop
 sudo apt-get install -y openssh-server
 sudo apt-get install -y libzmqpp-dev
-sudo  apt-get install -y libv4l-dev
+sudo apt-get install -y libv4l-dev
 sudo apt-get install -y libopencv-dev
 sudo apt-get install -y libeigen3-dev
 sudo apt-get install -y libbox2d-dev
 sudo apt-get install -y libvtk5-qt4-dev
+sudo apt-get install -y libqt5serialport5-dev
+sudo apt-get install -y libv4l2rds0			# For April Tags
+sudo apt-get install -y libv4l-dev			# For April Tags
+
+
+# For Arduino
+sudo apt-get install -y openjdk-7-jre
 
 
 # To get PCL
@@ -124,4 +131,11 @@ sudo apt-get install pritunl-client-gtk
 # For communicating with USB
 sudo adduser $USER dialout
 
+echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+echo "Install Arduino: http://planfully.com/install-arduino-ubuntu/"
+echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+echo "Install Teensyduino: https://www.pjrc.com/teensy/td_download.html"
+echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+echo "Install Herkulex Arduino library: http://robottini.altervista.org/dongbu-herkulex-arduino-library-2"
+echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
 echo "RESTART THE COMPUTER TO FINISH UPDATES"
