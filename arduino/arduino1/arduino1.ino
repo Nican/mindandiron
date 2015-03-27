@@ -5,6 +5,7 @@
 #include <Herkulex.h>
 #include <TimerOne.h>
 
+#include "battery_includes.h"
 #include "rc_includes.h"
 
 
@@ -62,7 +63,7 @@ void loop() {
     }
 
     printDataToComputer(Herkulex.getAngle(camServoID),
-                        getCurrent(), getBatteryVoltagE(),
+                        getCurrent(), getBatteryVoltage(),
                         getPaused());
 }
 
