@@ -8,6 +8,7 @@
 #include "rc_includes.h"
 
 
+// April Tag camera setup
 const int camServoID = 253;
 #define MAX_CAM_SERVO_ANGLE 159
 
@@ -60,7 +61,9 @@ void loop() {
         Herkulex.setLed(camServoID, LED_PINK);
     }
 
-    printDataToComputer(Herkulex.getAngle(camServoID), getPaused());
+    printDataToComputer(Herkulex.getAngle(camServoID),
+                        getCurrent(), getBatteryVoltagE(),
+                        getPaused());
 }
 
 // Blinks the LED when paused, leaves it solidly on while running
