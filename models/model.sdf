@@ -17,11 +17,11 @@
     </inertial>
 
     <collision name='collision'>
+      <pose>0.36 0 0 0 0 0</pose>
       <geometry>
-        <mesh>
-          <scale>10 10 10</scale>
-          <uri>model://models/kratos2.dae</uri>
-        </mesh>
+         <box>
+          <size>1.14 1.21 0.1</size>
+        </box>
       </geometry>
     </collision>
 
@@ -73,7 +73,7 @@
     </visual>
 
     <sensor type="depth" name="xtion_sensor">
-      <pose>0.7 0 0.8 0 0.52359878 0</pose>
+      <pose>0.7 0 0.8 0 0.52359878 0</pose> <!--0.7 0 0.8 0 0.52359878 0-->
       <always_on>true</always_on>
       <update_rate>1.0</update_rate>
       <topic>tteesstt</topic>
@@ -104,7 +104,7 @@
   ------------------------------------------->
 
   <link name="april_tag_link">
-    <pose>0.6 0.0 0.6 0 0 3.14</pose>
+    <pose>0.6 0.0 0.6 0 0 0</pose>
 
     <visual name='depth_visual'>
       <pose>0 0 0 0 0 0</pose>
@@ -142,11 +142,7 @@
     <child>april_tag_link</child>
     <parent>chassis</parent>
     <axis>
-      <xyz>0 0 0</xyz>
-      <dynamics>
-        <friction>20.0</friction>
-        <damping>20.0</damping>
-      </dynamics>
+      <xyz>0 0 1</xyz>
     </axis>
   </joint>
 
@@ -227,7 +223,7 @@
     <axis>
       <xyz>0 1 0</xyz>
       <dynamics>
-        <friction>20.0</friction>
+        <friction>200.0</friction>
         <damping>20.0</damping>
       </dynamics>
     </axis>
@@ -240,7 +236,7 @@
     <axis>
       <xyz>0 1 0</xyz>
       <dynamics>
-        <friction>20.0</friction>
+        <friction>200.0</friction>
         <damping>20.0</damping>
       </dynamics>
     </axis>

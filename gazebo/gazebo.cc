@@ -6,13 +6,14 @@
 #include <gazebo/sensors/SensorsIface.hh>
 #include <gazebo/sensors/Sensor.hh>
 #include <gazebo/sensors/RaySensor.hh>
+#include <gazebo/common/PID.hh>
 
-#include "gazebo/sensors/SensorManager.hh"
-#include "gazebo/sensors/DepthCameraSensor.hh"
-#include "gazebo/sensors/CameraSensor.hh"
+#include <gazebo/sensors/SensorManager.hh>
+#include <gazebo/sensors/DepthCameraSensor.hh>
+#include <gazebo/sensors/CameraSensor.hh>
 
-#include "gazebo/rendering/DepthCamera.hh"
-#include "gazebo/rendering/Camera.hh"
+#include <gazebo/rendering/DepthCamera.hh>
+#include <gazebo/rendering/Camera.hh>
 
 #include "robot.h"
 
@@ -98,25 +99,39 @@ class AprilTagCameraMotorGazebo : public Robot::AprilTagServo
 {
 public:
 
-  physics::EntityPtr mEntity;
+  physics::JointPtr mJoint;
+  //common::PID PID;
 
-  AprilTagCameraMotorGazebo(physics::EntityPtr entity) : mEntity(entity)
+  AprilTagCameraMotorGazebo(physics::JointPtr entity) : mJoint(entity)
   {
+    assert(entity);
+
+    //PID.Init(800, 0, 3, 50, -50, 50, -50);
   }
 
   virtual double GetPosition() const override
   {
-    auto pose = mEntity->GetRelativePose();
+    //auto pose = mEntity->GetRelativePose();
 
-    return pose.rot.GetYaw();
+    return mJoint->GetAngle(0).Radian();
   }
 
   virtual void SetPosition(double radians) override
   {
+    //To make this better http://answers.gazebosim.org/question/2541/setanglesetposition-having-erratic-effect-on-robot/
+    //Setting the position of a joint is broken
+    //mJoint->SetPosition(0, radians);
+
+    //double gasError = this->gasPedalState - this->gasPedalCmd;
+    //double gasCmd = PID.Update(gasError, dt);
+    //this->gasPedalJoint->SetForce(0, gasCmd);
+
+    /*
     auto pose = mEntity->GetRelativePose();
     pose.rot.SetFromEuler( pose.rot.GetPitch(), pose.rot.GetRoll(), radians );
 
     mEntity->SetRelativePose(pose);
+    */
   }
 };
 
@@ -155,9 +170,6 @@ public:
       m_rightWheelJoint = _parent->GetJoint("right_wheel_hinge");
       assert(m_leftWheelJoint);
       assert(m_rightWheelJoint);
-
-      auto aprilMotor = _parent->GetLink("april_tag_link");
-
 
       for(sensors::SensorPtr &sensor : sensors::SensorManager::Instance()->GetSensors())
       {
@@ -207,7 +219,7 @@ public:
 
       motion.mLeftWheel = std::make_shared<WheelJoint>(m_leftWheelJoint);
       motion.mRightWheel = std::make_shared<WheelJoint>(m_rightWheelJoint);
-      motion.mAprilServo = std::make_shared<AprilTagCameraMotorGazebo>(aprilMotor);
+      motion.mAprilServo = std::make_shared<AprilTagCameraMotorGazebo>(_parent->GetJoint("april_tag_hinge"));
 
       sensors.mTRS = std::make_shared<TRSGazebo>(this->model);
 
@@ -297,11 +309,11 @@ public:
     public: void OnUpdate(const common::UpdateInfo &info)
     {      
       double simTime = info.simTime.Double();
-      m_kratos->Update(simTime);
+      m_kratos->Update(info.simTime.Double());
 
       if(simTime > nextTickerUpdate)
       {
-        nextTickerUpdate = simTime + 0.1;
+        nextTickerUpdate = simTime + 0.01;
 
         double currentLeft = m_leftWheelJoint->GetAngle(1).Radian();
         double currentRight = m_rightWheelJoint->GetAngle(1).Radian();

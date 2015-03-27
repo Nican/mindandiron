@@ -16,12 +16,14 @@ Kratos::Kratos(const RobotMotion& motion, const RobotSensors& sensors) :
 	mStartSimTime(0.0), 
 	mZmqContext(1), 
 	mZmqSocket(mZmqContext, ZMQ_PUB),
-	mOdometry(0.69)
+	mOdometry(0.69),
+	mCurTime(0.0)
 {
 	mZmqSocket.bind ("tcp://*:5555");
 
 	//mState.reset(new State::MoveToWaypoint(this));
-	mState.reset(new State::ReturnToBase(this));
+	//mState.reset(new State::ReturnToBase(this));
+	mState.reset(new State::Explore(this));
 	mState->Initialize();
 
 	mBaseStation.reset(new BaseStationDetector(this));
@@ -33,6 +35,7 @@ void Kratos::Update(double simTime)
 
 	if(mStartSimTime == 0.0)
 	{
+		std::cout << "First time: " << simTime << "\n";
 		mLastSimTime = simTime;
 		mStartSimTime = simTime;
 
@@ -70,7 +73,7 @@ void Kratos::UpdateCameraRotation()
 
 	//std::cout << "A: " << angle2 << "\t" << rotation << "\n";
 
-	//mMotion.mAprilServo->SetPosition(angle2 - rotation + M_PI/2);
+	mMotion.mAprilServo->SetPosition(angle2 - rotation + M_PI/2);
 }
 
 void Kratos::ReceiveWheelTicks(int leftTicks, int rightTicks)
@@ -83,11 +86,11 @@ void Kratos::ReceiveWheelTicks(int leftTicks, int rightTicks)
 
 	mOdometry.Update(leftDistance, rightDistance);
 
-	Eigen::Vector2d pos = mSensors.mTRS->GetPosition().head<2>();
-	Eigen::Vector2d diff = mOdometry.mPosition - pos;
+	// Eigen::Vector2d pos = mSensors.mTRS->GetPosition().head<2>();
+	// Eigen::Vector2d diff = mOdometry.mPosition - pos;
 
-	std::cout << "Measured Position:\t" << mOdometry.mPosition.transpose() << "\n";
-	std::cout << "Error:\t" << diff.transpose() << "\n";
+	// std::cout << "Measured Position:\t" << mOdometry.mPosition.transpose() << "\n";
+	// std::cout << "Error:\t" << diff.transpose() << "\n";
 }
 
 void Kratos::ReceiveDepth(const DepthImgData &depthData)

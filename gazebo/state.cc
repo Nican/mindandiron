@@ -26,9 +26,8 @@ void MoveForward::Think()
 
 void ReturnToBase::Initialize()
 {
-	std::cout << "Starting returning to base routine\n";
-
 	mStateStartTime = mRobot->mCurTime;
+	std::cout << "Starting returning to base routine (" << mStateStartTime <<")\n";
 }
 
 void ReturnToBase::Think()
@@ -39,8 +38,8 @@ void ReturnToBase::Think()
 	if(progress < 10.0)
 	{
 		//Just getting off center somewhere
-		mRobot->mMotion.mLeftWheel->SetForce(50.0);
-		mRobot->mMotion.mRightWheel->SetForce(47.0);
+		mRobot->mMotion.mLeftWheel->SetForce(47.0);
+		mRobot->mMotion.mRightWheel->SetForce(50.0);
 		return;
 	}
 
@@ -152,6 +151,29 @@ void ReturnToBase::Think()
 	}
 
 }
+
+
+
+
+
+
+
+
+void Explore::Initialize()
+{
+
+}
+
+void Explore::Think()
+{
+
+
+	mRobot->mMotion.mLeftWheel->SetForce(48.0);
+	mRobot->mMotion.mRightWheel->SetForce(50.0);
+}
+
+
+
 
 
 

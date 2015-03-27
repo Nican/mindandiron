@@ -2,13 +2,13 @@
     <world name="default">
 
       <physics type="ode">
-        <real_time_update_rate>3000.0</real_time_update_rate>
+        <real_time_update_rate>1000.0</real_time_update_rate>
       </physics>
-  
+
       <include>
         <uri>model://sun</uri>
       </include>
-       
+
       <include>
         <uri>model://ground_plane</uri>
       </include>
@@ -19,7 +19,7 @@
         <pose>0.0 0 0.29 0 0 0</pose>
       </include>
 
-       <model name='kratos_plataform'>
+      <model name='kratos_plataform'>
         <static>1</static>
         <pose>0 0 0 0 0 0</pose>
         <link name='link'>
@@ -63,5 +63,176 @@
           <gravity>1</gravity>
         </link>
       </model>
+
+
+      <model name='unit_box_1'>
+        <pose>7 0 0.5 0 0 0</pose>
+        <static>1</static>
+        <link name='link'>
+          <collision name='collision'>
+            <geometry>
+              <box>
+                <size>1 1 1</size>
+              </box>
+            </geometry>
+          </collision>
+          <visual name='visual'>
+            <geometry>
+              <box>
+                <size>1 1 1</size>
+              </box>
+            </geometry>
+          </visual>
+        </link>
+      </model>
+
+
+      <model name='unit_box_2'>
+        <pose>5 5 0.5 0 0 0</pose>
+        <static>1</static>
+        <link name='link'>
+          <collision name='collision'>
+            <geometry>
+              <box>
+                <size>1 1 1</size>
+              </box>
+            </geometry>
+          </collision>
+          <visual name='visual'>
+            <geometry>
+              <box>
+                <size>1 1 1</size>
+              </box>
+            </geometry>
+          </visual>
+        </link>
+      </model>
+
+      <model name='unit_box_3'>
+        <pose>-6 9 0.5 0 0 0</pose>
+        <static>1</static>
+        <link name='link'>
+          <collision name='collision'>
+            <geometry>
+              <box>
+                <size>1 1 1</size>
+              </box>
+            </geometry>
+          </collision>
+          <visual name='visual'>
+            <geometry>
+              <box>
+                <size>1 1 1</size>
+              </box>
+            </geometry>
+          </visual>
+        </link>
+      </model>
+
+      <model name='unit_box_4'>
+        <pose>-10 -9 0.5 0 0 0</pose>
+        <static>1</static>
+        <link name='link'>
+          <collision name='collision'>
+            <geometry>
+              <box>
+                <size>1 1 1</size>
+              </box>
+            </geometry>
+          </collision>
+          <visual name='visual'>
+            <geometry>
+              <box>
+                <size>1 1 1</size>
+              </box>
+            </geometry>
+          </visual>
+        </link>
+      </model>
+
+      <model name='unit_box_5'>
+        <pose>-17 -1 0.5 0 0 0</pose>
+        <static>1</static>
+        <link name='link'>
+          <collision name='collision'>
+            <geometry>
+              <box>
+                <size>1 1 1</size>
+              </box>
+            </geometry>
+          </collision>
+          <visual name='visual'>
+            <geometry>
+              <box>
+                <size>1 1 1</size>
+              </box>
+            </geometry>
+          </visual>
+        </link>
+      </model>
+
+      <model name='unit_box_6'>
+        <pose>5 -8 0.5 0 0 0</pose>
+        <static>1</static>
+        <link name='link'>
+          <collision name='collision'>
+            <geometry>
+              <box>
+                <size>1 1 1</size>
+              </box>
+            </geometry>
+          </collision>
+          <visual name='visual'>
+            <geometry>
+              <box>
+                <size>1 1 1</size>
+              </box>
+            </geometry>
+          </visual>
+        </link>
+      </model>
+
+      <model name='unit_box_7'>
+        <pose>15 15 0.5 0 0 0</pose>
+        <static>1</static>
+        <link name='link'>
+          <collision name='collision'>
+            <geometry>
+              <box>
+                <size>1 1 1</size>
+              </box>
+            </geometry>
+          </collision>
+          <visual name='visual'>
+            <geometry>
+              <box>
+                <size>1 1 1</size>
+              </box>
+            </geometry>
+          </visual>
+        </link>
+      </model>
+
+      <model name='unit_box_8'>
+        <pose>-10 14 0.5 0 0 0</pose>
+        <static>1</static>
+        <link name='link'>
+          <collision name='collision'>
+            <geometry>
+              <box>
+                <size>1 1 1</size>
+              </box>
+            </geometry>
+          </collision>
+          <visual name='visual'>
+            <geometry>
+              <box>
+                <size>1 1 1</size>
+              </box>
+            </geometry>
+          </visual>
+        </link>
+      </model>
+
     </world>
   </sdf>
