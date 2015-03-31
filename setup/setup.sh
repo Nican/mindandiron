@@ -77,9 +77,15 @@ sudo apt-get install -y openjdk-7-jre
 
 # To get PCL
 # Instructions from here
-sudo add-apt-repository -y ppa:v-launchpad-jochen-sprickerhof-de/pcl
-sudo apt-get update
-sudo apt-get install libpcl-all-dev
+# sudo add-apt-repository -y ppa:v-launchpad-jochen-sprickerhof-de/pcl
+# sudo apt-get update
+# sudo apt-get install libpcl-all-dev
+# Alternate way to get PCL (necessary when we don't use graphics card)
+# git clone git@github.com:PointCloudLibrary/pcl.git
+# cd pcl
+# mkdir build; cd build
+# cmake ..; make -j6
+# sudo make install
 
 
 # To get libfreenect - see installation instruction here, might go wrong in bash script
