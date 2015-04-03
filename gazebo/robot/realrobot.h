@@ -58,10 +58,10 @@ class RealRobot : public QObject
 
     std::shared_ptr<Robot::Kratos> m_kratos;
 
-    Odometry mOdometry;
-
 public:
     RealRobot();
+
+    Odometry mOdometry;
 
 public slots:
     void showGPS();

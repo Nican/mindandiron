@@ -43,20 +43,25 @@ public:
 class TRSReal : public Robot::TotalRoboticStation 
 {
 public:
+	RealRobot* mRobot;
 
-  TRSReal()
-  {
-  }
+	TRSReal(RealRobot* robot) : mRobot(robot)
+	{
+	}
 
-  virtual Eigen::Vector3d GetPosition() const override
-  {
-    return Eigen::Vector3d(0, 0, 0);
-  }
+	virtual Eigen::Vector3d GetPosition() const override
+	{
 
-  virtual double GetOrientation() const override
-  {
-    return 0.0;
-  }
+		return Eigen::Vector3d(
+			mRobot->mOdometry.mPosition.x(), 
+			mRobot->mOdometry.mPosition.y(), 
+			0);
+	}
+
+	virtual double GetOrientation() const override
+	{
+		return mRobot->mOdometry.mTheta;
+	}
 };
 
 KratosKinect::KratosKinect(libfreenect2::Freenect2Device *dev, QObject* parent) : 
@@ -149,7 +154,7 @@ RealRobot::RealRobot() :
 	motion.mRightWheel = std::make_shared<WheelJointReal>();
 
 	Robot::RobotSensors sensors;
-	sensors.mTRS = std::make_shared<TRSReal>();
+	sensors.mTRS = std::make_shared<TRSReal>(this);
 
 	m_kratos = std::make_shared<Robot::Kratos>(motion, sensors);
 
@@ -157,9 +162,13 @@ RealRobot::RealRobot() :
 	QObject::connect(mTeensey, &Robot::Teensey::statusUpdate, [this](Robot::TeenseyStatus status){
 
 		if(bFirstTeenseyMessage != true)
+		{
 			this->mOdometry.Update(
 				status.leftPosition - lastStatus.leftPosition, 
 				status.rightPosition - lastStatus.rightPosition);
+
+			//this->m_kratos->ReceiveWheelTicks(status.leftPosition, status.rightPosition);
+		}
 
 		bFirstTeenseyMessage = false;
 		lastStatus = status;
@@ -212,7 +221,7 @@ void RealRobot::showGPS()
 	if(mKinect != nullptr)
 		mKinect->requestDepthFrame();
 
-	std::cout << "Current robot position: " << mOdometry.mPosition.transpose() << "\n";
+	std::cout << "Current robot position: " << mOdometry.mPosition.transpose() << " | " << lastStatus.leftPosition << "\n";
 
     //qDebug()<<Q_FUNC_INFO;
     //std::cout << "AAAA\t" << QThread::currentThreadId() << "\n";
