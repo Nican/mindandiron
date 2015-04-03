@@ -20,6 +20,7 @@ typedef std::unique_ptr<TrajectoryTreeNode> TrajectoryTreeNodePtr;
 template<class T>
 std::vector<T> GetRobotPoints()  
 {
+	/*
 	return std::vector<T>({
 		{0.130-0.33, -0.447675},
 		{0.5366-0.33, -0.447675},
@@ -29,7 +30,15 @@ std::vector<T> GetRobotPoints()
 		{0.1302-0.33, 0.447675},
 		{0.0-0.33, 0.2286},
 		{0.0-0.33, -0.2286}
-	});	
+	});
+	*/
+
+	return std::vector<T>({
+		{0.57 + 0.36 , 0.605},
+		{-0.57 + 0.36, 0.605},
+		{0.57 + 0.36 , -0.605},
+		{-0.57 + 0.36, -0.605}
+	});
 };
 
 class TrajectoryTreeNode

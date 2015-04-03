@@ -6,7 +6,7 @@ find_package(Boost REQUIRED COMPONENTS system)
 find_package(Eigen3 REQUIRED)
 #find_package(Qt5Widgets)
 #find_package(Qt5OpenGL)
-find_package(PCL 1.7.2 EXACT REQUIRED)
+find_package(PCL 1.8.0 EXACT REQUIRED)
 find_package(OpenCV)
 #find_package(apriltags REQUIRED)
 
@@ -38,6 +38,8 @@ link_directories(${GAZEBO_LIBRARY_DIRS})
 add_library(kratos SHARED gazebo.cc)
 target_link_libraries(kratos ${Boost_LIBRARIES} ${GAZEBO_LIBRARIES} kratos_base)
 
+add_executable(park_viewer park_viewer.cpp)
+target_link_libraries(park_viewer ${Boost_LIBRARIES} kratos_base)
 
 add_subdirectory(telemetry)
 add_subdirectory(robot)

@@ -16,6 +16,11 @@ Teensey::Teensey(QObject* parent) : QObject(parent)
 
 }
 
+void Teensey::receiveError()
+{
+	std::cout << "Teensey received error. " << mSerial->error() << "\n";
+}
+
 void Teensey::receiveSerialData()
 {
 	while(mSerial->canReadLine())
@@ -33,8 +38,8 @@ void Teensey::receiveSerialData()
 	        }
 
 	        TeenseyStatus status;
-	        status.leftSpeed = parts[1].toDouble();
-	        status.rightSpeed = parts[3].toDouble();
+	        status.leftPosition = parts[1].toDouble();
+	        status.rightPosition = parts[3].toDouble();
 	        status.acceleration.x() = parts[5].toDouble() - 512.0;
 	        status.acceleration.y() = parts[7].toDouble() - 512.0;
 	        status.acceleration.z() = parts[9].toDouble() - 512.0;

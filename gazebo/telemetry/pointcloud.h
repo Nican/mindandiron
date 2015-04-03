@@ -49,6 +49,9 @@ public:
 
 	virtual void ReceivePointCloud(Robot::PointCloud::Ptr &cloud) override;
 
+signals:
+	void CloudProcessed();
+
 public slots:
 	void UpdateSettings();
 };

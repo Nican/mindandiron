@@ -121,6 +121,8 @@ PointCloud::Ptr RegionGrowingSegmenter::AsyncronousUpdate(PointCloud::Ptr imgClo
 
 	auto colored_cloud = (new pcl::PointCloud<pcl::PointXYZRGB>)->makeShared ();
 
+	colored_cloud->sensor_origin_ = imgCloud->sensor_origin_;
+	colored_cloud->sensor_orientation_ = imgCloud->sensor_orientation_;
 	colored_cloud->width = imgCloud2->width;
 	colored_cloud->height = imgCloud2->height;
 	colored_cloud->is_dense = false;
@@ -131,9 +133,9 @@ PointCloud::Ptr RegionGrowingSegmenter::AsyncronousUpdate(PointCloud::Ptr imgClo
 		point.x = *(i_point.data);
 		point.y = *(i_point.data + 1);
 		point.z = *(i_point.data + 2);
-		point.r = 0;
-		point.g = 0;
-		point.b = 0;
+		point.r = 255;
+		point.g = 255;
+		point.b = 255;
 		colored_cloud->points.push_back (point);
 	}
 
@@ -142,8 +144,13 @@ PointCloud::Ptr RegionGrowingSegmenter::AsyncronousUpdate(PointCloud::Ptr imgClo
 	for(auto &segment : clusters)
 	{
 		const auto segmentSize = segment.indices.size();
-		if(segmentSize < 100)
+
+		//std::cout << "Segment with: " << segmentSize << " points.\n";
+
+		if(segmentSize < 150)
 			continue;
+
+
 
 		Eigen::Vector3f min(100,100,100);
 		Eigen::Vector3f max(-100,-100,-100);
@@ -159,18 +166,25 @@ PointCloud::Ptr RegionGrowingSegmenter::AsyncronousUpdate(PointCloud::Ptr imgClo
 		//std::cout << "Segment " << " (" << segment.indices.size() << ")\n";
 		//std::cout << "\tmin: " << min.transpose() << "\n";
 		//std::cout << "\tmax: " << max.transpose() << "\n";
-		//std::cout << "\t volume: " << (min-max).prod() << "\n\n";
+		//std::cout << "\tvolume: " << (min-max).prod() << "\n";
 
 		size_t pointUpCount = 0;
 		size_t sampleSize = std::min<size_t>(200, segmentSize);
 		for(size_t i = 0; i < segmentSize; i += segmentSize / sampleSize)
 		{
 			auto pt = normals->points[segment.indices[i]].getNormalVector3fMap();
+			float dot = pt.dot(Eigen::Vector3f(0,1,0));
+			const float threshold = 0.7;
 
-			if((pt - Eigen::Vector3f(0,1,0)).norm() < 0.3 )
+			//std::cout << "\t\tNorm: " << pt.transpose() << " ("<< dot <<")\n";
+
+			//Check for up and down vectors
+			if(dot > threshold || dot < -threshold)
 				pointUpCount++;
 			//std::cout << "Normal: " << segment.indices[i] << "| \t" << pt.transpose() << "\n";
 		}
+
+		//std::cout << "\tpointUpCount: " << pointUpCount << "\n\n";
 
 		uint8_t r = 0, g = 0, b = 0;
 		if( pointUpCount < sampleSize / 2) //max.y() > -0.6)
@@ -197,31 +211,13 @@ PointCloud::Ptr RegionGrowingSegmenter::AsyncronousUpdate(PointCloud::Ptr imgClo
 		}
 	}
 
-	//We want to transform the points from x=-2.5...2.5 and z=0...5 
-	//To a 2d image, 512x512 
-	MatrixXi walkabilityMap = MatrixXi::Zero(512, 512);
-	Affine2f toImageTransform = Scaling(512.0f / 5.0f, 512.0f / 5.0f) * Translation2f(2.5f, 0.0f);
-
-	for(const auto& pt : badPoints)
-	{
-		Vector2i imagePt = (toImageTransform * pt).cast<int>();
-
-		if(imagePt.x() < 0 || imagePt.x() > walkabilityMap.rows())
-			continue;
-
-		if(imagePt.y() < 0 || imagePt.y() > walkabilityMap.cols())
-			continue;
-
-		walkabilityMap(imagePt.x(), imagePt.y()) = 1.0;
-	}
-
 
 
 	for(auto &point : colored_cloud->points)
 	{
 		if(point.r == 0 && point.g == 0 && point.b == 0)
 		{
-			point.x = point.y = point.z = std::numeric_limits<double>::quiet_NaN();
+			//point.x = point.y = point.z = std::numeric_limits<double>::quiet_NaN();
 		}
 	}
 

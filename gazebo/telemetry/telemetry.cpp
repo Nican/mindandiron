@@ -12,7 +12,7 @@
 
 
 MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent), mZmqContext(1), mZmqSocket(mZmqContext, ZMQ_SUB), view(&scene)
+    : QMainWindow(parent), mZmqContext(1), mZmqSocket(mZmqContext, ZMQ_SUB), view(&scene), mCore(nullptr)
 {
 	mZmqSocket.connect("tcp://127.0.0.1:5555");
     mZmqSocket.setsockopt( ZMQ_SUBSCRIBE, "", 0);
@@ -36,8 +36,8 @@ MainWindow::MainWindow(QWidget *parent)
     dockWidget2->setWidget(mDepthCamera);
     addDockWidget(Qt::RightDockWidgetArea, dockWidget2);
 
-    setCentralWidget(mAprilTag);
-	//setCentralWidget(&view);
+    //setCentralWidget(mAprilTag);
+	setCentralWidget(&view);
 	//setCentralWidget(new ViewerWidget());
 
 
@@ -47,7 +47,7 @@ MainWindow::MainWindow(QWidget *parent)
         SETUP THE POINT CLOUD
     */    
     growingRegion = new GrowingRegionPointCloudWidget(this);
-    planeSegments = new PlaneSegmentCloudWidget(this);
+    //planeSegments = new PlaneSegmentCloudWidget(this);
 
     QDockWidget *dockWidget3 = new QDockWidget(tr("Dock Widget3"), this);
     //dockWidget3->setAllowedAreas(Qt::TopDockWidgetArea);
@@ -55,10 +55,10 @@ MainWindow::MainWindow(QWidget *parent)
     addDockWidget(Qt::RightDockWidgetArea, dockWidget3);
 
 
-    QDockWidget *dockWidget4 = new QDockWidget(tr("Dock Widget4"), this);
+    //QDockWidget *dockWidget4 = new QDockWidget(tr("Dock Widget4"), this);
     //dockWidget3->setAllowedAreas(Qt::TopDockWidgetArea);
-    dockWidget4->setWidget(planeSegments);
-    addDockWidget(Qt::RightDockWidgetArea, dockWidget4);
+    //dockWidget4->setWidget(planeSegments);
+    //addDockWidget(Qt::RightDockWidgetArea, dockWidget4);
 
 
     /**
@@ -79,7 +79,7 @@ MainWindow::MainWindow(QWidget *parent)
 	//scene.addText("Hello, world!");
 
 	//Make a robot with a nose.
-	scene.addRect(-2.0, 3.0, 4.0, 1.0, QPen(Qt::red, 0));
+	//scene.addRect(-2.0, 3.0, 4.0, 1.0, QPen(Qt::red, 0));
 	//auto nose = new QGraphicsRectItem(0.25, -0.1, 0.2, 0.2, mRobotInstance);
 	//nose->setPen(QPen(Qt::black, 0));
 
@@ -91,14 +91,14 @@ MainWindow::MainWindow(QWidget *parent)
 	//exploreChild(planner.rootNode.get(), planner.rootNode->childs.front().get());
 
 	//Make the whole world visible
-	view.setSceneRect(-3, -3, 6, 6);
-	view.fitInView(-3, -3, 6, 6);
+	view.setSceneRect(-5, -5, 10, 10);
+	view.fitInView(-5, -5, 10, 10);
 
 	//Scale the axis to fit nice visually.
 	view.scale(1, -1);
 
 
-    trajectoryPath = scene.addPath(QPainterPath(), QPen(Qt::black, 0));
+    trajectoryPath = scene.addPath(QPainterPath(), QPen(Qt::blue, 0));
 
 
     TrajectoryPlanner mPlanner({0,0}, std::polar(M_PI/2.0, 1.0), {1.0,6.0});
@@ -106,6 +106,75 @@ MainWindow::MainWindow(QWidget *parent)
 
     int id = 0;
     DrawExploreChild(mPlanner.rootNode.get(), mPlanner.rootNode->childs.front().get(), id);
+
+
+    connect(growingRegion, SIGNAL(CloudProcessed()), this, SLOT(UpdateWalkabilityMap()));
+
+}
+
+#include <QGraphicsItemGroup>
+
+void MainWindow::UpdateWalkabilityMap()
+{
+    if(mCore != nullptr)
+        delete mCore;
+
+    mCore = new QGraphicsItemGroup();
+    //mCore->setScale(5.0 / 512.0);
+
+    //We want to transform the points from x=-2.5...2.5 and z=0...5 
+    //To a 2d image, 512x512 
+    Eigen::MatrixXi walkabilityMap = Eigen::MatrixXi::Zero(512, 512);
+    Eigen::Affine2f toImageTransform = Eigen::Scaling(512.0f / 5.0f, 512.0f / 5.0f) * Eigen::Translation2f(2.5f, 0.0f);
+    //int notWalkable = 0;
+
+    auto pointCloud = growingRegion->segmenter.lastProccessed;
+
+    std::cout << "Point cloud " << *pointCloud << "\n";
+
+    for(const auto& pt : pointCloud->points)
+    {
+        if(pt.g == 255)
+            continue;
+
+        auto pt2d = Eigen::Vector2f(pt.x, pt.z);
+        Eigen::Vector2i imagePt = (toImageTransform * pt2d).cast<int>();
+
+        if(imagePt.x() < 0 || imagePt.x() > walkabilityMap.rows())
+            continue;
+
+        if(imagePt.y() < 0 || imagePt.y() > walkabilityMap.cols())
+            continue;
+
+        if(walkabilityMap(imagePt.x(), imagePt.y()) != 0)
+            continue;
+
+        walkabilityMap(imagePt.x(), imagePt.y()) = pt.b == 255 ? 2 : 1;
+        //notWalkable++;
+
+        //std::cout << "\t" << imagePt.transpose() << "\n";
+
+        Eigen::Vector2f newPt(imagePt.y() * 5.0 / 512.0 + 0.6, imagePt.x() * 5.0 / 512.0 - 2.5);
+        //newPt += pointCloud->sensor_origin_.head<2>();
+
+        //std::cout << "\tPt: \t" << pt.getVector3fMap().transpose() << "\n";
+        //std::cout << "\t\t\t" << imagePt.transpose() << "\n";
+        //std::cout << "\t\t\t" << newPt.transpose() << "\n";
+
+        auto rect = new QGraphicsRectItem(newPt.x(), newPt.y(), 5.0 / 512.0, 5.0 / 512.0);
+        rect->setPen(QPen(Qt::red, 0));
+        mCore->addToGroup(rect);
+    }
+
+    auto forward = pointCloud->sensor_orientation_ * Eigen::Vector3f::UnitX();
+    float angle = atan2(forward.y(), forward.x());
+
+    mCore->setPos(pointCloud->sensor_origin_.x(), pointCloud->sensor_origin_.y());
+    mCore->setRotation(angle * 180.0 / M_PI);
+    
+    //mCore->setParentItem(mRobotInstance);
+    scene.addItem(mCore);
+
 
 }
 
@@ -194,7 +263,12 @@ void MainWindow::update()
             QImage qImage(blobData.data(), imgData.width, imgData.height, QImage::Format_RGB888 );
             mDepthCamera->setPixmap(QPixmap::fromImage(qImage));
 
+            auto& lastPoint = mHistory.mPoints.back();
+            auto lastPointPos = lastPoint.mPosition.cast<float>();
+
             pcl::PointCloud <pcl::PointXYZRGB>::Ptr imgCloud (new pcl::PointCloud <pcl::PointXYZRGB>);
+            imgCloud->sensor_origin_ = Eigen::Vector4f(lastPointPos.x(), lastPointPos.y(), lastPointPos.z(), 0.0);
+            imgCloud->sensor_orientation_ = Eigen::AngleAxisf((float) lastPoint.mRotation, Eigen::Vector3f::UnitZ());
 
             UpdatePointCloud(imgData, *imgCloud);
             

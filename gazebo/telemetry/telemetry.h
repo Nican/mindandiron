@@ -10,6 +10,8 @@
 #include "qr.cpp"
 
 
+class QGraphicsItemGroup;
+
 
 class MainWindow : public QMainWindow
 {
@@ -31,6 +33,8 @@ public:
 	QGraphicsScene scene;
 	QGraphicsView view;
 
+	QGraphicsItemGroup* mCore;
+
 	QGraphicsPolygonItem* mRobotInstance;
 	QLabel* mStatusText;
 	QLabel* mDepthCamera;
@@ -46,7 +50,7 @@ public:
     POINT CLOUD
   */
   GrowingRegionPointCloudWidget* growingRegion;  
-  PlaneSegmentCloudWidget* planeSegments;
+  //PlaneSegmentCloudWidget* planeSegments;
 
 
 	void ReadLocation(const Robot::LocationDataPoint &historyPoint);
@@ -56,5 +60,6 @@ public:
 
 public slots:
 	void update();
+	void UpdateWalkabilityMap();
 };
 

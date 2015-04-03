@@ -8,8 +8,8 @@
 #define R1      8270000  // Ohms. The resister between pos. terminal and microcontroller
 #define R2      1091000  // Ohms. The resistor between microcontroller and neg. terminal
 
-#define CURRENT_IN_PIN       A0  // Voltage goes up with current
-#define CURRENT_REF_PIN      A1  // Provides a reference "zero" voltage for current
+#define CURRENT_IN_PIN       A14 // Voltage goes up with current
+#define CURRENT_REF_PIN      A15 // Provides a reference "zero" voltage for current
 #define BATT_VOLTAGE_IN_PIN  A2  // Voltage bridge for measuring battery voltage
 
 #endif  // ARDUINO_ARDUINO1_BATTERY_INCLUDES_H_

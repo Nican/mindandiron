@@ -9,6 +9,8 @@
 #include <QDoubleSpinBox>
 #include <QCheckBox>
 
+#include <eigen3/Eigen/Dense>
+
 PointCloudWidget::PointCloudWidget(QWidget *parent)
     : QWidget(parent), viewer(new pcl::visualization::PCLVisualizer ("viewer", false))
 {    
@@ -91,6 +93,8 @@ void GrowingRegionPointCloudWidget::ReceivePointCloud(Robot::PointCloud::Ptr &cl
         viewer->updatePointCloud (segmenter.lastProccessed, "cloud");
         viewer->resetCamera ();
         qvtkWidget->update ();
+
+        emit CloudProcessed();
     }
 }
 

@@ -4,6 +4,7 @@
 #include <QTimer>
 #include <iostream>
 #include "../robot.h"
+#include "../odometry.h"
 #include "teensey.h"
 #include <mutex>
 
@@ -49,10 +50,15 @@ class RealRobot : public QObject
 
     libfreenect2::Freenect2 freenect2;
     KratosKinect* mKinect;
+
     Robot::Teensey* mTeensey;
+    Robot::TeenseyStatus lastStatus;
+    bool bFirstTeenseyMessage;
   	//libfreenect2::Freenect2Device *dev;
 
     std::shared_ptr<Robot::Kratos> m_kratos;
+
+    Odometry mOdometry;
 
 public:
     RealRobot();

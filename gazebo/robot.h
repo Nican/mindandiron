@@ -93,6 +93,12 @@ struct DepthImgData
   MSGPACK_DEFINE(data, width, height, hfov);
 };
 
+struct DecawavePoint
+{
+	double mDistance;
+	
+};
+
 /**
 	Keep history of locations
 */

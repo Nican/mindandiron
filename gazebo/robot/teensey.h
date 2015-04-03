@@ -7,8 +7,8 @@ namespace Robot {
 
 struct TeenseyStatus
 {
-	double leftSpeed;
-	double rightSpeed;
+	double leftPosition;
+	double rightPosition;
 	Eigen::Vector3d acceleration;
 	bool autoFlag;
 };
@@ -27,9 +27,11 @@ public:
 
 protected slots:
 	void receiveSerialData();
+	void receiveError();
 
 signals:
     void statusUpdate(TeenseyStatus);
+
 
 };
 
