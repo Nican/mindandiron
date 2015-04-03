@@ -52,6 +52,7 @@ void setup() {
     pinMode(LEFT_CMD_IN, INPUT);
     pinMode(RIGHT_CMD_IN, INPUT);
     pinMode(AUTO_SWITCH_IN, INPUT);
+    pinMode(AUTO_SWITCH_OUT, OUTPUT);
     pinMode(COLLECTOR_OUT_A, OUTPUT);
     pinMode(COLLECTOR_OUT_B, OUTPUT);
     commandCollector(0);  // 0 stops the collector (drives both pins LOW)
@@ -82,6 +83,7 @@ void loop() {
         if (!isSystemAuto) {
             resetWheelIntegralError();  // Resets integral when starting AUTO
             isSystemAuto = 1;
+            digitalWrite(AUTO_SWITCH_OUT, isSystemAuto);
         } else {
           servoLeft.write(getLeftAutoWheelCmd());
           servoRight.write(getRightAutoWheelCmd());
@@ -91,12 +93,14 @@ void loop() {
     } else {
         if (isSystemAuto) {
             isSystemAuto = 0;
+            digitalWrite(AUTO_SWITCH_OUT, isSystemAuto);
         }
         lastLeftCmd = passThroughRC(servoLeft, LEFT_CMD_IN, lastLeftCmd);
         lastRightCmd = passThroughRC(servoRight, RIGHT_CMD_IN, lastRightCmd);
     }
 
     printDataToComputer(getLeftPosition(), getRightPosition(),
+                        getLeftVelocity(), getRightVelocity(),
                         getAX(), getAY(), getAZ(),
                         isSystemAuto);
 }

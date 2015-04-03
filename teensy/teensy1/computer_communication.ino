@@ -2,7 +2,7 @@
 // Include some type of copyright
 
 
-const int maxWheelSpeed = 130;
+const int maxWheelSpeed = 160;
 
 
 // Reads the serial port for a computer command and sets the given int values
@@ -75,11 +75,14 @@ int boundSorterSignal(int cmd) {
 
 // Prints given string to the computer, tab separated
 void printDataToComputer(int leftPosition, int rightPosition,
+                         int leftVelocity, int rightVelocity,
                          int aX, int aY, int aZ,
                          int isAuto) {
     // LVEL and RVEL are in ticks/sec
     Serial.print("LPOS\t"); Serial.print(leftPosition);
     Serial.print("\tRPOS\t"); Serial.print(rightPosition);
+    Serial.print("\tLVEL\t"); Serial.print(leftVelocity);
+    Serial.print("\tRVEL\t"); Serial.print(rightVelocity);
     Serial.print("\tAX\t"); Serial.print(aX);
     Serial.print("\tAY\t"); Serial.print(aY);
     Serial.print("\tAZ\t"); Serial.print(aZ);
