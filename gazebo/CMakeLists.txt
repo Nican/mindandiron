@@ -6,7 +6,7 @@ find_package(Boost REQUIRED COMPONENTS system)
 find_package(Eigen3 REQUIRED)
 #find_package(Qt5Widgets)
 #find_package(Qt5OpenGL)
-find_package(PCL 1.7.2 EXACT REQUIRED)
+find_package(PCL 1.8.0 EXACT REQUIRED)
 find_package(OpenCV)
 #find_package(apriltags REQUIRED)
 
