@@ -228,9 +228,8 @@ void RealRobot::showGPS()
 {
 	if(mKinect != nullptr)
 		mKinect->requestDepthFrame();
-
+	// std::cout << "Current robot position: " << mOdometry.mPosition.transpose() << "\n";
 	std::cout << "Current robot position: " << mOdometry.mPosition.transpose() << " | " << lastStatus.leftPosition << "\n";
-
     //qDebug()<<Q_FUNC_INFO;
     //std::cout << "AAAA\t" << QThread::currentThreadId() << "\n";
 }

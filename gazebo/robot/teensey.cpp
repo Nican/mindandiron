@@ -31,19 +31,21 @@ void Teensey::receiveSerialData()
 	        QString line(buf);
 	        QStringList parts = line.trimmed().split("\t");
 
-	        if(parts.size() != 12)
+	        if(parts.size() != 16)
 	        {
 	        	std::cerr << "Unable to parse teensey string: '" << buf << "'\n";
 	        	return;
 	        }
 
 	        TeenseyStatus status;
-	        status.leftPosition = parts[1].toDouble();
-	        status.rightPosition = parts[3].toDouble();
-	        status.acceleration.x() = parts[5].toDouble() - 512.0;
-	        status.acceleration.y() = parts[7].toDouble() - 512.0;
-	        status.acceleration.z() = parts[9].toDouble() - 512.0;
-	        status.autoFlag = parts[11] == "1";
+	        status.leftPosition = parts[1].toDouble() * (2 * M_PI / 23330.0) * 0.155;  // Distance traveled in meters
+	        status.rightPosition = parts[3].toDouble() * (2 * M_PI / 23330.0) * 0.155;  // Distance traveled in meters
+	        // status.leftVelocity = parts[5].toDouble();
+	        // status.rightVelocity = parts[7].toDouble();
+	        status.acceleration.x() = parts[9].toDouble() - 512.0;
+	        status.acceleration.y() = parts[11].toDouble() - 512.0;
+	        status.acceleration.z() = parts[13].toDouble() - 512.0;
+	        status.autoFlag = parts[15] == "1";
 
 	        status.acceleration = status.acceleration / 200.0; //Convert from voltage to m/s^2
 
