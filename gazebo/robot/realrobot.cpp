@@ -59,7 +59,9 @@ public:
   }
 };
 
-KratosKinect::KratosKinect(libfreenect2::Freenect2Device *dev, QObject* parent) : QObject(parent), mDev(dev)
+KratosKinect::KratosKinect(libfreenect2::Freenect2Device *dev, QObject* parent) : 
+	QObject(parent), 
+	mDev(dev)
 {	
 	mDev->start();
 }
@@ -134,7 +136,10 @@ bool KratosKinect::onNewFrame(libfreenect2::Frame::Type type, libfreenect2::Fram
 
 };
 
-RealRobot::RealRobot() : mKinect(nullptr)
+RealRobot::RealRobot() : 
+	mKinect(nullptr),
+	bFirstTeenseyMessage(true),
+	mOdometry(0.69)
 {
 
 
@@ -149,7 +154,15 @@ RealRobot::RealRobot() : mKinect(nullptr)
 	m_kratos = std::make_shared<Robot::Kratos>(motion, sensors);
 
 	mTeensey = new Robot::Teensey(this);
-	QObject::connect(mTeensey, &Robot::Teensey::statusUpdate, [](Robot::TeenseyStatus){
+	QObject::connect(mTeensey, &Robot::Teensey::statusUpdate, [this](Robot::TeenseyStatus status){
+
+		if(bFirstTeenseyMessage != true)
+			this->mOdometry.Update(
+				status.leftPosition - lastStatus.leftPosition, 
+				status.rightPosition - lastStatus.rightPosition);
+
+		bFirstTeenseyMessage = false;
+		lastStatus = status;
 		//std::cout << "Got update!\n";
 	});
 
@@ -168,11 +181,11 @@ RealRobot::RealRobot() : mKinect(nullptr)
 		mKinect = new KratosKinect(dev, this);
 		mKinect->requestDepthFrame();
 		
-		QObject::connect(timer, SIGNAL(timeout()), this, SLOT(showGPS()));
 		QObject::connect(mKinect, SIGNAL(receiveColorImage(Robot::ImgData)), this, SLOT(receiveColorImage2(Robot::ImgData)));
 		QObject::connect(mKinect, SIGNAL(receiveDepthImage(Robot::DepthImgData)), this, SLOT(receiveDepthImage2(Robot::DepthImgData)));
 	}
 
+	QObject::connect(timer, SIGNAL(timeout()), this, SLOT(showGPS()));
 }
 
 
@@ -198,6 +211,9 @@ void RealRobot::showGPS()
 {
 	if(mKinect != nullptr)
 		mKinect->requestDepthFrame();
+
+	std::cout << "Current robot position: " << mOdometry.mPosition.transpose() << "\n";
+
     //qDebug()<<Q_FUNC_INFO;
     //std::cout << "AAAA\t" << QThread::currentThreadId() << "\n";
 }
