@@ -2,6 +2,7 @@
 
 #include <QObject>
 #include <QTimer>
+#include <QElapsedTimer>
 #include <iostream>
 #include "../robot.h"
 #include "../odometry.h"
@@ -62,6 +63,7 @@ public:
     RealRobot();
 
     Odometry mOdometry;
+    QElapsedTimer mElapsedTimer;
 
 public slots:
     void showGPS();

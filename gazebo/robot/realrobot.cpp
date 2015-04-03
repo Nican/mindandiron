@@ -195,6 +195,14 @@ RealRobot::RealRobot() :
 	}
 
 	QObject::connect(timer, SIGNAL(timeout()), this, SLOT(showGPS()));
+
+	mElapsedTimer.start();
+
+	auto timer2 = new QTimer(this);
+	timer2->start(1000);
+	QObject::connect(timer, &QTimer::timeout, this, [this](){
+		this->m_kratos->Update(static_cast<double>(this->mElapsedTimer.elapsed()) / 1000.0);
+	});
 }
 
 
