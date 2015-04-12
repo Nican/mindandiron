@@ -2,35 +2,23 @@
 
 #include <QSerialPort>
 #include <eigen3/Eigen/Dense>
+#include "robot.h"
 
 namespace Robot {
 
-struct TeenseyStatus
-{
-	double leftPosition;
-	double rightPosition;
-	Eigen::Vector3d acceleration;
-	bool autoFlag;
-};
-
-class Teensey : public QObject
+class KratosTeensy : public Teensy
 {
     Q_OBJECT
 
     QSerialPort* mSerial;
 
-
-
 public:
     
-    Teensey(QObject* parent);
+    KratosTeensy(QObject* parent);
 
 protected slots:
 	void receiveSerialData();
-	void receiveError();
-
-signals:
-    void statusUpdate(TeenseyStatus);
+	void receiveError(QSerialPort::SerialPortError error);
 
 
 };

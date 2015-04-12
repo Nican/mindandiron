@@ -1,4 +1,5 @@
 #include "pointcloud.h"
+#include <pcl/geometry/polygon_operations.h>
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QPushButton>

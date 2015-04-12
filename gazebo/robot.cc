@@ -27,7 +27,6 @@ Kratos::Kratos(const RobotMotion& motion, const RobotSensors& sensors) :
 	mState->Initialize();
 
 	mBaseStation.reset(new BaseStationDetector(this));
-	
 }
 
 void Kratos::Update(double simTime)
@@ -81,8 +80,8 @@ void Kratos::ReceiveWheelTicks(int leftTicks, int rightTicks)
 	double leftRevolutions = static_cast<double>(leftTicks) / 23330.0;
 	double rightRevolutions = static_cast<double>(rightTicks) / 23330.0;
 
-	double leftDistance = leftRevolutions * 0.31 * M_PI;
-	double rightDistance = rightRevolutions * 0.31 * M_PI;
+	double leftDistance = leftRevolutions * 0.31 * 2.0 * M_PI;
+	double rightDistance = rightRevolutions * 0.31 * 2.0 * M_PI;
 
 	mOdometry.Update(leftDistance, rightDistance);
 

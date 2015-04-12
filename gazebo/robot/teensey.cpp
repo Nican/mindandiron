@@ -2,26 +2,27 @@
 #include <iostream>
 #include <QStringList>
 
-namespace Robot {
+using namespace Robot;
 
-Teensey::Teensey(QObject* parent) : QObject(parent)
+KratosTeensy::KratosTeensy(QObject* parent) : Teensy(parent)
 {
 
 	mSerial = new QSerialPort("/dev/serial/by-id/usb-Teensyduino_USB_Serial_587440-if00", this);
 
-	QObject::connect(mSerial, &QSerialPort::readyRead, this, &Teensey::receiveSerialData);
+	QObject::connect(mSerial, &QSerialPort::readyRead, this, &KratosTeensy::receiveSerialData);
+	connect(mSerial, SIGNAL(error(QSerialPort::SerialPortError)), this, SLOT(receiveError(QSerialPort::SerialPortError)));
 
 	if(!mSerial->open(QIODevice::ReadWrite))
 		std::cout << "Unabled to open Serial port\n";
 
 }
 
-void Teensey::receiveError()
+void KratosTeensy::receiveError(QSerialPort::SerialPortError error)
 {
 	std::cout << "Teensey received error. " << mSerial->error() << "\n";
 }
 
-void Teensey::receiveSerialData()
+void KratosTeensy::receiveSerialData()
 {
 	while(mSerial->canReadLine())
 	{
@@ -38,8 +39,8 @@ void Teensey::receiveSerialData()
 	        }
 
 	        TeenseyStatus status;
-	        status.leftPosition = parts[1].toDouble() * (2 * M_PI / 23330.0) * 0.155;  // Distance traveled in meters
-	        status.rightPosition = parts[3].toDouble() * (2 * M_PI / 23330.0) * 0.155;  // Distance traveled in meters
+	        status.leftPosition = parts[1].toDouble(); // * (2 * M_PI / 23330.0) * 0.155;  // Distance traveled in meters
+	        status.rightPosition = parts[3].toDouble(); // * (2 * M_PI / 23330.0) * 0.155;  // Distance traveled in meters
 	        // status.leftVelocity = parts[5].toDouble();
 	        // status.rightVelocity = parts[7].toDouble();
 	        status.acceleration.x() = parts[9].toDouble() - 512.0;
@@ -53,5 +54,3 @@ void Teensey::receiveSerialData()
 	    }
 	}
 }
-
-};

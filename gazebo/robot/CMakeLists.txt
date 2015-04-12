@@ -7,6 +7,16 @@ set(CMAKE_AUTOMOC ON)
 
 find_package(Qt5Widgets)
 find_package(Qt5SerialPort)
+find_package(Qt5Sql)
+find_package(Qt5Concurrent)
 
-add_executable(kratos_robot realrobot.cpp teensey.cpp)
-target_link_libraries(kratos_robot Qt5::Widgets Qt5::SerialPort freenect2 kratos_base)
+add_executable(kratos_robot 
+	realrobot.cpp 
+	gazeborobot.cpp
+	teensey.cpp 
+	../nzmqt/nzmqt.cpp 
+	main.cpp
+	robot.cpp
+)
+
+target_link_libraries(kratos_robot Qt5::Widgets Qt5::SerialPort Qt5::Sql Qt5::Concurrent freenect2 kratos_base)

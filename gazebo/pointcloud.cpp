@@ -2,6 +2,25 @@
 
 #include <pcl/filters/voxel_grid.h>
 
+#include <pcl/filters/passthrough.h>
+#include <pcl/search/kdtree.h>
+#include <pcl/segmentation/region_growing_rgb.h>
+#include <pcl/segmentation/region_growing.h>
+#include <pcl/features/normal_3d.h>
+
+
+#include <pcl/io/io.h>
+#include <pcl/io/pcd_io.h>
+#include <pcl/common/time.h>
+#include <pcl/features/integral_image_normal.h>
+#include <pcl/ModelCoefficients.h>
+
+#include <pcl/segmentation/organized_multi_plane_segmentation.h>
+#include <pcl/segmentation/organized_connected_component_segmentation.h>
+#include <pcl/filters/extract_indices.h>
+#include <pcl/console/parse.h>
+#include <pcl/geometry/polygon_operations.h>
+
 void UpdatePointCloud(const Robot::DepthImgData &imgData, pcl::PointCloud<pcl::PointXYZRGB> &cloud)
 {
 	//cloud.points.resize(0);
@@ -212,7 +231,7 @@ PointCloud::Ptr RegionGrowingSegmenter::AsyncronousUpdate(PointCloud::Ptr imgClo
 	}
 
 
-
+	/*
 	for(auto &point : colored_cloud->points)
 	{
 		if(point.r == 0 && point.g == 0 && point.b == 0)
@@ -220,6 +239,7 @@ PointCloud::Ptr RegionGrowingSegmenter::AsyncronousUpdate(PointCloud::Ptr imgClo
 			//point.x = point.y = point.z = std::numeric_limits<double>::quiet_NaN();
 		}
 	}
+	*/
 
 	return colored_cloud;
 }

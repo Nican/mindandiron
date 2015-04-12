@@ -1,8 +1,8 @@
 #include "realrobot.h"
-#include <QCoreApplication>
-#include <QThread>
+
 #include <QMetaType>
 
+using namespace Robot;
 
 class AprilTagCameraMotorReal : public Robot::AprilTagServo
 {
@@ -52,20 +52,17 @@ public:
 	virtual Eigen::Vector3d GetPosition() const override
 	{
 
-		return Eigen::Vector3d(
-			mRobot->mOdometry.mPosition.x(), 
-			mRobot->mOdometry.mPosition.y(), 
-			0);
+		return Eigen::Vector3d(0, 0, 0);
 	}
 
 	virtual double GetOrientation() const override
 	{
-		return mRobot->mOdometry.mTheta;
+		return 0.0;
 	}
 };
 
 KratosKinect::KratosKinect(libfreenect2::Freenect2Device *dev, QObject* parent) : 
-	QObject(parent), 
+	Robot::Kinect(parent), 
 	mDev(dev)
 {	
 	mDev->start();
@@ -141,13 +138,13 @@ bool KratosKinect::onNewFrame(libfreenect2::Frame::Type type, libfreenect2::Fram
 
 };
 
-RealRobot::RealRobot() : 
+RealRobot::RealRobot(QObject* parent) : 
+	Robot::Kratos2(parent),
 	mKinect(nullptr),
-	bFirstTeenseyMessage(true),
-	mOdometry(0.69)
+	bFirstTeenseyMessage(true)
 {
 
-
+	/*
 	Robot::RobotMotion motion;
 	motion.mAprilServo = std::make_shared<AprilTagCameraMotorReal>();
 	motion.mLeftWheel = std::make_shared<WheelJointReal>();
@@ -157,17 +154,18 @@ RealRobot::RealRobot() :
 	sensors.mTRS = std::make_shared<TRSReal>(this);
 
 	m_kratos = std::make_shared<Robot::Kratos>(motion, sensors);
+	*/
 
-	mTeensey = new Robot::Teensey(this);
-	QObject::connect(mTeensey, &Robot::Teensey::statusUpdate, [this](Robot::TeenseyStatus status){
+	mTeensy = new Robot::KratosTeensy(this);
+	QObject::connect(mTeensy, &Robot::KratosTeensy::statusUpdate, [this](Robot::TeenseyStatus status){
 
 		if(bFirstTeenseyMessage != true)
 		{
-			this->mOdometry.Update(
+			/*
+			this->m_kratos->ReceiveWheelTicks(
 				status.leftPosition - lastStatus.leftPosition, 
 				status.rightPosition - lastStatus.rightPosition);
-
-			//this->m_kratos->ReceiveWheelTicks(status.leftPosition, status.rightPosition);
+				*/
 		}
 
 		bFirstTeenseyMessage = false;
@@ -176,8 +174,8 @@ RealRobot::RealRobot() :
 	});
 
 
-    timer = new QTimer(this);
-    timer->start(1000); //time specified in ms
+    //timer = new QTimer(this);
+    //timer->start(1000); //time specified in ms
 
     auto dev = freenect2.openDefaultDevice();
 
@@ -190,23 +188,25 @@ RealRobot::RealRobot() :
 		mKinect = new KratosKinect(dev, this);
 		mKinect->requestDepthFrame();
 		
-		QObject::connect(mKinect, SIGNAL(receiveColorImage(Robot::ImgData)), this, SLOT(receiveColorImage2(Robot::ImgData)));
-		QObject::connect(mKinect, SIGNAL(receiveDepthImage(Robot::DepthImgData)), this, SLOT(receiveDepthImage2(Robot::DepthImgData)));
+		//QObject::connect(mKinect, SIGNAL(receiveColorImage(Robot::ImgData)), this, SLOT(receiveColorImage2(Robot::ImgData)));
+		//QObject::connect(mKinect, SIGNAL(receiveDepthImage(Robot::DepthImgData)), this, SLOT(receiveDepthImage2(Robot::DepthImgData)));
 	}
 
-	QObject::connect(timer, SIGNAL(timeout()), this, SLOT(showGPS()));
+	//QObject::connect(timer, SIGNAL(timeout()), this, SLOT(showGPS()));
 
 	mElapsedTimer.start();
 
+	/*
 	auto timer2 = new QTimer(this);
 	timer2->start(1000);
-	QObject::connect(timer, &QTimer::timeout, this, [this](){
-		this->m_kratos->Update(static_cast<double>(this->mElapsedTimer.elapsed()) / 1000.0);
+	QObject::connect(timer2, &QTimer::timeout, [this](){
+		//this->m_kratos->Update(static_cast<double>(this->mElapsedTimer.elapsed()) / 1000.0);
 	});
+	*/
 }
 
 
-
+/*
 void RealRobot::receiveColorImage2(Robot::ImgData mat)
 {
 	//std::cout << "Received color image2\t" << QThread::currentThreadId() << "\n";
@@ -228,25 +228,7 @@ void RealRobot::showGPS()
 {
 	if(mKinect != nullptr)
 		mKinect->requestDepthFrame();
-	// std::cout << "Current robot position: " << mOdometry.mPosition.transpose() << "\n";
-	std::cout << "Current robot position: " << mOdometry.mPosition.transpose() << " | " << lastStatus.leftPosition << "\n";
-    //qDebug()<<Q_FUNC_INFO;
-    //std::cout << "AAAA\t" << QThread::currentThreadId() << "\n";
+	
+	//qDebug()<<Q_FUNC_INFO;
 }
-
-
-int main(int argc, char* argv[])
-{
-	//QCoreApplication does not have a GUI
-	QCoreApplication app(argc, argv);
-	qRegisterMetaType<Robot::DepthImgData>("Robot::DepthImgData");	
-	qRegisterMetaType<Robot::ImgData>("Robot::ImgData");
-	qRegisterMetaType<Robot::TeenseyStatus>("Robot::TeenseyStatus");
-
-	RealRobot myWidget;
-
-	// ...
-	return app.exec();
-}
-
-
+*/

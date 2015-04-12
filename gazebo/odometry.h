@@ -11,11 +11,9 @@ class Odometry
 
 public:
 
-
-
 	//Total distance traveled
 	double mDistanceTraveled;  
-
+	
 	Eigen::Vector2d mPosition;
 	double mTheta;
 

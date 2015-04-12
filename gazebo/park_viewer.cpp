@@ -53,7 +53,7 @@ int main(int argc, char *argv[])
 
 	char basePath[] = "/home/nican/zfs/storage/kinect/kinect2";
 
-	for(int i = 0; i < 2000; i++)
+	for(int i = 155; i < 2000; i++)
 	{
 		char path[5000];
 		sprintf(path, "%s/rgb_%d.bin", basePath, i);

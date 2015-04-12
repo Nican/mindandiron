@@ -155,7 +155,6 @@ public:
 		sbuf.write(&id, sizeof(id));
 		msgpack::pack(sbuf, obj);
 
-
 		zmq::message_t msg(sbuf.size());
 		memcpy(msg.data(), sbuf.data(), sbuf.size());
 		mZmqSocket.send (msg);

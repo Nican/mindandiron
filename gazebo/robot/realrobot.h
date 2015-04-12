@@ -5,6 +5,7 @@
 #include <QElapsedTimer>
 #include <iostream>
 #include "../robot.h"
+#include "robot.h"
 #include "../odometry.h"
 #include "teensey.h"
 #include <mutex>
@@ -15,8 +16,10 @@
 
 #include <opencv2/opencv.hpp>
 
+namespace Robot 
+{
 
-class KratosKinect : public QObject, public libfreenect2::FrameListener
+class KratosKinect : public Robot::Kinect, public libfreenect2::FrameListener
 {
     Q_OBJECT
 
@@ -32,12 +35,8 @@ public:
 
     virtual bool onNewFrame(libfreenect2::Frame::Type type, libfreenect2::Frame *frame) override;
 
-    void requestDepthFrame();
-    void requestColorFrame();
-
-signals:
-    void receiveColorImage(Robot::ImgData mat);
-    void receiveDepthImage(Robot::DepthImgData mat);
+    virtual void requestDepthFrame() override;
+    virtual void requestColorFrame() override;
     
 private:
     Q_DISABLE_COPY(KratosKinect)
@@ -45,32 +44,43 @@ private:
 };
 
 
-class RealRobot : public QObject
+class RealRobot : public Robot::Kratos2
 {
     Q_OBJECT
 
     libfreenect2::Freenect2 freenect2;
     KratosKinect* mKinect;
 
-    Robot::Teensey* mTeensey;
+    Robot::KratosTeensy* mTeensy;
     Robot::TeenseyStatus lastStatus;
     bool bFirstTeenseyMessage;
   	//libfreenect2::Freenect2Device *dev;
 
-    std::shared_ptr<Robot::Kratos> m_kratos;
+    //std::shared_ptr<Robot::Kratos> m_kratos;
 
 public:
-    RealRobot();
+    RealRobot(QObject* parent = 0);
 
-    Odometry mOdometry;
     QElapsedTimer mElapsedTimer;
 
-public slots:
-    void showGPS();
+    virtual Kinect* GetKinect() override
+    {
+        return mKinect;
+    }
 
-    void receiveColorImage2(Robot::ImgData mat);
-    void receiveDepthImage2(Robot::DepthImgData mat);
+    virtual Teensy* GetTeensy() override
+    {
+        return mTeensy;
+    }
+
+public slots:
+    //void showGPS();
+
+    //void receiveColorImage2(Robot::ImgData mat);
+   // void receiveDepthImage2(Robot::DepthImgData mat);
 
 private:
-    QTimer *timer;
+    //QTimer *timer;
 };
+
+}

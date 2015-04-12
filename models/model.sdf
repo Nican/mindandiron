@@ -93,7 +93,11 @@
       <!-- <plugin name='libkratos_camera' filename='libkratos_camera.so'/>-->
     </sensor>
 
-
+    <sensor name="imu" type="imu">
+      <imu/>
+      <always_on>1</always_on>
+      <update_rate>1000</update_rate>
+    </sensor>
 
 
   </link>
