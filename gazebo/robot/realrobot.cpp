@@ -4,6 +4,7 @@
 
 using namespace Robot;
 
+/*
 class AprilTagCameraMotorReal : public Robot::AprilTagServo
 {
 public:
@@ -60,7 +61,7 @@ public:
 		return 0.0;
 	}
 };
-
+*/
 KratosKinect::KratosKinect(libfreenect2::Freenect2Device *dev, QObject* parent) : 
 	Robot::Kinect(parent), 
 	mDev(dev)

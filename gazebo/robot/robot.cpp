@@ -59,6 +59,7 @@ mDb(QSqlDatabase::addDatabase("QSQLITE"))
 	mDb.exec("CREATE INDEX IF NOT EXISTS depthLogTimestampIndex ON depthLog(timestamp)");
 	mDb.exec("CREATE INDEX IF NOT EXISTS teensyLogTimestampIndex ON teensyLog(timestamp)");
 	mDb.exec("CREATE INDEX IF NOT EXISTS pointCloudTimestampIndex ON pointCloudLog(timestamp)");
+	mDb.exec("CREATE INDEX IF NOT EXISTS decawaveLogTimestampIndex ON decawaveLog(timestamp)");
 }
 
 void SensorLog::receiveDepthImage(DepthImgData mat)
@@ -132,12 +133,24 @@ void SensorLog::decawaveUpdate(double distance)
 	mSocket->sendMessage(msg);
 }
 
+void SensorLog::SendObstacles(std::vector<Eigen::Vector2i> points)
+{
+	msgpack::sbuffer sbuf;
+	msgpack::pack(sbuf, points);
+
+	QList<QByteArray> msg;
+	msg += QByteArray("\x05");
+	msg += QByteArray(sbuf.data(), sbuf.size());
+	mSocket->sendMessage(msg);
+}
+
 Kratos2::Kratos2(QObject* parent) : QObject(parent)
 {
 	mContext = nzmqt::createDefaultContext(this);
 	mContext->start();
 
 	mSensorLog = new SensorLog(this, mContext);
+	mPlanner = new TrajectoryPlanner2(this);
 }
 
 
@@ -157,12 +170,17 @@ void Kratos2::Initialize()
 	connect(GetKinect(), &Kinect::receiveDepthImage, this, &Kratos2::ProccessPointCloud);
 
 	connect(&mFutureWatcher, SIGNAL(finished()), this, SLOT(FinishedPointCloud()));
+	connect(mPlanner, SIGNAL(ObstacleMapUpdate(std::vector<Eigen::Vector2i>)), mSensorLog, SLOT(SendObstacles(std::vector<Eigen::Vector2i>)));
 
 	GetKinect()->requestDepthFrame();
 }
 
+
+
 void Kratos2::ProccessPointCloud(DepthImgData mat)
 {
+	QDateTime currentTime = QDateTime::currentDateTime();
+
 	QFuture<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> future = QtConcurrent::run([mat]() -> pcl::PointCloud<pcl::PointXYZRGB>::Ptr{
 
 		auto imgCloud = boost::make_shared<pcl::PointCloud<pcl::PointXYZRGB>>();
@@ -183,7 +201,7 @@ void Kratos2::FinishedPointCloud()
 	auto pointCloud = mFutureWatcher.future().result();
 	mSensorLog->receiveSegmentedPointcloud(pointCloud);
 
-
+	mPlanner->UpdateObstacles(pointCloud);
 
 	GetKinect()->requestDepthFrame();
 }

@@ -5,8 +5,8 @@ namespace msgpack {
 
 MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
 
-template <int _Rows>
-inline object const& operator>> (object const& o, Eigen::Matrix<double, _Rows, 1>& v) {
+template <typename T, int _Rows>
+inline object const& operator>> (object const& o, Eigen::Matrix<T, _Rows, 1>& v) {
     if (o.type != msgpack::type::ARRAY) throw msgpack::type_error();
     if (o.via.array.size != _Rows) throw msgpack::type_error();
 
@@ -16,8 +16,8 @@ inline object const& operator>> (object const& o, Eigen::Matrix<double, _Rows, 1
     return o;
 }
 
-template <typename Stream, int _Rows>
-inline packer<Stream>& operator<< (packer<Stream>& o, Eigen::Matrix<double, _Rows, 1> const& v) {
+template <typename Stream, typename T, int _Rows>
+inline packer<Stream>& operator<< (packer<Stream>& o, Eigen::Matrix<T, _Rows, 1> const& v) {
     // packing member variables as an array.
     o.pack_array(_Rows);
     

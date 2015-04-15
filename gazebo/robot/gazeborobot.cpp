@@ -72,20 +72,44 @@ void GazeboTeensey::fireUpdate()
 }
 
 GazeboKratos::GazeboKratos(QObject* parent) 
-	: Kratos2(parent)
+	: Kratos2(parent), leftWheel(0.0), rightWheel(0.0)
 {
-	mSocket = mContext->createSocket(nzmqt::ZMQSocket::TYP_SUB, this);
-	mSocket->setObjectName("Subscriber.Socket.socket(SUB)");
-	mSocket->connectTo("tcp://127.0.0.1:5556");
-	mSocket->setOption(nzmqt::ZMQSocket::OPT_SUBSCRIBE, "", 0);
+	mSubSocket = mContext->createSocket(nzmqt::ZMQSocket::TYP_SUB, this);
+	mSubSocket->setObjectName("Subscriber.Socket.socket(SUB)");
+	mSubSocket->connectTo("tcp://127.0.0.1:5556");
+	mSubSocket->setOption(nzmqt::ZMQSocket::OPT_SUBSCRIBE, "", 0);
+
+	mPubSocket = mContext->createSocket(nzmqt::ZMQSocket::TYP_PUB, this);
+	mPubSocket->setObjectName("Publisher.Socket.socket(PUB)");
+	mPubSocket->bindTo("tcp://*:5557");
 
 	mTeensey = new GazeboTeensey(this);
 	mKinect = new GazeboKinect(this);
 	mDecaWave = new GazeboDevawave(this);
 
-	connect(mSocket, SIGNAL(messageReceived(const QList<QByteArray>&)), SLOT(messageReceived(const QList<QByteArray>&)));
+	mSendControlTimer = new QTimer(this);
+	mSendControlTimer->start(1000/30);
+
+	connect(mSendControlTimer, SIGNAL(timeout()), this, SLOT(fireControlUpdate()));
+	connect(mSubSocket, SIGNAL(messageReceived(const QList<QByteArray>&)), SLOT(messageReceived(const QList<QByteArray>&)));
 }
 
+void GazeboKratos::fireControlUpdate()
+{
+	RobotGazeboControl control;
+	control.leftForce = leftWheel;
+	control.rightForce = rightWheel;
+
+	char id = 0;
+
+	msgpack::sbuffer sbuf;
+	sbuf.write(&id, sizeof(id));
+	msgpack::pack(sbuf, control);
+
+	QList<QByteArray> msg;
+	msg += QByteArray(sbuf.data(), sbuf.size());
+	mPubSocket->sendMessage(msg);
+}
 
 void GazeboKratos::messageReceived(const QList<QByteArray>& messages)
 {

@@ -64,11 +64,17 @@ class GazeboKratos : public Kratos2
 	Q_OBJECT
 
 public:
-	nzmqt::ZMQSocket* mSocket;
+	nzmqt::ZMQSocket* mSubSocket;
+	nzmqt::ZMQSocket* mPubSocket;
 
 	GazeboTeensey* mTeensey;
 	GazeboKinect* mKinect;
 	GazeboDevawave* mDecaWave;
+
+	QTimer* mSendControlTimer;
+
+	double leftWheel;
+	double rightWheel;
 
 	GazeboKratos(QObject* parent = 0);
 
@@ -87,8 +93,18 @@ public:
 		return mDecaWave;
 	}
 
-protected slots:
+	virtual void SetLeftWheelPower(double power) override
+	{
+		leftWheel = power;
+	}
 
+	virtual void SetLRightWheelPower(double power) override
+	{
+		rightWheel = power;
+	}
+
+protected slots:
+	void fireControlUpdate();
     void messageReceived(const QList<QByteArray>& message);
 };
 

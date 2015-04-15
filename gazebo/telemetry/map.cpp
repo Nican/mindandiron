@@ -5,6 +5,8 @@
 #include <QGridLayout>
 #include <QTextStream>
 #include <QGraphicsRectItem>
+#include <QGraphicsItemGroup>
+
 
 
 MapOverview::MapOverview(QWidget *parent)
@@ -57,6 +59,29 @@ void MapOverview::ReceiveDecawaveReading(double distance)
     mDecawaveCircle->setRect(-distance, -distance, distance*2, distance*2);
 }
 
+void MapOverview::ReceiveObstacleMap(std::vector<Eigen::Vector2i> points)
+{
+    if(mCore != nullptr)
+        delete mCore;
+
+    mCore = new QGraphicsItemGroup();
+
+    for(const auto& imagePt : points)
+    {
+        Eigen::Vector2f newPt(imagePt.y() * 5.0 / 512.0 + 0.6, imagePt.x() * 5.0 / 512.0 - 2.5);
+
+        auto rect = new QGraphicsRectItem(newPt.x(), newPt.y(), 5.0 / 512.0, 5.0 / 512.0);
+        rect->setPen(QPen(Qt::red, 0));
+        mCore->addToGroup(rect);
+    }
+
+    mCore->setPos(mRobotInstance->pos());
+    mCore->setRotation(mRobotInstance->rotation());
+    
+    scene.addItem(mCore);
+}
+
+/*
 void MapOverview::ReadLocation(const Robot::LocationDataPoint &historyPoint)
 {
     QPointF lastPos = mRobotInstance->pos();
@@ -79,6 +104,7 @@ void MapOverview::ReadLocation(const Robot::LocationDataPoint &historyPoint)
     QTextStream(&statusStr) << "Position = " << stringStream.str().c_str() << "\n" << "rotation = " << historyPoint.mRotation;
     //mStatusText->setText(statusStr);
 }
+*/
 
 void MapOverview::DrawExploreChild(TrajectoryTreeNode* parent, TrajectoryTreeNode* node, int &id)
 {
@@ -100,7 +126,6 @@ void MapOverview::DrawExploreChild(TrajectoryTreeNode* parent, TrajectoryTreeNod
 }
 
 
-#include <QGraphicsItemGroup>
 
 void MapOverview::UpdateWalkabilityMap(DepthViewerTab::PclPointCloud::Ptr pointCloud)
 {
@@ -114,11 +139,6 @@ void MapOverview::UpdateWalkabilityMap(DepthViewerTab::PclPointCloud::Ptr pointC
     //To a 2d image, 512x512 
     Eigen::MatrixXi walkabilityMap = Eigen::MatrixXi::Zero(512, 512);
     Eigen::Affine2f toImageTransform = Eigen::Scaling(512.0f / 5.0f, 512.0f / 5.0f) * Eigen::Translation2f(2.5f, 0.0f);
-    //int notWalkable = 0;
-
-    //auto pointCloud = mDepthViewer->mGrowingRegion->segmenter.lastProccessed;
-
-    //std::cout << "Point cloud " << *pointCloud << "\n";
 
     for(const auto& pt : pointCloud->points)
     {
@@ -138,9 +158,6 @@ void MapOverview::UpdateWalkabilityMap(DepthViewerTab::PclPointCloud::Ptr pointC
             continue;
 
         walkabilityMap(imagePt.x(), imagePt.y()) = pt.b == 255 ? 2 : 1;
-        //notWalkable++;
-
-        //std::cout << "\t" << imagePt.transpose() << "\n";
 
         Eigen::Vector2f newPt(imagePt.y() * 5.0 / 512.0 + 0.6, imagePt.x() * 5.0 / 512.0 - 2.5);
         //newPt += pointCloud->sensor_origin_.head<2>();

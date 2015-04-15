@@ -6,6 +6,7 @@
 #include "../nzmqt/nzmqt.hpp"
 #include "../pointcloud.h"
 #include "../teensy.h"
+#include "trajectory2.h"
 
 namespace Robot{
 
@@ -71,22 +72,8 @@ public slots:
 	void receiveDepthImage(DepthImgData mat);
 	void teensyStatus(TeenseyStatus status);
 	void decawaveUpdate(double distance);
+	void SendObstacles(std::vector<Eigen::Vector2i>);
 };
-
-
-/*
-class PointCloudWorker : public QObject
-{
-	Q_OBJECT
-
-public slots:
-	void ProccessPointCloud(DepthImgData mat);
-
-signals:
-    void resultReady();
-
-};
-*/
 
 
 class Kratos2 : public QObject
@@ -96,10 +83,10 @@ class Kratos2 : public QObject
 public:
 	nzmqt::ZMQContext* mContext;
 
-
 	SensorLog* mSensorLog;
 	QFutureWatcher<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> mFutureWatcher;
 
+	TrajectoryPlanner2* mPlanner;
 
 	Kratos2(QObject* parent);
 
@@ -108,6 +95,9 @@ public:
 	virtual Kinect* GetKinect() = 0;
 	virtual Teensy* GetTeensy() = 0;
 	virtual Decawave* GetDecawave() = 0;
+
+	virtual void SetLeftWheelPower(double power) = 0;
+	virtual void SetLRightWheelPower(double power) = 0;
 
 public slots:
 	void ProccessPointCloud(DepthImgData mat);

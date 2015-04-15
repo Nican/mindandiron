@@ -26,7 +26,9 @@ namespace gazebo
   {
   public:
     zmq::context_t mZmqContext;
-    zmq::socket_t mZmqSocket;
+
+    zmq::socket_t mZmqPubSocket;
+    zmq::socket_t mZmqSubSocket;
 
     event::ConnectionPtr newDepthFrameConnection;
     event::ConnectionPtr newImageFrameConnection;
@@ -49,9 +51,13 @@ namespace gazebo
 
     Kratos() : 
       mZmqContext(1), 
-      mZmqSocket(mZmqContext, ZMQ_PUB)
+      mZmqPubSocket(mZmqContext, ZMQ_PUB),
+      mZmqSubSocket(mZmqContext, ZMQ_SUB)
     {
-      mZmqSocket.bind ("tcp://*:5556");
+      mZmqPubSocket.bind ("tcp://*:5556");
+
+      mZmqSubSocket.connect("tcp://127.0.0.1:5557");
+      mZmqSubSocket.setsockopt(ZMQ_SUBSCRIBE, "", 0);
     }
 
     virtual void Load(physics::ModelPtr _parent, sdf::ElementPtr /*_sdf*/) override
@@ -233,6 +239,32 @@ namespace gazebo
       lastRightWheelAngle = currentRight;
 
       SendTelemetry(0, tickData);
+
+      zmq::message_t msg;
+      while(mZmqSubSocket.recv(&msg, ZMQ_DONTWAIT))
+      {
+        char id = ((char*) msg.data())[0];
+
+        //Read result from the network
+        msgpack::unpacked result;
+        try { 
+          msgpack::unpack(result, ((char*) msg.data())+1, msg.size() - 1);
+        }
+        catch(std::exception &e)
+        {
+          std::cerr << "Failed to parse: " << e.what() << "\n";
+          return;
+        }
+
+        if(id == 0)
+        {
+          RobotGazeboControl controlData;
+          result.get().convert(&controlData);
+
+          m_leftWheelJoint->SetForce(0, controlData.leftForce);
+          m_rightWheelJoint->SetForce(0, controlData.rightForce);
+        }
+      }
     }
 
     std::mutex zmqLock;
@@ -249,7 +281,7 @@ namespace gazebo
       
       {
         std::lock_guard<std::mutex> lock(zmqLock);
-        mZmqSocket.send (msg);
+        mZmqPubSocket.send (msg);
       }
     };
   };

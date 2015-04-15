@@ -52,8 +52,8 @@ class WheelOdometryTab : public QWidget
 {
 	Q_OBJECT
 
-	QCustomPlot* leftPlot;
-	QCustomPlot* rightPlot;
+	WheelOdometryPlot* leftPlot;
+	WheelOdometryPlot* rightPlot;
 
 public:
 	WheelOdometryTab(QWidget *parent = 0);
@@ -80,11 +80,12 @@ public:
 
 	QGraphicsEllipseItem* mDecawaveCircle;
 
-	void ReadLocation(const Robot::LocationDataPoint &historyPoint);
+	//void ReadLocation(const Robot::LocationDataPoint &historyPoint);
 	void DrawExploreChild(TrajectoryTreeNode* parent, TrajectoryTreeNode* child, int &id);
 	void UpdateWalkabilityMap(DepthViewerTab::PclPointCloud::Ptr pointCloud);
 
 	void ReceiveDecawaveReading(double distance);
+	void ReceiveObstacleMap(std::vector<Eigen::Vector2i> points);
 };
 
 
@@ -109,8 +110,6 @@ public:
 	MapOverview* mGridView;
 	AprilTagLabel* mAprilTag;
 
-
-	Robot::LocationHistory mHistory;
 
 public slots:
 	void messageReceived(const QList<QByteArray>& messages);

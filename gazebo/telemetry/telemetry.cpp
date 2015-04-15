@@ -64,7 +64,7 @@ void DepthViewerTab::ReceivePointCloud(const PclPointCloud::Ptr pointCloud)
 }
 
 
-WheelOdometryPlot::WheelOdometryPlot(QWidget *parent = 0) : QCustomPlot(parent)
+WheelOdometryPlot::WheelOdometryPlot(QWidget *parent) : QCustomPlot(parent)
 {
     addGraph();
     graph(0)->setPen(QPen(Qt::blue)); // line color blue for first graph
@@ -89,12 +89,12 @@ WheelOdometryPlot::WheelOdometryPlot(QWidget *parent = 0) : QCustomPlot(parent)
 
 void WheelOdometryPlot::addPoint(double x, double y)
 {
-    graph(0)->addData(key, data.leftPosition);
-    graph(0)->removeDataBefore(key-30);
+    graph(0)->addData(x, y);
+    graph(0)->removeDataBefore(x-30);
     graph(0)->rescaleValueAxis();
 
     // make key axis range scroll with the data (at a constant range size of 8):
-    xAxis->setRange(key+0.25, 30, Qt::AlignRight);
+    xAxis->setRange(x+0.25, 30, Qt::AlignRight);
     replot();
 }
 
@@ -113,10 +113,10 @@ WheelOdometryTab::WheelOdometryTab(QWidget *parent) : QWidget(parent)
 
 void WheelOdometryTab::ReceiveData(const Robot::TeenseyStatus &data)
 {
-    double key = QDateTime::currentDateTime().toMSecsSinceEpoch()/1000.0;
+    double key = QDateTime::currentDateTime().toMSecsSinceEpoch() / 1000.0;
 
     leftPlot->addPoint(key, data.leftPosition);
-    leftPlot->addPoint(key, data.rightPosition);
+    rightPlot->addPoint(key, data.rightPosition);
 }
 
 
@@ -200,6 +200,16 @@ void MainWindow::messageReceived(const QList<QByteArray>& messages)
         double distance = *(reinterpret_cast<const double*>(messages[1].data()));
         mGridView->ReceiveDecawaveReading(distance);
 
+    }
+
+    if(id == '\x05')
+    {
+        std::vector<Eigen::Vector2i> points;
+
+        msgpack::unpacked result;
+        msgpack::unpack(result, messages[1].data(), messages[1].size());
+        result.get().convert(&points);
+        mGridView->ReceiveObstacleMap(points);
     }
 
 }

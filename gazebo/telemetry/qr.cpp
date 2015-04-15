@@ -37,7 +37,7 @@ class AprilTagLabel : public QLabel
   double m_px; // camera principal point
   double m_py;
 
-  QRTagFinder qrFinder;
+  //QRTagFinder qrFinder;
 
 public:
 	AprilTagLabel(QWidget *parent = 0) : QLabel("C", parent),

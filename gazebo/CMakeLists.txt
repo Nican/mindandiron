@@ -28,7 +28,7 @@ link_directories(${Boost_LIBRARY_DIRS})
 link_directories(lib)
 
 
-add_library(kratos_base SHARED robot.cc trajectory.cpp state.cc pointcloud.cpp april.cpp odometry.cpp)
+add_library(kratos_base SHARED trajectory.cpp pointcloud.cpp odometry.cpp)
 target_link_libraries(kratos_base apriltags ${Boost_LIBRARIES} ${OpenCV_LIBS}  ${PCL_LIBRARIES} zmq msgpack Box2D)
 
 find_package(gazebo REQUIRED)
