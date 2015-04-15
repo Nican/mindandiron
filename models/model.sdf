@@ -2,7 +2,7 @@
 <sdf version='1.4'>
   <model name="Kratos">
    
-   <static>true</static>
+   <static>false</static>
 
 
   <!-----------------------------------------

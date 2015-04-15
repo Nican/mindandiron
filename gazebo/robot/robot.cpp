@@ -144,6 +144,80 @@ void SensorLog::SendObstacles(std::vector<Eigen::Vector2i> points)
 	mSocket->sendMessage(msg);
 }
 
+//////////////////////////
+/// WheelPID
+//////////////////////////
+
+WheelPID::WheelPID(QObject* parent) : 
+	mLeftDesiredVelocity(0.0), 
+	mRightDesiredVelocity(0.0), 
+	mLeftForce(0.0), 
+	mRightForce(0.0)
+{
+
+}
+
+void WheelPID::SetLeftDesiredVelocity(double speed)
+{
+	SetLeftDesiredAngularVelocity(speed / 0.155);
+}
+
+void WheelPID::SetLeftDesiredAngularVelocity(double speed)
+{
+	mLeftDesiredVelocity = speed;
+}
+
+void WheelPID::SetRightDesiredVelocity(double speed)
+{
+	SetRightDesiredAngularVelocity(speed / 0.155);
+}
+
+void WheelPID::SetRightDesiredAngularVelocity(double speed)
+{
+	mRightDesiredVelocity = speed;
+}
+
+void WheelPID::teensyStatus(TeenseyStatus status)
+{
+	QDateTime currentTime = QDateTime::currentDateTime();
+
+	if(!mLastStatusTime.isValid() || mLastStatusTime.msecsTo(currentTime) > 1000 )
+	{
+		mLastStatusTime = QDateTime::currentDateTime();
+		return;
+	}
+
+	double seconds = static_cast<double>(mLastStatusTime.msecsTo(currentTime)) / 1000.0;
+
+	mLeftVelocity = (mLastStatus.leftPosition - status.leftPosition) / seconds;
+	mRightVelocity = (mLastStatus.rightPosition - status.rightPosition) / seconds;
+
+	//TODO: Look at real implementation of PID
+	if(mLeftVelocity < mLeftDesiredVelocity)
+	{
+		mLeftForce += 1.0;
+	}
+	else
+	{
+		mLeftForce -= 1.0;
+	}
+
+	if(mRightVelocity < mRightDesiredVelocity)
+	{
+		mRightForce += 1.0;
+	}
+	else
+	{
+		mRightForce -= 1.0;
+	}
+
+	mLastStatus = status;
+}
+
+//////////////////////////
+/// Kratos2
+//////////////////////////
+
 Kratos2::Kratos2(QObject* parent) : QObject(parent)
 {
 	mContext = nzmqt::createDefaultContext(this);
@@ -173,6 +247,9 @@ void Kratos2::Initialize()
 	connect(mPlanner, SIGNAL(ObstacleMapUpdate(std::vector<Eigen::Vector2i>)), mSensorLog, SLOT(SendObstacles(std::vector<Eigen::Vector2i>)));
 
 	GetKinect()->requestDepthFrame();
+
+	SetLeftWheelPower(500);
+	SetLRightWheelPower(500);
 }
 
 

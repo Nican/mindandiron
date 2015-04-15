@@ -225,8 +225,10 @@ namespace gazebo
       auto linAccel = mImuSensor->GetLinearAcceleration();
 
       //One full rotation should be 23330 ticks
-      tickData.leftWheelTicks = static_cast<int>((currentLeft - lastLeftWheelAngle) / (M_PI*2) * 23330.0);
-      tickData.rightWheelTicks = static_cast<int>((currentRight - lastRightWheelAngle) / (M_PI*2) * 23330.0);
+      //tickData.leftWheelTicks = static_cast<int>((currentLeft - lastLeftWheelAngle) / (M_PI*2) * 23330.0);
+      //tickData.rightWheelTicks = static_cast<int>((currentRight - lastRightWheelAngle) / (M_PI*2) * 23330.0);
+      tickData.leftWheelTicks = static_cast<int>((currentLeft) / (M_PI*2) * 23330.0);
+      tickData.rightWheelTicks = static_cast<int>((currentRight) / (M_PI*2) * 23330.0);
 
       tickData.leftWheelForce = m_leftWheelJoint->GetVelocity(0xDEADBEEF);
       tickData.rightWheelForce = m_rightWheelJoint->GetVelocity(0xDEADBEEF);
@@ -255,6 +257,8 @@ namespace gazebo
           std::cerr << "Failed to parse: " << e.what() << "\n";
           return;
         }
+
+        //std::cout << "rceived message of id " << ((int)id) << "\n";
 
         if(id == 0)
         {

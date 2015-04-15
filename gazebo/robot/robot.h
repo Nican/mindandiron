@@ -3,6 +3,7 @@
 #include <QObject>
 #include <QSqlDatabase>
 #include <QFutureWatcher>
+#include <QDateTime>
 #include "../nzmqt/nzmqt.hpp"
 #include "../pointcloud.h"
 #include "../teensy.h"
@@ -73,6 +74,34 @@ public slots:
 	void teensyStatus(TeenseyStatus status);
 	void decawaveUpdate(double distance);
 	void SendObstacles(std::vector<Eigen::Vector2i>);
+};
+
+class WheelPID : public QObject
+{
+	Q_OBJECT
+public:
+	double mLeftDesiredVelocity; //in rads/sec
+	double mRightDesiredVelocity; //in rads/sec
+
+	TeenseyStatus mLastStatus;
+	QDateTime mLastStatusTime;
+
+	double mLeftVelocity;
+	double mRightVelocity;
+
+	double mLeftForce;
+	double mRightForce;
+
+	WheelPID(QObject* parent);
+
+	void SetLeftDesiredAngularVelocity(double speed); //In radians per second
+	void SetLeftDesiredVelocity(double speed); // In m/s
+
+	void SetRightDesiredAngularVelocity(double speed); //In radians per second
+	void SetRightDesiredVelocity(double speed); // In m/s
+
+public slots:
+	void teensyStatus(TeenseyStatus status);
 };
 
 
