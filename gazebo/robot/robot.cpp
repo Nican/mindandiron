@@ -1,4 +1,5 @@
 #include "robot.h"
+#include "state.h"
 #include <QSqlQuery>
 #include <QVariant>
 #include <QDateTime>
@@ -34,26 +35,32 @@ mDb(QSqlDatabase::addDatabase("QSQLITE"))
 
 	mDb.exec("CREATE TABLE IF NOT EXISTS depthLog(" \
 		"id INTEGER PRIMARY KEY ASC,"\
-		"timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,"\
+		"timestamp INTEGER,"\
 		"data COLLATE BINARY"\
 		")");
 
 	mDb.exec("CREATE TABLE IF NOT EXISTS teensyLog(" \
 		"id INTEGER PRIMARY KEY ASC,"\
-		"timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,"\
+		"timestamp INTEGER,"\
 		"leftWheel INTEGER, rightWheel INTEGER, accelX REAL, accelY REAL, accelZ REAL, autoFlag INTEGER"\
 		")");
 
 	mDb.exec("CREATE TABLE IF NOT EXISTS pointCloudLog(" \
 		"id INTEGER PRIMARY KEY ASC,"\
-		"timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,"\
+		"timestamp INTEGER,"\
 		"data COLLATE BINARY"\
 		")");
 
 	mDb.exec("CREATE TABLE IF NOT EXISTS decawaveLog(" \
 		"id INTEGER PRIMARY KEY ASC,"\
-		"timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,"\
+		"timestamp INTEGER,"\
 		"distance REAL"\
+		")");
+
+	mDb.exec("CREATE TABLE IF NOT EXISTS forceLog(" \
+		"id INTEGER PRIMARY KEY ASC,"\
+		"timestamp INTEGER,"\
+		"leftForce REAL, rightForce REAL"\
 		")");
 
 	mDb.exec("CREATE INDEX IF NOT EXISTS depthLogTimestampIndex ON depthLog(timestamp)");
@@ -70,7 +77,8 @@ void SensorLog::receiveDepthImage(DepthImgData mat)
 	QByteArray data = QByteArray(sbuf.data(), sbuf.size());
 
 	QSqlQuery query(mDb);
-	query.prepare("INSERT INTO depthLog(data) VALUES(:data)");
+	query.prepare("INSERT INTO depthLog(timestamp, data) VALUES(:timestamp, :data)");
+	query.bindValue(":timestamp", QDateTime::currentDateTime().toMSecsSinceEpoch() , QSql::In);
 	query.bindValue(":data", data, QSql::In | QSql::Binary);
 	query.exec();
 
@@ -83,8 +91,9 @@ void SensorLog::receiveDepthImage(DepthImgData mat)
 void SensorLog::teensyStatus(TeenseyStatus status)
 {
 	QSqlQuery query(mDb);
-	query.prepare("INSERT INTO teensyLog(leftWheel, rightWheel, accelX, accelY, accelZ, autoFlag) VALUES "\
-		"(:left, :right, :accelX, :accelY, :accelZ, :auto)");
+	query.prepare("INSERT INTO teensyLog(timestamp, leftWheel, rightWheel, accelX, accelY, accelZ, autoFlag) VALUES "\
+		"(:timestamp, :left, :right, :accelX, :accelY, :accelZ, :auto)");
+	query.bindValue(":timestamp", QDateTime::currentDateTime().toMSecsSinceEpoch() , QSql::In);
 	query.bindValue(":left", status.leftPosition, QSql::In);
 	query.bindValue(":right", status.rightPosition, QSql::In);
 	query.bindValue(":accelX", status.acceleration.x(), QSql::In);
@@ -102,6 +111,30 @@ void SensorLog::teensyStatus(TeenseyStatus status)
 	mSocket->sendMessage(msg);
 }
 
+void SensorLog::forceUpdated(double leftForce, double rightForce)
+{
+	QSqlQuery query(mDb);
+	query.prepare("INSERT INTO forceLog(timestamp, leftForce, rightForce) VALUES "\
+		"(:timestamp, :left, :right)");
+	query.bindValue(":timestamp", QDateTime::currentDateTime().toMSecsSinceEpoch() , QSql::In);
+	query.bindValue(":left", leftForce, QSql::In);
+	query.bindValue(":right", rightForce, QSql::In);
+	query.exec();
+
+	std::vector<double> forces = {
+		leftForce,
+		rightForce
+	};
+
+	msgpack::sbuffer sbuf;
+	msgpack::pack(sbuf, forces);
+
+	QList<QByteArray> msg;
+	msg += QByteArray("\x06");
+	msg += QByteArray(sbuf.data(), sbuf.size());
+	mSocket->sendMessage(msg);
+}
+
 void SensorLog::receiveSegmentedPointcloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr pointCloud)
 {
 	QByteArray data(
@@ -110,7 +143,8 @@ void SensorLog::receiveSegmentedPointcloud(pcl::PointCloud<pcl::PointXYZRGB>::Pt
 		);
 
 	QSqlQuery query(mDb);
-	query.prepare("INSERT INTO pointCloudLog(data) VALUES(:data)");
+	query.prepare("INSERT INTO pointCloudLog(timestamp, data) VALUES(:timestamp, :data)");
+	query.bindValue(":timestamp", QDateTime::currentDateTime().toMSecsSinceEpoch() , QSql::In);
 	query.bindValue(":data", data, QSql::In | QSql::Binary);
 	query.exec();
 
@@ -123,7 +157,8 @@ void SensorLog::receiveSegmentedPointcloud(pcl::PointCloud<pcl::PointXYZRGB>::Pt
 void SensorLog::decawaveUpdate(double distance)
 {
 	QSqlQuery query(mDb);
-	query.prepare("INSERT INTO decawaveLog(distance) VALUES(:distance)");
+	query.prepare("INSERT INTO decawaveLog(timestamp, distance) VALUES(:timestamp, :distance)");
+	query.bindValue(":timestamp", QDateTime::currentDateTime().toMSecsSinceEpoch() , QSql::In);
 	query.bindValue(":distance", distance, QSql::In | QSql::Binary);
 	query.exec();
 
@@ -189,42 +224,72 @@ void WheelPID::teensyStatus(TeenseyStatus status)
 
 	double seconds = static_cast<double>(mLastStatusTime.msecsTo(currentTime)) / 1000.0;
 
-	mLeftVelocity = (mLastStatus.leftPosition - status.leftPosition) / seconds;
-	mRightVelocity = (mLastStatus.rightPosition - status.rightPosition) / seconds;
+	mLeftVelocity = static_cast<double>(mLastStatus.leftPosition - status.leftPosition) / 23330.0 / seconds;
+	mRightVelocity = static_cast<double>(mLastStatus.rightPosition - status.rightPosition) / 23330.0 / seconds;
+
+	double forceStep = 30.0;
+	double forceLimit = 1000.0;
+
+	std::cout << "Vels: " << mLeftVelocity << "\t" << mLeftDesiredVelocity << "\n";
 
 	//TODO: Look at real implementation of PID
 	if(mLeftVelocity < mLeftDesiredVelocity)
 	{
-		mLeftForce += 1.0;
+		mLeftForce += forceStep;
 	}
 	else
 	{
-		mLeftForce -= 1.0;
+		mLeftForce -= forceStep;
 	}
 
 	if(mRightVelocity < mRightDesiredVelocity)
 	{
-		mRightForce += 1.0;
+		mRightForce += forceStep;
 	}
 	else
 	{
-		mRightForce -= 1.0;
+		mRightForce -= forceStep;
 	}
 
+	if(mLeftForce >= forceLimit)
+		mLeftForce = forceLimit;
+
+	if(mLeftForce <= -forceLimit)
+		mLeftForce = -forceLimit;
+
+	if(mRightForce >= forceLimit)
+		mRightForce = forceLimit;
+
+	if(mRightForce <= -forceLimit)
+		mRightForce = -forceLimit;
+
 	mLastStatus = status;
+
+	emit forceUpdated();
+}
+
+void WheelPID::Reset()
+{
+	mRightForce = 0.0;
+	mLeftForce = 0.0;
+	SetLeftDesiredAngularVelocity(0.0);
+	SetRightDesiredAngularVelocity(0.0);
+
+	emit forceUpdated();
 }
 
 //////////////////////////
 /// Kratos2
 //////////////////////////
 
-Kratos2::Kratos2(QObject* parent) : QObject(parent)
+Kratos2::Kratos2(QObject* parent) : QObject(parent), mState(nullptr)
 {
 	mContext = nzmqt::createDefaultContext(this);
 	mContext->start();
 
 	mSensorLog = new SensorLog(this, mContext);
 	mPlanner = new TrajectoryPlanner2(this);
+	mWheelPID = new WheelPID(this);
 }
 
 
@@ -232,6 +297,8 @@ void Kratos2::Initialize()
 {
 	connect(GetKinect(), &Kinect::receiveDepthImage, mSensorLog, &SensorLog::receiveDepthImage);
 	connect(GetTeensy(), &Teensy::statusUpdate, mSensorLog, &SensorLog::teensyStatus);
+	connect(GetTeensy(), &Teensy::statusUpdate, mWheelPID, &WheelPID::teensyStatus);
+	
 
 	auto decawave = GetDecawave();
 
@@ -246,13 +313,21 @@ void Kratos2::Initialize()
 	connect(&mFutureWatcher, SIGNAL(finished()), this, SLOT(FinishedPointCloud()));
 	connect(mPlanner, SIGNAL(ObstacleMapUpdate(std::vector<Eigen::Vector2i>)), mSensorLog, SLOT(SendObstacles(std::vector<Eigen::Vector2i>)));
 
+	connect(mWheelPID, &WheelPID::forceUpdated, this, &Kratos2::updateForces);
+
 	GetKinect()->requestDepthFrame();
 
-	SetLeftWheelPower(500);
-	SetLRightWheelPower(500);
+	MoveForwardState* newState = new MoveForwardState(this, 1.0);
+	SetState(newState);
 }
 
+void Kratos2::updateForces()
+{
+	SetLeftWheelPower(mWheelPID->mLeftForce);
+	SetRightWheelPower(mWheelPID->mRightForce);
 
+	mSensorLog->forceUpdated(mWheelPID->mLeftForce, mWheelPID->mRightForce);
+}
 
 void Kratos2::ProccessPointCloud(DepthImgData mat)
 {
@@ -281,6 +356,57 @@ void Kratos2::FinishedPointCloud()
 	mPlanner->UpdateObstacles(pointCloud);
 
 	GetKinect()->requestDepthFrame();
+}
+
+void Kratos2::SetState(BaseState* nextState)
+{
+	nextState->setParent(this);
+
+ 	auto oldState = mState;
+
+ 	mState = nextState;
+ 	nextState->Start();
+
+ 	if(oldState != nullptr)
+ 		oldState->deleteLater();
+}
+
+#include <QSqlError>
+
+Odometry Kratos2::GetOdometryTraveledSince(QDateTime time)
+{
+	QSqlQuery query(mSensorLog->mDb);
+	query.prepare("SELECT leftWheel, rightWheel FROM teensyLog WHERE timestamp > :startTime");
+	query.bindValue(":startTime", time.toMSecsSinceEpoch());
+
+	if(!query.exec())
+		cout << "error SQL= " <<  query.lastError().text().toStdString() << endl;
+
+	double lastLeft = 0.0;
+	double lastRight = 0.0;
+
+	if(query.next())
+	{
+		lastLeft = query.value(0).toDouble();
+		lastRight = query.value(1).toDouble();
+	}
+
+	Odometry odometry(0.69);
+
+	while (query.next()) {
+		double left = query.value(0).toDouble();
+		double right = query.value(1).toDouble();
+
+		//std::cout << "\tReading value: " << query.value(0).toDouble() << "\n";
+		odometry.Update(
+			static_cast<double>(lastLeft - left) / 23330.0 * 0.31 * M_PI, 
+			static_cast<double>(lastRight - right) / 23330.0 * 0.31 * M_PI);
+
+		lastLeft = left;
+		lastRight = right;
+    }
+
+	return odometry;
 }
 
 

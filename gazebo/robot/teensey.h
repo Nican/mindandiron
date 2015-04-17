@@ -16,6 +16,8 @@ public:
     
     KratosTeensy(QObject* parent);
 
+    void SetVelocities(double left, double right);
+
 protected slots:
 	void receiveSerialData();
 	void receiveError(QSerialPort::SerialPortError error);

@@ -18,6 +18,7 @@ add_executable(kratos_robot
 	main.cpp
 	robot.cpp
 	trajectory2.cpp
+	state.cpp
 )
 
 target_link_libraries(kratos_robot Qt5::Widgets Qt5::SerialPort Qt5::Sql Qt5::Concurrent freenect2 kratos_base)

@@ -55,9 +55,13 @@ class WheelOdometryTab : public QWidget
 	WheelOdometryPlot* leftPlot;
 	WheelOdometryPlot* rightPlot;
 
+	WheelOdometryPlot* leftForcePlot;
+	WheelOdometryPlot* rightForcePlot;
+
 public:
 	WheelOdometryTab(QWidget *parent = 0);
 	void ReceiveData(const Robot::TeenseyStatus &data);
+	void ReceiveWheelForce(const std::vector<double> &forces);
 };
 
 

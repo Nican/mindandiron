@@ -22,6 +22,17 @@ void KratosTeensy::receiveError(QSerialPort::SerialPortError error)
 	std::cout << "Teensey received error. " << mSerial->error() << "\n";
 }
 
+void KratosTeensy::SetVelocities(double left, double right)
+{
+	int leftInt = static_cast<int>(left) * 23330 * 100;
+	int rightInt = static_cast<int>(right) * 23330 * 100;
+
+	QString sendString;
+	sendString.sprintf("LVEL\t%d\tRVEL\t%d\tCOLL\t%s\tSORT\t%s\tEND", leftInt, rightInt, "0", "0");
+	std::cout << "Sending value: " << sendString.toStdString() << "\n";
+	mSerial->write(sendString.toLocal8Bit());
+}
+
 void KratosTeensy::receiveSerialData()
 {
 	while(mSerial->canReadLine())

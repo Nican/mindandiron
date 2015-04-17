@@ -104,9 +104,15 @@ WheelOdometryTab::WheelOdometryTab(QWidget *parent) : QWidget(parent)
     leftPlot = new WheelOdometryPlot(this);
     rightPlot = new WheelOdometryPlot(this);
 
+    leftForcePlot = new WheelOdometryPlot(this);
+    rightForcePlot = new WheelOdometryPlot(this);
+
     QGridLayout *layout = new QGridLayout;
     layout->addWidget(leftPlot, 0, 0);
     layout->addWidget(rightPlot, 1, 0);
+
+    layout->addWidget(leftForcePlot, 0, 1);
+    layout->addWidget(rightForcePlot, 1, 1);
 
     setLayout(layout);
 }
@@ -119,6 +125,13 @@ void WheelOdometryTab::ReceiveData(const Robot::TeenseyStatus &data)
     rightPlot->addPoint(key, data.rightPosition);
 }
 
+void WheelOdometryTab::ReceiveWheelForce(const std::vector<double> &forces)
+{
+    double key = QDateTime::currentDateTime().toMSecsSinceEpoch() / 1000.0;
+
+    leftForcePlot->addPoint(key, forces[0]);
+    rightForcePlot->addPoint(key, forces[1]);
+}
 
 
 MainWindow::MainWindow(QWidget *parent)
@@ -210,6 +223,16 @@ void MainWindow::messageReceived(const QList<QByteArray>& messages)
         msgpack::unpack(result, messages[1].data(), messages[1].size());
         result.get().convert(&points);
         mGridView->ReceiveObstacleMap(points);
+    }
+
+    if(id == '\x06')
+    {
+        std::vector<double> points;
+
+        msgpack::unpacked result;
+        msgpack::unpack(result, messages[1].data(), messages[1].size());
+        result.get().convert(&points);
+        mWheelOdometry->ReceiveWheelForce(points);
     }
 
 }

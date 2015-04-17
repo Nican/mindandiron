@@ -142,7 +142,9 @@ bool KratosKinect::onNewFrame(libfreenect2::Frame::Type type, libfreenect2::Fram
 RealRobot::RealRobot(QObject* parent) : 
 	Robot::Kratos2(parent),
 	mKinect(nullptr),
-	bFirstTeenseyMessage(true)
+	bFirstTeenseyMessage(true),
+	mLeftVelocity(0.0),
+	mRightVelocity(0.0)
 {
 
 	/*
@@ -175,8 +177,9 @@ RealRobot::RealRobot(QObject* parent) :
 	});
 
 
-    //timer = new QTimer(this);
-    //timer->start(1000); //time specified in ms
+    auto timer = new QTimer(this);
+    timer->start(100); //time specified in ms
+    QObject::connect(timer, SIGNAL(timeout()), this, SLOT(updateForces()));
 
     auto dev = freenect2.openDefaultDevice();
 
@@ -193,7 +196,7 @@ RealRobot::RealRobot(QObject* parent) :
 		//QObject::connect(mKinect, SIGNAL(receiveDepthImage(Robot::DepthImgData)), this, SLOT(receiveDepthImage2(Robot::DepthImgData)));
 	}
 
-	//QObject::connect(timer, SIGNAL(timeout()), this, SLOT(showGPS()));
+	
 
 	mElapsedTimer.start();
 
@@ -204,6 +207,16 @@ RealRobot::RealRobot(QObject* parent) :
 		//this->m_kratos->Update(static_cast<double>(this->mElapsedTimer.elapsed()) / 1000.0);
 	});
 	*/
+}
+
+void RealRobot::SetLeftWheelPower(double power) 
+{
+	mLeftVelocity = power / 100.0;
+}
+
+void RealRobot::SetRightWheelPower(double power)
+{
+	mRightVelocity = power / 100.0;
 }
 
 
@@ -222,14 +235,11 @@ void RealRobot::receiveDepthImage2(Robot::DepthImgData image)
 		m_kratos->ReceiveDepth(image);
 }
 
-
-
-
-void RealRobot::showGPS()
-{
-	if(mKinect != nullptr)
-		mKinect->requestDepthFrame();
-	
-	//qDebug()<<Q_FUNC_INFO;
-}
 */
+
+
+void RealRobot::updateForces()
+{
+	mTeensy->SetVelocities(mLeftVelocity, mRightVelocity);
+}
+

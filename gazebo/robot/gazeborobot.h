@@ -98,7 +98,7 @@ public:
 		leftWheel = power;
 	}
 
-	virtual void SetLRightWheelPower(double power) override
+	virtual void SetRightWheelPower(double power) override
 	{
 		rightWheel = power;
 	}

@@ -11,6 +11,8 @@
 
 namespace Robot{
 
+class BaseState;
+
 class Decawave : public QObject
 {
 	Q_OBJECT
@@ -68,6 +70,7 @@ public:
 	SensorLog(QObject* parent, nzmqt::ZMQContext* context);
 
 	void receiveSegmentedPointcloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr pointCloud);
+	void forceUpdated(double leftForce, double rightForce);
 
 public slots:
 	void receiveDepthImage(DepthImgData mat);
@@ -92,7 +95,7 @@ public:
 	double mLeftForce;
 	double mRightForce;
 
-	WheelPID(QObject* parent);
+	WheelPID(QObject* parent = 0);
 
 	void SetLeftDesiredAngularVelocity(double speed); //In radians per second
 	void SetLeftDesiredVelocity(double speed); // In m/s
@@ -100,8 +103,13 @@ public:
 	void SetRightDesiredAngularVelocity(double speed); //In radians per second
 	void SetRightDesiredVelocity(double speed); // In m/s
 
+	void Reset();
+
 public slots:
 	void teensyStatus(TeenseyStatus status);
+
+signals:
+    void forceUpdated();
 };
 
 
@@ -116,21 +124,30 @@ public:
 	QFutureWatcher<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> mFutureWatcher;
 
 	TrajectoryPlanner2* mPlanner;
+	WheelPID* mWheelPID;
+
+	BaseState *mState;
 
 	Kratos2(QObject* parent);
 
 	void Initialize();
+
+	//The state is only set on the next frame
+	void SetState(BaseState* nextState); 
 
 	virtual Kinect* GetKinect() = 0;
 	virtual Teensy* GetTeensy() = 0;
 	virtual Decawave* GetDecawave() = 0;
 
 	virtual void SetLeftWheelPower(double power) = 0;
-	virtual void SetLRightWheelPower(double power) = 0;
+	virtual void SetRightWheelPower(double power) = 0;
+
+	Odometry GetOdometryTraveledSince(QDateTime time);
 
 public slots:
 	void ProccessPointCloud(DepthImgData mat);
 	void FinishedPointCloud();
+	void updateForces();
 
 
 };
