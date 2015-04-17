@@ -295,27 +295,28 @@ Kratos2::Kratos2(QObject* parent) : QObject(parent), mState(nullptr)
 
 void Kratos2::Initialize()
 {
-	connect(GetKinect(), &Kinect::receiveDepthImage, mSensorLog, &SensorLog::receiveDepthImage);
+	auto kinect = GetKinect();
+
+	if(kinect != nullptr)
+	{
+		connect(kinect, &Kinect::receiveDepthImage, mSensorLog, &SensorLog::receiveDepthImage);
+		connect(kinect, &Kinect::receiveDepthImage, this, &Kratos2::ProccessPointCloud);
+		kinect->requestDepthFrame();
+	}
+
 	connect(GetTeensy(), &Teensy::statusUpdate, mSensorLog, &SensorLog::teensyStatus);
 	connect(GetTeensy(), &Teensy::statusUpdate, mWheelPID, &WheelPID::teensyStatus);
 	
-
 	auto decawave = GetDecawave();
 
 	if(decawave != nullptr)
 	{
 		connect(decawave, &Decawave::statusUpdate, mSensorLog, &SensorLog::decawaveUpdate);
-	}
-
-
-	connect(GetKinect(), &Kinect::receiveDepthImage, this, &Kratos2::ProccessPointCloud);
+	}	
 
 	connect(&mFutureWatcher, SIGNAL(finished()), this, SLOT(FinishedPointCloud()));
 	connect(mPlanner, SIGNAL(ObstacleMapUpdate(std::vector<Eigen::Vector2i>)), mSensorLog, SLOT(SendObstacles(std::vector<Eigen::Vector2i>)));
-
 	connect(mWheelPID, &WheelPID::forceUpdated, this, &Kratos2::updateForces);
-
-	GetKinect()->requestDepthFrame();
 
 	MoveForwardState* newState = new MoveForwardState(this, 1.0);
 	SetState(newState);
@@ -354,8 +355,10 @@ void Kratos2::FinishedPointCloud()
 	mSensorLog->receiveSegmentedPointcloud(pointCloud);
 
 	mPlanner->UpdateObstacles(pointCloud);
+	auto kinect = GetKinect();
 
-	GetKinect()->requestDepthFrame();
+	if(kinect != nullptr)
+		kinect->requestDepthFrame();
 }
 
 void Kratos2::SetState(BaseState* nextState)
