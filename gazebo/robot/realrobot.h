@@ -76,6 +76,11 @@ public:
         return mTeensy;
     }
 
+    virtual Decawave* GetDecawave() override
+    {
+        return nullptr;
+    }
+
     virtual void SetLeftWheelPower(double power) override;
     virtual void SetRightWheelPower(double power) override;
 
