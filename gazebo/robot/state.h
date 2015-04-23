@@ -15,24 +15,60 @@ public:
 
 	BaseState(Kratos2 *parent) : QObject(parent), mRobot(parent)
 	{
-
 	}
 
-	virtual void Start() = 0;
+	virtual bool IsValid();
+	virtual void Start(){};
+	virtual void End(){};
+};
 
-	bool IsActive();
+class ProgressState;
+
+class RootState : public BaseState
+{
+	Q_OBJECT
+
+	ProgressState *mState;
+
+public:
+	RootState(Kratos2 *parent);
+
+	void SetState(ProgressState* nextState);
+
+public slots:
+	void MoveToNextState();
+
 };
 
 
-class MoveForwardState : public BaseState
+class ProgressState : public BaseState
+{
+	Q_OBJECT
+
+private:
+	bool mIsFinished;
+
+public:
+	ProgressState(Kratos2 *parent) : BaseState(parent), mIsFinished(false)
+	{
+	}
+
+	void SetFinished();
+	bool IsFinished();
+	virtual bool IsValid() override;
+
+signals:
+	void Finished();
+};
+
+
+
+class MoveTowardsGoalState : public ProgressState
 {
 	Q_OBJECT
 public:
 
-	QDateTime mStartTime;
-	double mDistance;
-
-	MoveForwardState(Kratos2 *parent, double distance) : BaseState(parent), mDistance(distance)
+	MoveTowardsGoalState(Kratos2 *parent) : ProgressState(parent)
 	{
 	}
 
@@ -43,7 +79,27 @@ public slots:
 };
 
 
-class RotateState : public BaseState
+
+class MoveForwardState : public ProgressState
+{
+	Q_OBJECT
+public:
+
+	QDateTime mStartTime;
+	double mDistance;
+
+	MoveForwardState(Kratos2 *parent, double distance) : ProgressState(parent), mDistance(distance)
+	{
+	}
+
+	virtual void Start() override;
+
+public slots:
+	void TeensyStatus(TeenseyStatus status);
+};
+
+
+class RotateState : public ProgressState
 {
 	Q_OBJECT
 public:
@@ -51,7 +107,7 @@ public:
 	QDateTime mStartTime;
 	double mRotation;
 
-	RotateState(Kratos2 *parent, double rotation) : BaseState(parent), mRotation(rotation)
+	RotateState(Kratos2 *parent, double rotation) : ProgressState(parent), mRotation(rotation)
 	{
 	}
 

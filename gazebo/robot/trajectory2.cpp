@@ -4,6 +4,102 @@
 using namespace Robot;
 
 
+///////////////////////////////
+//// TrajectoryTreeNode2
+///////////////////////////////
+
+TrajectoryTreeNode2::TrajectoryTreeNode2(TrajectorySearch* planner, const Eigen::Vector2d &point, Complex rotation)
+	: mPoint(point), mRotation(rotation), mPlanner(planner)
+{
+	for(double i = -M_PI/8; i < M_PI/8; i += M_PI/32)
+	{
+		availableAngles.emplace_back(rotationToCompex(i) * mRotation);
+	}
+}
+
+bool TrajectoryTreeNode2::explore()
+{
+	if(inGoal())
+		return true;
+
+	if(!childs.empty())
+	{
+		for(auto& child : childs)
+		{
+			if(child->explore())
+				return true;
+		}
+	}
+
+
+	while(!availableAngles.empty())
+	{
+		Complex bestAngle(getNextBestAngle());
+
+		availableAngles.remove(bestAngle);
+
+		auto newPoint = mPoint + Eigen::Vector2d(std::real(bestAngle), std::imag(bestAngle)) * 0.3;
+		auto node = std::unique_ptr<TrajectoryTreeNode2>(new TrajectoryTreeNode2(mPlanner, newPoint, bestAngle));
+		//double x = node->mPoint.x();
+		//double y = node->mPoint.y();
+
+		if(mPlanner->TestPosition(node->mPoint, std::arg(node->mRotation)))
+		{
+			node->availableAngles.clear();
+			childs.emplace_back(std::move(node));
+
+			continue;
+		}
+		
+		childs.emplace_back(std::move(node));
+		return true;
+	}
+
+	return false;
+}
+
+Complex TrajectoryTreeNode2::getNextBestAngle() const
+{
+	Complex bestAngle;
+	Eigen::Vector2d diff(mPlanner->mGoal - mPoint);
+	Complex targetAngle = rotationToCompex(std::atan2(diff.y(), diff.x()));
+
+	for(auto angle : availableAngles)
+	{
+		if(std::norm(bestAngle) == 0.0 || std::norm(targetAngle - angle) < std::norm(targetAngle - bestAngle))
+		{
+			bestAngle = angle;
+		}
+	}
+
+	return bestAngle;
+}
+
+inline bool TrajectoryTreeNode2::inGoal() const
+{
+	return (mPoint - mPlanner->mGoal).norm() < 0.3;
+}
+
+
+///////////////////////////////
+//// TrajectorySearch
+///////////////////////////////
+
+
+bool TrajectorySearch::TestPosition(Eigen::Vector2d pos, double rotation)
+{
+	mPlanner->mRobotFixture->GetBody()->SetTransform({(float) pos.x(), (float) pos.y()}, (float) rotation);
+
+	//Recalculate collissions
+	mPlanner->world.Step(1.0f / 60.0f, 1, 1);
+
+	return mPlanner->mRobotFixture->GetBody()->GetContactList() != nullptr;
+}
+
+///////////////////////////////
+//// TrajectoryPlanner2
+///////////////////////////////
+
 TrajectoryPlanner2::TrajectoryPlanner2(QObject* parent) : 
 QObject(parent), mOdometry(0.69), world(b2Vec2(0.0, 0.0))
 {
@@ -111,7 +207,10 @@ void TrajectoryPlanner2::UpdateObstacles(pcl::PointCloud<pcl::PointXYZRGB>::Ptr 
 	}
 }
 
+
+/*
 void TrajectoryPlanner2::UpdateOdometry(double leftWheel, double rightWheel)
 {
 
 }
+*/

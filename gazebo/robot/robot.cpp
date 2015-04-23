@@ -1,10 +1,11 @@
 #include "robot.h"
 #include "state.h"
-#include <QSqlQuery>
-#include <QVariant>
 #include <QDateTime>
-#include <QtConcurrent>
 #include <QDir>
+#include <QSqlError>
+#include <QSqlQuery>
+#include <QtConcurrent>
+#include <QVariant>
 
 using namespace Robot;
 using namespace nzmqt;
@@ -230,38 +231,45 @@ void WheelPID::teensyStatus(TeenseyStatus status)
 	double forceStep = 30.0;
 	double forceLimit = 1000.0;
 
-	std::cout << "Vels: " << mLeftVelocity << "\t" << mLeftDesiredVelocity << "\n";
-
-	//TODO: Look at real implementation of PID
-	if(mLeftVelocity < mLeftDesiredVelocity)
+	if(status.autoFlag == true)
 	{
-		mLeftForce += forceStep;
+		mLeftForce = 0.0;
+		mRightForce = 0.0;
 	}
-	else
+	else 
 	{
-		mLeftForce -= forceStep;
+		//TODO: Look at real implementation of PID
+		if(mLeftVelocity < mLeftDesiredVelocity)
+		{
+			mLeftForce += forceStep;
+		}
+		else
+		{
+			mLeftForce -= forceStep;
+		}
+
+		if(mRightVelocity < mRightDesiredVelocity)
+		{
+			mRightForce += forceStep;
+		}
+		else
+		{
+			mRightForce -= forceStep;
+		}
+
+		if(mLeftForce >= forceLimit)
+			mLeftForce = forceLimit;
+
+		if(mLeftForce <= -forceLimit)
+			mLeftForce = -forceLimit;
+
+		if(mRightForce >= forceLimit)
+			mRightForce = forceLimit;
+
+		if(mRightForce <= -forceLimit)
+			mRightForce = -forceLimit;
 	}
 
-	if(mRightVelocity < mRightDesiredVelocity)
-	{
-		mRightForce += forceStep;
-	}
-	else
-	{
-		mRightForce -= forceStep;
-	}
-
-	if(mLeftForce >= forceLimit)
-		mLeftForce = forceLimit;
-
-	if(mLeftForce <= -forceLimit)
-		mLeftForce = -forceLimit;
-
-	if(mRightForce >= forceLimit)
-		mRightForce = forceLimit;
-
-	if(mRightForce <= -forceLimit)
-		mRightForce = -forceLimit;
 
 	mLastStatus = status;
 
@@ -282,7 +290,7 @@ void WheelPID::Reset()
 /// Kratos2
 //////////////////////////
 
-Kratos2::Kratos2(QObject* parent) : QObject(parent), mState(nullptr)
+Kratos2::Kratos2(QObject* parent) : QObject(parent), mState(nullptr), mIsPaused(false)
 {
 	mContext = nzmqt::createDefaultContext(this);
 	mContext->start();
@@ -306,6 +314,7 @@ void Kratos2::Initialize()
 
 	connect(GetTeensy(), &Teensy::statusUpdate, mSensorLog, &SensorLog::teensyStatus);
 	connect(GetTeensy(), &Teensy::statusUpdate, mWheelPID, &WheelPID::teensyStatus);
+	connect(GetTeensy(), &Teensy::statusUpdate, this, &Kratos2::TeensyStatus);
 	
 	auto decawave = GetDecawave();
 
@@ -318,8 +327,18 @@ void Kratos2::Initialize()
 	connect(mPlanner, SIGNAL(ObstacleMapUpdate(std::vector<Eigen::Vector2i>)), mSensorLog, SLOT(SendObstacles(std::vector<Eigen::Vector2i>)));
 	connect(mWheelPID, &WheelPID::forceUpdated, this, &Kratos2::updateForces);
 
-	MoveForwardState* newState = new MoveForwardState(this, 1.0);
-	SetState(newState);
+	mState = new RootState(this);
+	mState->Start();
+}
+
+void Kratos2::TeensyStatus(TeenseyStatus status)
+{
+	if(mIsPaused != status.autoFlag)
+	{
+		mIsPaused = status.autoFlag;
+		std::cout << "Robot changed to paused state: " << mIsPaused << "\n";
+		emit pauseUpdate(mIsPaused);
+	}
 }
 
 void Kratos2::updateForces()
@@ -360,21 +379,6 @@ void Kratos2::FinishedPointCloud()
 	if(kinect != nullptr)
 		kinect->requestDepthFrame();
 }
-
-void Kratos2::SetState(BaseState* nextState)
-{
-	nextState->setParent(this);
-
- 	auto oldState = mState;
-
- 	mState = nextState;
- 	nextState->Start();
-
- 	if(oldState != nullptr)
- 		oldState->deleteLater();
-}
-
-#include <QSqlError>
 
 Odometry Kratos2::GetOdometryTraveledSince(QDateTime time)
 {

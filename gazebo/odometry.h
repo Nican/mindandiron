@@ -22,5 +22,6 @@ public:
 	}
 
 	void Update(double leftWheel, double rightWheel);
-
 };
+
+std::ostream& operator<<(std::ostream &strm, const Odometry &a); 

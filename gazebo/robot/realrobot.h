@@ -1,14 +1,14 @@
 #pragma once
 
-#include <QObject>
-#include <QTimer>
-#include <QElapsedTimer>
-#include <iostream>
+#include "../odometry.h"
 #include "../robot.h"
 #include "robot.h"
-#include "../odometry.h"
 #include "teensey.h"
+#include <iostream>
 #include <mutex>
+#include <QElapsedTimer>
+#include <QObject>
+#include <QTimer>
 
 #include <libfreenect2/libfreenect2.hpp>
 #include <libfreenect2/frame_listener_impl.h>

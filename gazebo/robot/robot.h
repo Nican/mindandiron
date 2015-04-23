@@ -12,6 +12,7 @@
 namespace Robot{
 
 class BaseState;
+class RootState;
 
 class Decawave : public QObject
 {
@@ -50,6 +51,7 @@ private:
 class Teensy : public QObject
 {
     Q_OBJECT
+
 public:
     Teensy(QObject* parent) : QObject(parent)
 	{
@@ -126,14 +128,16 @@ public:
 	TrajectoryPlanner2* mPlanner;
 	WheelPID* mWheelPID;
 
-	BaseState *mState;
+	RootState *mState;
+
+	bool mIsPaused;
 
 	Kratos2(QObject* parent);
 
 	void Initialize();
 
 	//The state is only set on the next frame
-	void SetState(BaseState* nextState); 
+	//void SetState(BaseState* nextState); 
 
 	virtual Kinect* GetKinect() = 0;
 	virtual Teensy* GetTeensy() = 0;
@@ -146,9 +150,12 @@ public:
 
 public slots:
 	void ProccessPointCloud(DepthImgData mat);
+	void TeensyStatus(TeenseyStatus status);
 	void FinishedPointCloud();
 	void updateForces();
 
+signals:
+	void pauseUpdate(bool); //True when paused
 
 };
 

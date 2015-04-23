@@ -52,3 +52,7 @@ void Odometry::Update(double leftWheel, double rightWheel)
 	mDistanceTraveled += DSpace;   // total traveled distance
     mPosition += Dpos;     // current position
 }
+
+std::ostream& operator<<(std::ostream &strm, const Odometry &a) {
+  return strm << "Odometry({" << a.mPosition.transpose() << "}, " << (a.mTheta * 180.0 / M_PI) << "°)";
+}

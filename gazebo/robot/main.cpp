@@ -11,8 +11,8 @@ int main(int argc, char* argv[])
 	//qRegisterMetaType<Robot::TeenseyStatus>("Robot::TeenseyStatus");
 
 
-	Robot::RealRobot robot;
-	//Robot::GazeboKratos robot;
+	//Robot::RealRobot robot;
+	Robot::GazeboKratos robot;
 	robot.Initialize();
 
 	// ...

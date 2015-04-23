@@ -5,7 +5,6 @@
 #include <zmq.hpp>
 #include "msgpack.h"
 #include "state.h"
-#include "odometry.h"
 #include "april.h"
 
 namespace Robot
