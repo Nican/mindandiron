@@ -84,7 +84,11 @@ inline bool TrajectoryTreeNode2::inGoal() const
 ///////////////////////////////
 //// TrajectorySearch
 ///////////////////////////////
-
+TrajectorySearch::TrajectorySearch(TrajectoryPlanner2* planner, Eigen::Vector2d goal) : 
+	mPlanner(planner), mGoal(goal)
+{
+	rootNode.reset(new TrajectoryTreeNode2(this, {0.0, 0.0}, rotationToCompex(0.0)));
+}
 
 bool TrajectorySearch::TestPosition(Eigen::Vector2d pos, double rotation)
 {
@@ -147,6 +151,18 @@ void TrajectoryPlanner2::AddObstacle(float x, float y)
     obstacleBody->CreateFixture(&spriteShapeDef2);    
 
     mObstacles.append(obstacleBody);
+}
+
+std::shared_ptr<TrajectorySearch> TrajectoryPlanner2::FindPath(const Eigen::Vector2d &goal, int iterations)
+{
+	auto search = std::make_shared<TrajectorySearch>(this, goal);
+
+	for(int i = 0; i < iterations; i ++)
+	{
+		search->rootNode->explore();
+	}
+
+	return search;
 }
 
 void TrajectoryPlanner2::UpdateObstacles(pcl::PointCloud<pcl::PointXYZRGB>::Ptr pointCloud)

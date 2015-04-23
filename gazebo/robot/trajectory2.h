@@ -42,10 +42,9 @@ class TrajectorySearch
 public:
 	TrajectoryPlanner2* mPlanner;
 	Eigen::Vector2d mGoal;
+	std::unique_ptr<TrajectoryTreeNode2> rootNode;
 
-	TrajectorySearch(TrajectoryPlanner2* planner) : mPlanner(planner)
-	{
-	}
+	TrajectorySearch(TrajectoryPlanner2* planner, Eigen::Vector2d mGoal);
 
 	bool TestPosition(Eigen::Vector2d pos, double rotation);
 };
@@ -71,6 +70,7 @@ public:
 	//void UpdateOdometry(double leftWheel, double rightWheel);
 
 	void AddObstacle(float x, float y);
+	std::shared_ptr<TrajectorySearch> FindPath(const Eigen::Vector2d &goal, int iterations = 5000);
 
 signals:
 	void ObstacleMapUpdate(std::vector<Eigen::Vector2i>);

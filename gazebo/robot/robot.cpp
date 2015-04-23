@@ -373,11 +373,35 @@ void Kratos2::FinishedPointCloud()
 	auto pointCloud = mFutureWatcher.future().result();
 	mSensorLog->receiveSegmentedPointcloud(pointCloud);
 
-	mPlanner->UpdateObstacles(pointCloud);
 	auto kinect = GetKinect();
-
 	if(kinect != nullptr)
 		kinect->requestDepthFrame();
+
+	/*
+	QtConcurrent::run([pointCloud]() -> std::shared_ptr<TrajectorySearch>{
+
+		auto imgCloud = boost::make_shared<pcl::PointCloud<pcl::PointXYZRGB>>();
+		//imgCloud->sensor_origin_ = Eigen::Vector4f(lastPointPos.x(), lastPointPos.y(), lastPointPos.z(), 0.0);
+		//imgCloud->sensor_orientation_ = Eigen::AngleAxisf((float) lastPoint.mRotation, Eigen::Vector3f::UnitZ());
+
+		UpdatePointCloud(mat, *imgCloud);
+
+		RegionGrowingSegmenter growingRegion;
+		return growingRegion.AsyncronousUpdate(imgCloud);
+	});
+
+	mPlanner->UpdateObstacles(pointCloud);
+	{
+		auto start = std::chrono::high_resolution_clock::now();
+		mPlanner->FindPath({5.0, 0.0});
+		auto end = std::chrono::high_resolution_clock::now();
+
+		std::chrono::duration<double> diff = end-start;
+        std::cout << "Time to search : " << diff.count() << " s\n";
+	}
+	*/
+
+
 }
 
 Odometry Kratos2::GetOdometryTraveledSince(QDateTime time)
