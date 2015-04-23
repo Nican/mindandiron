@@ -24,8 +24,8 @@ void KratosTeensy::receiveError(QSerialPort::SerialPortError error)
 
 void KratosTeensy::SetVelocities(double left, double right)
 {
-	int leftInt = static_cast<int>(left) * 23330 * 100;
-	int rightInt = static_cast<int>(right) * 23330 * 100;
+	int leftInt = static_cast<int>(left * 10);
+	int rightInt = static_cast<int>(right * 10);
 
 	QString sendString;
 	sendString.sprintf("LVEL\t%d\tRVEL\t%d\tCOLL\t%s\tSORT\t%s\tEND", leftInt, rightInt, "0", "0");
@@ -58,10 +58,10 @@ void KratosTeensy::receiveSerialData()
 			status.acceleration.y() = parts[11].toDouble() - 512.0;
 			status.acceleration.z() = parts[13].toDouble() - 512.0;
 			status.autoFlag = parts[15] == "1";
-
-			status.acceleration = status.acceleration / 200.0; //Convert from voltage to m/s^2
+	        status.acceleration = status.acceleration / 200.0; //Convert from voltage to m/s^2
 
 			emit statusUpdate(status);
 		}
 	}
+	mSerial->clear();
 }

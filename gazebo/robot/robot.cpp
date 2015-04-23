@@ -406,7 +406,7 @@ Odometry Kratos2::GetOdometryTraveledSince(QDateTime time)
 
 		//std::cout << "\tReading value: " << query.value(0).toDouble() << "\n";
 		odometry.Update(
-			static_cast<double>(lastLeft - left) / 23330.0 * 0.31 * M_PI, 
+			static_cast<double>(lastLeft - left) / 23330.0 * 0.31 * M_PI,
 			static_cast<double>(lastRight - right) / 23330.0 * 0.31 * M_PI);
 
 		lastLeft = left;
