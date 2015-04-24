@@ -7,7 +7,7 @@ void setup() {
 }
 
 void loop() {
-    Serial.println("About to read CMD");
+//    Serial.println("About to read CMD");
     readComputerCommands(&camServoSetpoint);
 //    Serial.print("camServoSetpoint: "); Serial.println(camServoSetpoint);
     if (camServoSetpoint > 50) {
@@ -16,15 +16,16 @@ void loop() {
         digitalWrite(LED, LOW);
     }
     
-    delay(500);
-    digitalWrite(LED, HIGH);
-    delay(75);
-    digitalWrite(LED, LOW);
-    delay(75);
-    digitalWrite(LED, HIGH);
-    delay(75);
-    digitalWrite(LED, LOW);
-    delay(75);
+//    delay(100);
+//    delay(500);
+//    digitalWrite(LED, HIGH);
+//    delay(75);
+//    digitalWrite(LED, LOW);
+//    delay(75);
+//    digitalWrite(LED, HIGH);
+//    delay(75);
+//    digitalWrite(LED, LOW);
+//    delay(75);
 }
 
 void readComputerCommands(int *camServoSetpoint) {
@@ -40,7 +41,7 @@ void readComputerCommands(int *camServoSetpoint) {
             tabCounter++;
         }
     }
-//    Serial.print("tabCounter: "); Serial.println(tabCounter);
+    Serial.print("tabCounter: "); Serial.println(tabCounter);
     if (tabCounter == 2) {
         *camServoSetpoint = boundCamServoCmd(camServoCmd);
     }

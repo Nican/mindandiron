@@ -18,6 +18,9 @@ float getCurrent(void) {
 float getBatteryVoltage(void) {
     int sensorVal = analogRead(BATT_VOLTAGE_IN_PIN);
     float measuredVoltage = (sensorVal * VCC) / 1023.0;  // Converts 0-1023 to volts
-//    Serial.print("--- Voltage (V)\t"); Serial.println(measuredVoltage * R1 / (R1 + R2));
-    return ( measuredVoltage * R1 / (R1 + R2) );  // Calculates battery voltage from voltage divider
+   Serial.print("--- sensorVal (tick)\t"); Serial.println(sensorVal);
+   Serial.print("--- Voltage (V)\t"); Serial.println(measuredVoltage);
+   Serial.print("--- VCC (V)\t"); Serial.println(VCC);
+    return ( measuredVoltage * (R1 + R2) / R2 );  // Calculates battery voltage from voltage divider
 }
+

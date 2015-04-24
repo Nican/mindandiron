@@ -2,7 +2,7 @@ import serial
 
 
 def main():
-    ser = serial.Serial('/dev/ttyACM1', 9600)
+    ser = serial.Serial('/dev/kratos_teensy', 9600)
     counter = 0
     cycleCounts = 50
     Lcmd = 0
