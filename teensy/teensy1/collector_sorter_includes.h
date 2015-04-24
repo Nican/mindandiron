@@ -4,7 +4,7 @@
 #ifndef TEENSY_TEENSY1_COLLECTOR_SORTER_INCLUDES_H_
 #define TEENSY_TEENSY1_COLLECTOR_SORTER_INCLUDES_H_
 
-#define SORTER_OUT_PIN   4   // PWM control on the sorter
+#define SORTER_OUT_PIN   22   // PWM control on the sorter
 #define COLLECTOR_OUT_A  5   // Goes to one side of the collector
 #define COLLECTOR_OUT_B  6   // Goes to one side of the collector
 #define SORTER_TICKS_PER_REV 4095   // Determined experimentally for encoder

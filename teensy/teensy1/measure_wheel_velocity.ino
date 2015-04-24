@@ -1,8 +1,8 @@
 // Put professional header here
 // Include some type of copyright
 
-Encoder wheelLeft(17, 16);
-Encoder wheelRight(14, 15);
+Encoder wheelLeft(9, 10);
+Encoder wheelRight(12, 11);
 const int encoderHistLength = 5;
 volatile int32_t oldLeft[encoderHistLength] = {-999, -999, -999, -999, -999};
 volatile int32_t oldRight[encoderHistLength] = {-999, -999, -999, -999, -999};

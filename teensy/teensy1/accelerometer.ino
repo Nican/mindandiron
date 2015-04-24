@@ -4,9 +4,9 @@
 #include <Arduino.h>
 
 // int accelerometerAxes[3] = {0, 0, 0};  // Done in teensy1.ino
-#define accelerometerXPin A9
-#define accelerometerYPin A8
-#define accelerometerZPin A7
+#define accelerometerXPin A3
+#define accelerometerYPin A2
+#define accelerometerZPin A1
 
 int accelerometerAxes[3] = {0, 0, 0};  // Stores {x, y, z} accelerometer data
 
