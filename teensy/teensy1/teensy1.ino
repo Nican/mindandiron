@@ -44,6 +44,9 @@ Servo servoSorter;
 int collectorAutoCmd = 0;
 int sorterAutoSlot = 0;  // 10 discrete slots (position control)
 
+// TURN ON LIGHT WHEN ON
+int ledPin = 13;
+
 
 void setup() {
     Serial.begin(9600);
@@ -67,6 +70,10 @@ void setup() {
     // WHEEL PID SETUP
     Timer3.initialize(PID_PERIOD_MICRO);
     Timer3.attachInterrupt(calculateWheelPIDControl);
+
+    // TURN ON LIGHT
+    pinMode(ledPin, OUTPUT);
+    digitalWrite(ledPin, HIGH);
 }
 
 

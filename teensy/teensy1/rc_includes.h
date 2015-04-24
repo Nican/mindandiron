@@ -8,7 +8,7 @@
 #define RIGHT_CMD_IN     17  // Pin 2 on the receiver
 #define AUTO_SWITCH_IN   19  // Pin 5 on the receiver
 #define AUTO_SWITCH_OUT  7   // Pin 7 on the Teensy, goes to Pin 4 on the Arduino
-#define LEFT_OUT_PIN     22  // PWM control on the left wheel
+#define LEFT_OUT_PIN     20  // PWM control on the left wheel
 #define RIGHT_OUT_PIN    21  // PWM control on the right wheel
 #define MAX_SERVO_SPEED  130
 #define MIN_SERVO_SPEED  95  // Though it seems 90 should be centered, the motors move at 90, stop at 95
