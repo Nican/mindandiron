@@ -125,7 +125,27 @@ void MapOverview::DrawExploreChild(TrajectoryTreeNode* parent, TrajectoryTreeNod
     }
 }
 
+void MapOverview::ReceivePath(std::vector<Eigen::Vector2d> points)
+{
+    for(auto &line : mLines)
+    {
+        delete line;
+    }
 
+    mLines.clear();
+
+    for(std::size_t i = 1; i < points.size(); i++)
+    {
+        QColor color;
+        color.setHsvF(static_cast<double>(i/points.size()), 1.0, 1.0);
+
+        auto p1 = points[i-1];
+        auto p2 = points[i];
+
+        auto line = scene.addLine(p1.x(), p1.y(), p2.x(), p2.y(), QPen(color, 0));
+        mLines.push_back(line);
+    }
+}
 
 void MapOverview::UpdateWalkabilityMap(DepthViewerTab::PclPointCloud::Ptr pointCloud)
 {

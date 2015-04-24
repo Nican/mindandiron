@@ -73,6 +73,7 @@ public:
 
 	void receiveSegmentedPointcloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr pointCloud);
 	void forceUpdated(double leftForce, double rightForce);
+	void ReceivePath(const std::vector<Eigen::Vector2d> &points);
 
 public slots:
 	void receiveDepthImage(DepthImgData mat);
@@ -124,6 +125,7 @@ public:
 
 	SensorLog* mSensorLog;
 	QFutureWatcher<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> mFutureWatcher;
+	QFutureWatcher<std::shared_ptr<TrajectorySearch>> mPathFutureWatcher;
 
 	TrajectoryPlanner2* mPlanner;
 	WheelPID* mWheelPID;
@@ -153,6 +155,7 @@ public slots:
 	void TeensyStatus(TeenseyStatus status);
 	void FinishedPointCloud();
 	void updateForces();
+	void FinishedTrajectory();
 
 signals:
 	void pauseUpdate(bool); //True when paused

@@ -19,8 +19,12 @@ TrajectoryTreeNode2::TrajectoryTreeNode2(TrajectorySearch* planner, const Eigen:
 
 bool TrajectoryTreeNode2::explore()
 {
-	if(inGoal())
+	if(inGoal()){
+		mPlanner->foundSolution = true;
 		return true;
+	}
+
+	//std::cout << "Exploring child at " << mPoint.transpose() << "\n";
 
 	if(!childs.empty())
 	{
@@ -84,35 +88,22 @@ inline bool TrajectoryTreeNode2::inGoal() const
 ///////////////////////////////
 //// TrajectorySearch
 ///////////////////////////////
-TrajectorySearch::TrajectorySearch(TrajectoryPlanner2* planner, Eigen::Vector2d goal) : 
-	mPlanner(planner), mGoal(goal)
-{
-	rootNode.reset(new TrajectoryTreeNode2(this, {0.0, 0.0}, rotationToCompex(0.0)));
-}
-
-bool TrajectorySearch::TestPosition(Eigen::Vector2d pos, double rotation)
-{
-	mPlanner->mRobotFixture->GetBody()->SetTransform({(float) pos.x(), (float) pos.y()}, (float) rotation);
-
-	//Recalculate collissions
-	mPlanner->world.Step(1.0f / 60.0f, 1, 1);
-
-	return mPlanner->mRobotFixture->GetBody()->GetContactList() != nullptr;
-}
-
-///////////////////////////////
-//// TrajectoryPlanner2
-///////////////////////////////
-
-TrajectoryPlanner2::TrajectoryPlanner2(QObject* parent) : 
-QObject(parent), mOdometry(0.69), world(b2Vec2(0.0, 0.0))
+TrajectorySearch::TrajectorySearch(const std::vector<Eigen::Vector2i> &obstacleList, Eigen::Vector2d goal, QObject* parent) : 
+	QObject(parent), world(b2Vec2(0.0, 0.0)), mGoal(goal), foundSolution(false)
 {
 	world.SetAllowSleeping(false);
 
 	mRobotFixture = CreateRobot();
+
+	for(const Eigen::Vector2i& pt : obstacleList)
+	{
+		AddObstacle(pt.y() * 5.0f / 512.0f + 0.6f, pt.x() * 5.0f / 512.0f - 2.5f);
+	}
+
+	rootNode.reset(new TrajectoryTreeNode2(this, {0.0, 0.0}, rotationToCompex(0.0)));
 }
 
-b2Fixture* TrajectoryPlanner2::CreateRobot()
+b2Fixture* TrajectorySearch::CreateRobot()
 {
 	b2BodyDef robotBodyDef;
 	robotBodyDef.position.Set(0.0f, 0.0f);
@@ -132,8 +123,17 @@ b2Fixture* TrajectoryPlanner2::CreateRobot()
 	return robotBody->CreateFixture(&spriteShapeDef);
 }
 
+bool TrajectorySearch::TestPosition(Eigen::Vector2d pos, double rotation)
+{
+	mRobotFixture->GetBody()->SetTransform({(float) pos.x(), (float) pos.y()}, (float) rotation);
 
-void TrajectoryPlanner2::AddObstacle(float x, float y)
+	//Recalculate collissions
+	world.Step(1.0f / 60.0f, 1, 1);
+
+	return mRobotFixture->GetBody()->GetContactList() != nullptr;
+}
+
+void TrajectorySearch::AddObstacle(float x, float y)
 {
 	b2BodyDef obstacleBodyDef;
     obstacleBodyDef.position.Set(x, y);
@@ -153,6 +153,60 @@ void TrajectoryPlanner2::AddObstacle(float x, float y)
     mObstacles.append(obstacleBody);
 }
 
+
+static bool GetPath(TrajectoryTreeNode2* node, std::vector<TrajectoryTreeNode2*> &outPath)
+{
+	if(node->inGoal())
+	{
+		outPath.push_back(node);
+		return true;
+	}
+
+	for(auto& child : node->childs)
+	{
+		if(GetPath(child.get(), outPath))
+		{
+			outPath.push_back(node);
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool TrajectorySearch::GetResult(std::vector<Eigen::Vector2d> &points)
+{
+	std::vector<TrajectoryTreeNode2*> outVector;
+
+	if(GetPath(rootNode.get(), outVector))
+	{
+		for(auto &node : outVector)
+		{
+			points.push_back(node->mPoint);
+		}
+		return true;
+	}
+
+	return false;
+}
+
+void TrajectorySearch::Iterate()
+{
+	rootNode->explore();
+}
+
+///////////////////////////////
+//// TrajectoryPlanner2
+///////////////////////////////
+
+TrajectoryPlanner2::TrajectoryPlanner2(QObject* parent) : 
+QObject(parent) //, mOdometry(0.69), world(b2Vec2(0.0, 0.0))
+{
+}
+
+
+
+/*
 std::shared_ptr<TrajectorySearch> TrajectoryPlanner2::FindPath(const Eigen::Vector2d &goal, int iterations)
 {
 	auto search = std::make_shared<TrajectorySearch>(this, goal);
@@ -164,6 +218,7 @@ std::shared_ptr<TrajectorySearch> TrajectoryPlanner2::FindPath(const Eigen::Vect
 
 	return search;
 }
+*/
 
 void TrajectoryPlanner2::UpdateObstacles(pcl::PointCloud<pcl::PointXYZRGB>::Ptr pointCloud)
 {
@@ -171,7 +226,8 @@ void TrajectoryPlanner2::UpdateObstacles(pcl::PointCloud<pcl::PointXYZRGB>::Ptr 
     //To a 2d image, 512x512 
 	Eigen::MatrixXi walkabilityMap = Eigen::MatrixXi::Zero(512, 512);
 	Eigen::Affine2f toImageTransform = Eigen::Scaling(512.0f / 5.0f, 512.0f / 5.0f) * Eigen::Translation2f(2.5f, 0.0f);
-	std::vector<Eigen::Vector2i> obstaclePoints;
+	//std::vector<Eigen::Vector2i> obstaclePoints;
+	mObstacleList.clear();
 
 	for(const auto& pt : pointCloud->points)
 	{
@@ -182,10 +238,10 @@ void TrajectoryPlanner2::UpdateObstacles(pcl::PointCloud<pcl::PointXYZRGB>::Ptr 
 		auto pt2d = Eigen::Vector2f(pt.x, pt.z);
 		Eigen::Vector2i imagePt = (toImageTransform * pt2d).cast<int>();
 
-		if(imagePt.x() < 0 || imagePt.x() > walkabilityMap.rows())
+		if(imagePt.x() < 0 || imagePt.x() >= walkabilityMap.rows())
 			continue;
 
-		if(imagePt.y() < 0 || imagePt.y() > walkabilityMap.cols())
+		if(imagePt.y() < 0 || imagePt.y() >= walkabilityMap.cols())
 			continue;
 
 		if(walkabilityMap(imagePt.x(), imagePt.y()) != 0)
@@ -198,7 +254,7 @@ void TrajectoryPlanner2::UpdateObstacles(pcl::PointCloud<pcl::PointXYZRGB>::Ptr 
 
 		if(pt.r == 255)
 		{
-			obstaclePoints.push_back(imagePt);
+			mObstacleList.push_back(imagePt);
 		}
         /*
         Eigen::Vector2f newPt(imagePt.y() * 5.0 / 512.0 + 0.6, imagePt.x() * 5.0 / 512.0 - 2.5);
@@ -209,18 +265,17 @@ void TrajectoryPlanner2::UpdateObstacles(pcl::PointCloud<pcl::PointXYZRGB>::Ptr 
         */
     }
 
-    emit ObstacleMapUpdate(obstaclePoints);
+    emit ObstacleMapUpdate(mObstacleList);
 
+    /*
     for(auto& obstacle : mObstacles)
 	{
 		world.DestroyBody(obstacle);
 	}
 	mObstacles.clear();
+	*/
 
-	for(const Eigen::Vector2i& pt : obstaclePoints)
-	{
-		AddObstacle(pt.y() * 5.0f / 512.0f + 0.6f, pt.x() * 5.0f / 512.0f - 2.5f);
-	}
+	
 }
 
 

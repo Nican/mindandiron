@@ -69,6 +69,7 @@ sudo apt-get install -y libvtk5-qt4-dev
 sudo apt-get install -y libqt5serialport5-dev
 sudo apt-get install -y libv4l2rds0			# For April Tags
 sudo apt-get install -y libv4l-dev			# For April Tags
+sudo apt-get install -y capnproto
 
 
 # For Arduino

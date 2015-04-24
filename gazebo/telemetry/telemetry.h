@@ -90,6 +90,8 @@ public:
 
 	void ReceiveDecawaveReading(double distance);
 	void ReceiveObstacleMap(std::vector<Eigen::Vector2i> points);
+
+	void ReceivePath(std::vector<Eigen::Vector2d> points);
 };
 
 

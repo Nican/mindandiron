@@ -37,40 +37,45 @@ public:
 	inline bool inGoal() const;
 };
 
-class TrajectorySearch 
+class TrajectorySearch : public QObject
 {
+	Q_OBJECT
+	b2Fixture* CreateRobot();
+
 public:
+	b2World world;
+	b2Fixture* mRobotFixture;
+	QVector<b2Body*> mObstacles;
+
 	TrajectoryPlanner2* mPlanner;
 	Eigen::Vector2d mGoal;
 	std::unique_ptr<TrajectoryTreeNode2> rootNode;
 
-	TrajectorySearch(TrajectoryPlanner2* planner, Eigen::Vector2d mGoal);
+	bool foundSolution;
+
+	TrajectorySearch(const std::vector<Eigen::Vector2i> &obstacleList, Eigen::Vector2d goal, QObject* parent = nullptr);
 
 	bool TestPosition(Eigen::Vector2d pos, double rotation);
+	void AddObstacle(float x, float y);
+
+	bool GetResult(std::vector<Eigen::Vector2d> &points);
+	void Iterate();
 };
 
 class TrajectoryPlanner2 : public QObject
 {
 	Q_OBJECT
 
-	b2Fixture* CreateRobot();
-
 public:
-	Odometry mOdometry;
-
-	b2World world;
-
-	b2Fixture* mRobotFixture;
-	QVector<b2Body*> mObstacles;
-
+	std::vector<Eigen::Vector2i> mObstacleList;
+	
 	TrajectoryPlanner2(QObject* parent);
 
 	void UpdateObstacles(pcl::PointCloud<pcl::PointXYZRGB>::Ptr pointCloud);
 	
 	//void UpdateOdometry(double leftWheel, double rightWheel);
 
-	void AddObstacle(float x, float y);
-	std::shared_ptr<TrajectorySearch> FindPath(const Eigen::Vector2d &goal, int iterations = 5000);
+	//std::shared_ptr<TrajectorySearch> FindPath(const Eigen::Vector2d &goal, int iterations = 5000);
 
 signals:
 	void ObstacleMapUpdate(std::vector<Eigen::Vector2i>);

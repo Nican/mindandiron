@@ -34,6 +34,15 @@ mDb(QSqlDatabase::addDatabase("QSQLITE"))
 		std::cout << "Unable to open database! :(\n";
 	}
 
+	//Avoid Sqlite writing to disk all the time
+	mDb.exec("PRAGMA synchronous=OFF");
+	//Other optimzations suggestions
+	//http://stackoverflow.com/questions/784173/what-are-the-performance-characteristics-of-sqlite-with-very-large-database-file
+	//http://www.sqlite.org/pragma.html
+
+	if (mDb.lastError().isValid())
+    	qDebug() << mDb.lastError();
+
 	mDb.exec("CREATE TABLE IF NOT EXISTS depthLog(" \
 		"id INTEGER PRIMARY KEY ASC,"\
 		"timestamp INTEGER,"\
@@ -112,30 +121,6 @@ void SensorLog::teensyStatus(TeenseyStatus status)
 	mSocket->sendMessage(msg);
 }
 
-void SensorLog::forceUpdated(double leftForce, double rightForce)
-{
-	QSqlQuery query(mDb);
-	query.prepare("INSERT INTO forceLog(timestamp, leftForce, rightForce) VALUES "\
-		"(:timestamp, :left, :right)");
-	query.bindValue(":timestamp", QDateTime::currentDateTime().toMSecsSinceEpoch() , QSql::In);
-	query.bindValue(":left", leftForce, QSql::In);
-	query.bindValue(":right", rightForce, QSql::In);
-	query.exec();
-
-	std::vector<double> forces = {
-		leftForce,
-		rightForce
-	};
-
-	msgpack::sbuffer sbuf;
-	msgpack::pack(sbuf, forces);
-
-	QList<QByteArray> msg;
-	msg += QByteArray("\x06");
-	msg += QByteArray(sbuf.data(), sbuf.size());
-	mSocket->sendMessage(msg);
-}
-
 void SensorLog::receiveSegmentedPointcloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr pointCloud)
 {
 	QByteArray data(
@@ -176,6 +161,41 @@ void SensorLog::SendObstacles(std::vector<Eigen::Vector2i> points)
 
 	QList<QByteArray> msg;
 	msg += QByteArray("\x05");
+	msg += QByteArray(sbuf.data(), sbuf.size());
+	mSocket->sendMessage(msg);
+}
+
+void SensorLog::forceUpdated(double leftForce, double rightForce)
+{
+	QSqlQuery query(mDb);
+	query.prepare("INSERT INTO forceLog(timestamp, leftForce, rightForce) VALUES "\
+		"(:timestamp, :left, :right)");
+	query.bindValue(":timestamp", QDateTime::currentDateTime().toMSecsSinceEpoch() , QSql::In);
+	query.bindValue(":left", leftForce, QSql::In);
+	query.bindValue(":right", rightForce, QSql::In);
+	query.exec();
+
+	std::vector<double> forces = {
+		leftForce,
+		rightForce
+	};
+
+	msgpack::sbuffer sbuf;
+	msgpack::pack(sbuf, forces);
+
+	QList<QByteArray> msg;
+	msg += QByteArray("\x06");
+	msg += QByteArray(sbuf.data(), sbuf.size());
+	mSocket->sendMessage(msg);
+}
+
+void SensorLog::ReceivePath(const std::vector<Eigen::Vector2d> &points)
+{
+	msgpack::sbuffer sbuf;
+	msgpack::pack(sbuf, points);
+
+	QList<QByteArray> msg;
+	msg += QByteArray("\x07");
 	msg += QByteArray(sbuf.data(), sbuf.size());
 	mSocket->sendMessage(msg);
 }
@@ -323,6 +343,7 @@ void Kratos2::Initialize()
 		connect(decawave, &Decawave::statusUpdate, mSensorLog, &SensorLog::decawaveUpdate);
 	}	
 
+	connect(&mPathFutureWatcher, SIGNAL(finished()), this, SLOT(FinishedTrajectory()));
 	connect(&mFutureWatcher, SIGNAL(finished()), this, SLOT(FinishedPointCloud()));
 	connect(mPlanner, SIGNAL(ObstacleMapUpdate(std::vector<Eigen::Vector2i>)), mSensorLog, SLOT(SendObstacles(std::vector<Eigen::Vector2i>)));
 	connect(mWheelPID, &WheelPID::forceUpdated, this, &Kratos2::updateForces);
@@ -351,7 +372,14 @@ void Kratos2::updateForces()
 
 void Kratos2::ProccessPointCloud(DepthImgData mat)
 {
-	QDateTime currentTime = QDateTime::currentDateTime();
+	//QDateTime currentTime = QDateTime::currentDateTime();
+
+	std::cout << "Processing point cloud;\n";
+
+	if(mFutureWatcher.future().isRunning()){
+		std::cout << "Point cloud is still processing. not starting a new one\n";
+		return;
+	}
 
 	QFuture<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> future = QtConcurrent::run([mat]() -> pcl::PointCloud<pcl::PointXYZRGB>::Ptr{
 
@@ -368,8 +396,23 @@ void Kratos2::ProccessPointCloud(DepthImgData mat)
 	mFutureWatcher.setFuture(future);
 }
 
+void Kratos2::FinishedTrajectory()
+{
+	auto planner = mPathFutureWatcher.future().result();
+
+	std::vector<Eigen::Vector2d> points;
+	if(planner->GetResult(points))
+	{
+		std::cout << "Path has " << points.size() << " points\n";
+	}
+
+	mSensorLog->ReceivePath(points);
+}
+
 void Kratos2::FinishedPointCloud()
 {
+	std::cout << "Finished point cloud;\n";
+
 	auto pointCloud = mFutureWatcher.future().result();
 	mSensorLog->receiveSegmentedPointcloud(pointCloud);
 
@@ -377,19 +420,40 @@ void Kratos2::FinishedPointCloud()
 	if(kinect != nullptr)
 		kinect->requestDepthFrame();
 
-	/*
-	QtConcurrent::run([pointCloud]() -> std::shared_ptr<TrajectorySearch>{
+	mPlanner->UpdateObstacles(pointCloud);
 
-		auto imgCloud = boost::make_shared<pcl::PointCloud<pcl::PointXYZRGB>>();
-		//imgCloud->sensor_origin_ = Eigen::Vector4f(lastPointPos.x(), lastPointPos.y(), lastPointPos.z(), 0.0);
-		//imgCloud->sensor_orientation_ = Eigen::AngleAxisf((float) lastPoint.mRotation, Eigen::Vector3f::UnitZ());
+	if(mPathFutureWatcher.future().isRunning())
+	{
+		std::cout << "Trajectory is still processing. not starting a new one\n";
+		return;
+	}
 
-		UpdatePointCloud(mat, *imgCloud);
+	std::vector<Eigen::Vector2i> obstacleList = mPlanner->mObstacleList;
 
-		RegionGrowingSegmenter growingRegion;
-		return growingRegion.AsyncronousUpdate(imgCloud);
+	auto future = QtConcurrent::run([this, obstacleList]() -> std::shared_ptr<TrajectorySearch>{
+		//auto start = std::chrono::high_resolution_clock::now();
+		Eigen::Vector2d goal(5.0, 0.0);
+		auto planner = std::make_shared<TrajectorySearch>(obstacleList, goal);
+		std::size_t i = 0;
+		
+		for(i = 0; i < 500 && !planner->foundSolution; i ++)
+		{
+			planner->rootNode->explore();
+		}
+
+		std::cout << "Found solution after " << i << " iterations\n";
+
+		//auto end = std::chrono::high_resolution_clock::now();
+
+		//std::chrono::duration<double> diff = end-start;
+        //std::cout << "Time to search : " << diff.count() << " s\n"; 
+
+        return planner;
 	});
 
+	mPathFutureWatcher.setFuture(future);
+
+	/*
 	mPlanner->UpdateObstacles(pointCloud);
 	{
 		auto start = std::chrono::high_resolution_clock::now();

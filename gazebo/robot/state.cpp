@@ -18,7 +18,7 @@ bool BaseState::IsValid()
 
 RootState::RootState(Kratos2 *parent) : BaseState(parent)
 {
-	MoveToNextState();
+	//MoveToNextState();
 }
 
 void RootState::SetState(ProgressState* nextState)

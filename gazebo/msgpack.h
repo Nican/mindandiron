@@ -1,10 +1,35 @@
 #pragma once
+#include <iostream>
+
+namespace Robot
+{
+
+struct ImgData
+{
+  std::vector<unsigned char> data;
+  unsigned int width;
+  unsigned int height;
+};
+
+
+struct DepthImgData
+{
+  std::vector<float> data;
+  unsigned int width;
+  unsigned int height;
+  float hfov;
+};
+
+}
 
 #include <msgpack_fwd.hpp>
 namespace msgpack {
 
 MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
 
+/////////////////////////
+/// Eigen vectors
+/////////////////////////
 template <typename T, int _Rows>
 inline object const& operator>> (object const& o, Eigen::Matrix<T, _Rows, 1>& v) {
     if (o.type != msgpack::type::ARRAY) throw msgpack::type_error();
@@ -27,7 +52,9 @@ inline packer<Stream>& operator<< (packer<Stream>& o, Eigen::Matrix<T, _Rows, 1>
     return o;
 }
 
-
+/////////////////////////
+/// Complex numbers
+/////////////////////////
 inline object const& operator>> (object const& o, std::complex<double>& v) {
     if (o.type != msgpack::type::ARRAY) throw msgpack::type_error();
     if (o.via.array.size != 2) throw msgpack::type_error();
@@ -55,7 +82,67 @@ inline packer<Stream>& operator<< (packer<Stream>& o, std::complex<double>const&
 }
 
 
+/////////////////////////
+/// Image data
+/////////////////////////
+inline object const& operator>> (object const& o, Robot::ImgData& v) {
+    if (o.type != msgpack::type::ARRAY) throw msgpack::type_error();
+    if (o.via.array.size != 3) throw msgpack::type_error();
 
+    o.via.array.ptr[0].convert(v.width);
+    o.via.array.ptr[1].convert(v.height);
+
+    v.data.resize(v.width * v.height);
+    std::memcpy(v.data.data(), o.via.array.ptr[2].via.bin.ptr, o.via.array.ptr[2].via.bin.size);
+
+    return o;
+}
+
+template <typename Stream>
+inline packer<Stream>& operator<< (packer<Stream>& o, Robot::ImgData const& v) {
+    // packing member variables as an array.
+    o.pack_array(3);
+    
+    o.pack(v.width);
+    o.pack(v.height);
+
+    o.pack_bin(v.width * v.height);
+    o.pack_bin_body(reinterpret_cast<const char*>(v.data.data()), v.width * v.height);
+
+    return o;
+}
+
+/////////////////////////
+/// Depth Image data
+/////////////////////////
+inline object const& operator>> (object const& o, Robot::DepthImgData& v) {
+    if (o.type != msgpack::type::ARRAY) throw msgpack::type_error();
+    if (o.via.array.size != 4) throw msgpack::type_error();
+
+    o.via.array.ptr[0].convert(v.width);
+    o.via.array.ptr[1].convert(v.height);
+    o.via.array.ptr[2].convert(v.hfov);
+
+    v.data.resize(v.width * v.height);
+    std::memcpy(v.data.data(), o.via.array.ptr[3].via.bin.ptr, o.via.array.ptr[3].via.bin.size);
+
+    return o;
+}
+
+template <typename Stream>
+inline packer<Stream>& operator<< (packer<Stream>& o, Robot::DepthImgData const& v) {
+    // packing member variables as an array.
+    o.pack_array(4);
+    
+    o.pack(v.width);
+    o.pack(v.height);
+    o.pack(v.hfov);
+
+    o.pack_bin(v.width * v.height * sizeof(float));
+    o.pack_bin_body(reinterpret_cast<const char*>(v.data.data()), v.width * v.height * sizeof(float));
+
+    return o;
+}
 
 
 
