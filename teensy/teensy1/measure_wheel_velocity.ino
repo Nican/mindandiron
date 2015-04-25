@@ -29,18 +29,22 @@ void calculateVelocity() {
     rightVelocity = rightSum / (encoderHistLength - 1);
 }
 
+// Returns in ticks/hundreth of a second
 double getLeftVelocity() {
     return leftVelocity;
 }
 
+// Returns in ticks/hundreth of a second
 double getRightVelocity() {
     return rightVelocity;
 }
 
+// Returns in ticks from the start
 int getLeftPosition() {
     return wheelLeft.read();
 }
 
+// Returns in ticks from the start
 int getRightPosition() {
     return wheelRight.read();
 }
