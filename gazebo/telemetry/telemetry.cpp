@@ -217,7 +217,7 @@ void MainWindow::messageReceived(const QList<QByteArray>& messages)
 
     if(id == '\x05')
     {
-        std::vector<Eigen::Vector2i> points;
+        std::vector<Eigen::Vector2d> points;
 
         msgpack::unpacked result;
         msgpack::unpack(result, messages[1].data(), messages[1].size());

@@ -1,3 +1,4 @@
+#include "trajectory2.h"
 #include "robot.h"
 #include "state.h"
 #include <QDateTime>
@@ -154,7 +155,7 @@ void SensorLog::decawaveUpdate(double distance)
 	mSocket->sendMessage(msg);
 }
 
-void SensorLog::SendObstacles(std::vector<Eigen::Vector2i> points)
+void SensorLog::SendObstacles(std::vector<Eigen::Vector2d> points)
 {
 	msgpack::sbuffer sbuf;
 	msgpack::pack(sbuf, points);
@@ -200,116 +201,6 @@ void SensorLog::ReceivePath(const std::vector<Eigen::Vector2d> &points)
 	mSocket->sendMessage(msg);
 }
 
-//////////////////////////
-/// WheelPID
-//////////////////////////
-
-/*
-WheelPID::WheelPID(QObject* parent) : 
-	mLeftDesiredVelocity(0.0), 
-	mRightDesiredVelocity(0.0), 
-	mLeftForce(0.0), 
-	mRightForce(0.0)
-{
-
-}
-
-void WheelPID::SetLeftDesiredVelocity(double speed)
-{
-	SetLeftDesiredAngularVelocity(speed / 0.155 * M_PI);
-}
-
-void WheelPID::SetLeftDesiredAngularVelocity(double speed)
-{
-	mLeftDesiredVelocity = speed;
-}
-
-void WheelPID::SetRightDesiredVelocity(double speed)
-{
-	SetRightDesiredAngularVelocity(speed / 0.155 * M_PI);
-}
-
-void WheelPID::SetRightDesiredAngularVelocity(double speed)
-{
-	mRightDesiredVelocity = speed;
-}
-
-void WheelPID::teensyStatus(TeenseyStatus status)
-{
-	QDateTime currentTime = QDateTime::currentDateTime();
-
-	if(!mLastStatusTime.isValid() || mLastStatusTime.msecsTo(currentTime) > 1000 )
-	{
-		mLastStatusTime = QDateTime::currentDateTime();
-		mLastStatus = status;
-		return;
-	}
-
-	double seconds = static_cast<double>(mLastStatusTime.msecsTo(currentTime)) / 1000.0;
-
-	mLeftVelocity = static_cast<double>(status.leftPosition - mLastStatus.leftPosition) / 23330.0 / seconds;
-	mRightVelocity = static_cast<double>(status.rightPosition - mLastStatus.rightPosition) / 23330.0 / seconds;
-
-	double forceStep = 30.0;
-	double forceLimit = 1000.0;
-
-	if(status.autoFlag == true)
-	{
-		mLeftForce = 0.0;
-		mRightForce = 0.0;
-	}
-	else 
-	{
-		std::cout << "velocity: " << status.leftPosition << "/" << seconds << "\t" << mLeftVelocity << "\t / \t " << mLeftDesiredVelocity << "\n";
-
-		//TODO: Look at real implementation of PID
-		if(mLeftVelocity < mLeftDesiredVelocity)
-		{
-			mLeftForce += forceStep;
-		}
-		else
-		{
-			mLeftForce -= forceStep;
-		}
-
-		if(mRightVelocity < mRightDesiredVelocity)
-		{
-			mRightForce += forceStep;
-		}
-		else
-		{
-			mRightForce -= forceStep;
-		}
-
-		if(mLeftForce >= forceLimit)
-			mLeftForce = forceLimit;
-
-		if(mLeftForce <= -forceLimit)
-			mLeftForce = -forceLimit;
-
-		if(mRightForce >= forceLimit)
-			mRightForce = forceLimit;
-
-		if(mRightForce <= -forceLimit)
-			mRightForce = -forceLimit;
-	}
-
-	mLastStatusTime = QDateTime::currentDateTime();
-	mLastStatus = status;
-
-	emit forceUpdated();
-}
-
-void WheelPID::Reset()
-{
-	mRightForce = 0.0;
-	mLeftForce = 0.0;
-	SetLeftDesiredAngularVelocity(0.0);
-	SetRightDesiredAngularVelocity(0.0);
-
-	emit forceUpdated();
-}
-*/
 
 //////////////////////////
 /// Kratos2
@@ -355,7 +246,7 @@ void Kratos2::Initialize()
 
 	
 	connect(&mFutureWatcher, SIGNAL(finished()), this, SLOT(FinishedPointCloud()));
-	connect(mPlanner, SIGNAL(ObstacleMapUpdate(std::vector<Eigen::Vector2i>)), mSensorLog, SLOT(SendObstacles(std::vector<Eigen::Vector2i>)));
+	connect(mPlanner, SIGNAL(ObstacleMapUpdate(std::vector<Eigen::Vector2d>)), mSensorLog, SLOT(SendObstacles(std::vector<Eigen::Vector2d>)));
 	connect(this, &Kratos2::WheelVelocityUpdate, mSensorLog, &SensorLog::WheelVelocityUpdate);
 	//connect(mWheelPID, &WheelPID::forceUpdated, this, &Kratos2::updateForces);
 
@@ -454,13 +345,18 @@ Odometry Kratos2::GetOdometryTraveledSince(QDateTime time)
 		double left = query.value(0).toDouble();
 		double right = query.value(1).toDouble();
 
-		//std::cout << "\tReading value: " << query.value(0).toDouble() << "\n";
-		odometry.Update(
-			static_cast<double>(lastLeft - left) / 23330.0 * 0.31 * M_PI,
-			static_cast<double>(lastRight - right) / 23330.0 * 0.31 * M_PI);
+		double diffLeft = static_cast<double>(lastLeft - left) / 23330.0 * 0.31 * M_PI;
+		double diffRight = static_cast<double>(lastRight - right) / 23330.0 * 0.31 * M_PI;
 
 		lastLeft = left;
 		lastRight = right;
+
+		if(std::abs(diffLeft) > 0.05 || std::abs(diffRight) > 0.05){
+			std::cout << "\t Skipping large jump: " << diffLeft << "\t" << diffRight << "\n";
+			continue;
+		}
+
+		odometry.Update(diffLeft, diffRight);
     }
 
 	return odometry;
@@ -470,5 +366,3 @@ Odometry Kratos2::GetOdometryTraveledSince(QDateTime time)
 Q_DECLARE_METATYPE(Robot::DepthImgData)
 Q_DECLARE_METATYPE(Robot::ImgData)
 Q_DECLARE_METATYPE(Robot::TeenseyStatus)
-
-

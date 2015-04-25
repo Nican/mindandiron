@@ -157,6 +157,7 @@ RealRobot::RealRobot(QObject* parent) :
 	m_kratos = std::make_shared<Robot::Kratos>(motion, sensors);
 	*/
 
+	mDecawave = new Robot::KratosDecawave(mContext, this);
 	mTeensy = new Robot::KratosTeensy(this);
 	QObject::connect(mTeensy, &Robot::KratosTeensy::statusUpdate, [this](Robot::TeenseyStatus status){
 

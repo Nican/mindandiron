@@ -53,6 +53,7 @@ class RealRobot : public Robot::Kratos2
 
     Robot::KratosTeensy* mTeensy;
     Robot::TeenseyStatus lastStatus;
+    Robot::KratosDecawave* mDecawave;
     bool bFirstTeenseyMessage;
 
     //double mLeftVelocity;
@@ -78,7 +79,7 @@ public:
 
     virtual Decawave* GetDecawave() override
     {
-        return nullptr;
+        return mDecawave;
     }
 
     //virtual void SetLeftWheelPower(double power) override;

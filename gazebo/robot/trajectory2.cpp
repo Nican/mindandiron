@@ -1,5 +1,6 @@
 #include "trajectory2.h"
 #include "../trajectory.h"
+#include "robot.h"
 
 using namespace Robot;
 
@@ -11,9 +12,20 @@ using namespace Robot;
 TrajectoryTreeNode2::TrajectoryTreeNode2(TrajectorySearch* planner, const Eigen::Vector2d &point, Complex rotation)
 	: mPoint(point), mRotation(rotation), mPlanner(planner)
 {
+	double minAngle = -M_PI/4;
+	double maxAngle = -minAngle;
+	int steps = 10;
+
+	for(int i = 0; i < steps; i++)
+	{
+		double angle = minAngle + ((maxAngle - minAngle) / steps) * i;
+		availableAngles.emplace_back(rotationToCompex(angle) * mRotation);
+	}
+
+
 	for(double i = -M_PI/8; i < M_PI/8; i += M_PI/32)
 	{
-		availableAngles.emplace_back(rotationToCompex(i) * mRotation);
+		//availableAngles.emplace_back(rotationToCompex(i) * mRotation);
 	}
 }
 
@@ -88,16 +100,16 @@ inline bool TrajectoryTreeNode2::inGoal() const
 ///////////////////////////////
 //// TrajectorySearch
 ///////////////////////////////
-TrajectorySearch::TrajectorySearch(const std::vector<Eigen::Vector2i> &obstacleList, Eigen::Vector2d goal, QObject* parent) : 
+TrajectorySearch::TrajectorySearch(const std::vector<Eigen::Vector2d> &obstacleList, Eigen::Vector2d goal, QObject* parent) : 
 	QObject(parent), world(b2Vec2(0.0, 0.0)), mGoal(goal), foundSolution(false)
 {
 	world.SetAllowSleeping(false);
 
 	mRobotFixture = CreateRobot();
 
-	for(const Eigen::Vector2i& pt : obstacleList)
+	for(const auto& pt : obstacleList)
 	{
-		AddObstacle(pt.y() * 5.0f / 512.0f + 0.6f, pt.x() * 5.0f / 512.0f - 2.5f);
+		AddObstacle(pt.x(), pt.y());
 	}
 
 	rootNode.reset(new TrajectoryTreeNode2(this, {0.0, 0.0}, rotationToCompex(0.0)));
@@ -115,6 +127,9 @@ b2Fixture* TrajectorySearch::CreateRobot()
 
 	b2PolygonShape robotShape;
 	static std::vector<b2Vec2> robotPoints = GetRobotPoints<b2Vec2>();
+
+	// for(auto& pt : robotPoints)
+	// 	pt *= 1.5;
 
 	robotShape.Set(robotPoints.data(), robotPoints.size());
 
@@ -201,19 +216,37 @@ void TrajectorySearch::Iterate()
 //// TrajectoryPlanner2
 ///////////////////////////////
 
-TrajectoryPlanner2::TrajectoryPlanner2(QObject* parent) : 
-QObject(parent) //, mOdometry(0.69), world(b2Vec2(0.0, 0.0))
+TrajectoryPlanner2::TrajectoryPlanner2(Kratos2* parent) : 
+QObject(parent), mRobot(parent) //, mOdometry(0.69), world(b2Vec2(0.0, 0.0))
 {
+}
+
+std::size_t TrajectoryPlanner2::GetOldestObstacle()
+{
+	std::size_t oldest = 0;
+
+	for(std::size_t i = 0; i < mObstacleHistory.size(); i++)
+	{
+		if(!mObstacleHistory[i].mCreatedTime.isValid())
+			return i;
+
+		if(mObstacleHistory[oldest].mCreatedTime < mObstacleHistory[i].mCreatedTime)
+			oldest = i;
+	}
+
+	return oldest;
 }
 
 void TrajectoryPlanner2::UpdateObstacles(pcl::PointCloud<pcl::PointXYZRGB>::Ptr pointCloud)
 {
+	using namespace Eigen;
 	//We want to transform the points from x=-2.5...2.5 and z=0...5 
     //To a 2d image, 512x512 
 	Eigen::MatrixXi walkabilityMap = Eigen::MatrixXi::Zero(512, 512);
 	Eigen::Affine2f toImageTransform = Eigen::Scaling(512.0f / 5.0f, 512.0f / 5.0f) * Eigen::Translation2f(2.5f, 0.0f);
 	//std::vector<Eigen::Vector2i> obstaclePoints;
-	mObstacleList.clear();
+	//mObstacleList.clear();
+	std::vector<Eigen::Vector2d> obstacleList;
 
 	for(const auto& pt : pointCloud->points)
 	{
@@ -240,9 +273,38 @@ void TrajectoryPlanner2::UpdateObstacles(pcl::PointCloud<pcl::PointXYZRGB>::Ptr 
 
 		if(pt.r == 255)
 		{
-			mObstacleList.push_back(imagePt);
+			Eigen::Vector2d newPt(imagePt.y() * 5.0f / 512.0f + 0.6f, imagePt.x() * 5.0f / 512.0f - 2.5f);
+			obstacleList.push_back(newPt);
 		}
     }
+
+    auto oldest = GetOldestObstacle();
+    auto currentTime = QDateTime::currentDateTime();
+    auto validRange = currentTime.addSecs(-30);
+
+    mObstacleHistory[oldest] = {currentTime, obstacleList};
+
+    mObstacleList.clear();
+
+    for(const auto& item : mObstacleHistory)
+	{
+		if(!item.mCreatedTime.isValid())
+			continue;
+
+		if(item.mCreatedTime < validRange)
+			continue;
+
+		auto odometry = mRobot->GetOdometryTraveledSince(item.mCreatedTime);
+
+		auto tf = Translation2d(odometry.mPosition);
+
+		for(const auto pt : item.mObstacleList){
+			mObstacleList.push_back(tf * pt);
+		}
+
+	}
+
+
 
     emit ObstacleMapUpdate(mObstacleList);
 }

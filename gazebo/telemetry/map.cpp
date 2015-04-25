@@ -60,7 +60,7 @@ void MapOverview::ReceiveDecawaveReading(double distance)
     mDecawaveCircle->setRect(-distance, -distance, distance*2, distance*2);
 }
 
-void MapOverview::ReceiveObstacleMap(std::vector<Eigen::Vector2i> points)
+void MapOverview::ReceiveObstacleMap(std::vector<Eigen::Vector2d> points)
 {
     if(mCore != nullptr)
         delete mCore;
@@ -69,9 +69,7 @@ void MapOverview::ReceiveObstacleMap(std::vector<Eigen::Vector2i> points)
 
     for(const auto& imagePt : points)
     {
-        Eigen::Vector2f newPt(imagePt.y() * 5.0 / 512.0 + 0.6, imagePt.x() * 5.0 / 512.0 - 2.5);
-
-        auto rect = new QGraphicsRectItem(newPt.x(), newPt.y(), 5.0 / 512.0, 5.0 / 512.0);
+        auto rect = new QGraphicsRectItem(imagePt.x(), imagePt.y(), 5.0 / 512.0, 5.0 / 512.0);
         rect->setPen(QPen(Qt::red, 0));
         mCore->addToGroup(rect);
     }
@@ -158,7 +156,15 @@ void MapOverview::ReceivePath(std::vector<Eigen::Vector2d> points)
 
     for(std::size_t i = 1; i < points.size(); i++)
     {
-        path.lineTo(points[i].x(), points[i].y());  
+        auto pt = points[i];
+        path.lineTo(pt.x(), pt.y());
+
+        path.lineTo(pt.x() + 0.1, pt.y() + 0.1); 
+        path.lineTo(pt.x() - 0.1, pt.y() + 0.1); 
+        path.lineTo(pt.x() + 0.0, pt.y() - 0.1);
+        path.lineTo(pt.x() + 0.1, pt.y() + 0.1);  
+
+        path.lineTo(pt.x(), pt.y());
     }
 
     mPlannedTrajectory->setPath(path);

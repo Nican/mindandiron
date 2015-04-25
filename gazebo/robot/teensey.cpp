@@ -24,12 +24,16 @@ void KratosTeensy::receiveError(QSerialPort::SerialPortError error)
 
 void KratosTeensy::SetVelocities(double left, double right)
 {
-	int leftInt = static_cast<int>(left * 10);
-	int rightInt = static_cast<int>(right * 10);
+	int leftPos = 0;
+	int rightPos = 0;
+	int useVelocity = 1;
+	int collector = 0;
+	int sorter = 0;
 
 	QString sendString;
-	sendString.sprintf("LVEL\t%d\tRVEL\t%d\tCOLL\t%s\tSORT\t%s\tEND", leftInt, rightInt, "0", "0");
-	std::cout << "Sending value: " << sendString.toStdString() << "\n";
+	//sendString.sprintf("LVEL\t%d\tRVEL\t%d\tCOLL\t%s\tSORT\t%s\tEND", leftInt, rightInt, "0", "0");
+	sendString.sprintf("\t%.2f\t%.2f\t%d\t%d\t%d\t%d\t%d\tEND", left, right, leftPos, rightPos, useVelocity, collector, sorter);
+	//std::cout << "Sending value: " << sendString.toStdString() << "\n";
 	mSerial->write(sendString.toLocal8Bit());
 }
 
@@ -52,8 +56,8 @@ void KratosTeensy::receiveSerialData()
 			TeenseyStatus status;
 			status.leftPosition = parts[1].toDouble(); // * (2 * M_PI / 23330.0) * 0.155;  // Distance traveled in meters
 			status.rightPosition = parts[3].toDouble(); // * (2 * M_PI / 23330.0) * 0.155;  // Distance traveled in meters
-			// status.leftVelocity = parts[5].toDouble();
-			// status.rightVelocity = parts[7].toDouble();
+			status.leftVelocity = parts[5].toDouble();
+			status.rightVelocity = parts[7].toDouble();
 			status.acceleration.x() = parts[9].toDouble() - 512.0;
 			status.acceleration.y() = parts[11].toDouble() - 512.0;
 			status.acceleration.z() = parts[13].toDouble() - 512.0;
@@ -64,4 +68,43 @@ void KratosTeensy::receiveSerialData()
 		}
 	}
 	mSerial->clear();
+}
+
+
+KratosDecawave::KratosDecawave(nzmqt::ZMQContext* context, QObject* parent) : Decawave(parent)
+{
+
+	mSubSocket = context->createSocket(nzmqt::ZMQSocket::TYP_SUB, this);
+	mSubSocket->setObjectName("Subscriber.Socket.socket(SUB)");
+	mSubSocket->connectTo("tcp://127.0.0.1:5560");
+	mSubSocket->setOption(nzmqt::ZMQSocket::OPT_SUBSCRIBE, "", 0);
+
+	connect(mSubSocket, SIGNAL(messageReceived(const QList<QByteArray>&)), SLOT(messageReceived(const QList<QByteArray>&)));
+}
+
+	
+void KratosDecawave::messageReceived(const QList<QByteArray>& messages)
+{
+	//std::cout << "Message size: " << message.size () << "\n";
+
+	std::cout << "Got message! \n";
+	//Why is this a list of arrays?
+	for(auto& byteArray : messages)
+	{
+		QString readString(byteArray);
+
+		if(readString.contains("LAST:"))
+		{
+			QString doubleVal = readString.replace("LAST: ", "");
+
+			double val = doubleVal.toDouble();
+
+			std::cout << "Read decawave value: " << val << "\n";
+
+			emit statusUpdate(val);
+		}
+
+	 	//std::cout << "\tReceived string: " << QString(byteArray).toStdString() << "\n";
+	}
+
 }

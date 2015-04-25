@@ -7,12 +7,13 @@
 #include "../nzmqt/nzmqt.hpp"
 #include "../pointcloud.h"
 #include "../teensy.h"
-#include "trajectory2.h"
+#include "../odometry.h"
 
 namespace Robot{
 
 class BaseState;
 class RootState;
+class TrajectoryPlanner2;
 
 class Decawave : public QObject
 {
@@ -79,45 +80,9 @@ public slots:
 	void receiveDepthImage(DepthImgData mat);
 	void teensyStatus(TeenseyStatus status);
 	void decawaveUpdate(double distance);
-	void SendObstacles(std::vector<Eigen::Vector2i>);
+	void SendObstacles(std::vector<Eigen::Vector2d>);
 	void WheelVelocityUpdate(double left, double right);
 };
-
-/*
-class WheelPID : public QObject
-{
-	Q_OBJECT
-public:
-	double mLeftDesiredVelocity; //in rads/sec
-	double mRightDesiredVelocity; //in rads/sec
-
-	TeenseyStatus mLastStatus;
-	QDateTime mLastStatusTime;
-
-	double mLeftVelocity;
-	double mRightVelocity;
-
-	double mLeftForce;
-	double mRightForce;
-
-	WheelPID(QObject* parent = 0);
-
-	void SetLeftDesiredAngularVelocity(double speed); //In radians per second
-	void SetLeftDesiredVelocity(double speed); // In m/s
-
-	void SetRightDesiredAngularVelocity(double speed); //In radians per second
-	void SetRightDesiredVelocity(double speed); // In m/s
-
-	void Reset();
-
-public slots:
-	void teensyStatus(TeenseyStatus status);
-
-signals:
-    void forceUpdated();
-};
-*/
-
 
 class Kratos2 : public QObject
 {

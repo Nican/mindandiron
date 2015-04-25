@@ -90,7 +90,7 @@ public:
 	void UpdateWalkabilityMap(DepthViewerTab::PclPointCloud::Ptr pointCloud);
 
 	void ReceiveDecawaveReading(double distance);
-	void ReceiveObstacleMap(std::vector<Eigen::Vector2i> points);
+	void ReceiveObstacleMap(std::vector<Eigen::Vector2d> points);
 
 	void ReceivePath(std::vector<Eigen::Vector2d> points);
 };

@@ -228,8 +228,8 @@ namespace gazebo
       tickData.leftWheelTicks = static_cast<int>((currentLeft) / (M_PI*2) * 23330.0);
       tickData.rightWheelTicks = static_cast<int>((currentRight) / (M_PI*2) * 23330.0);
 
-      tickData.leftWheelForce = m_leftWheelJoint->GetVelocity(0xDEADBEEF);
-      tickData.rightWheelForce = m_rightWheelJoint->GetVelocity(0xDEADBEEF);
+      tickData.leftWheelVelocity = m_leftWheelJoint->GetVelocity(0xDEADBEEF);
+      tickData.rightWheelVelocity = m_rightWheelJoint->GetVelocity(0xDEADBEEF);
 
       tickData.robotPosition = GetRobotPosition();
       tickData.robotOrientation = GetOrientation();

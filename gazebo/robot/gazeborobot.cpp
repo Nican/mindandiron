@@ -63,6 +63,8 @@ void GazeboTeensey::fireUpdate()
 	Robot::TeenseyStatus status;
 	status.leftPosition = mLastTick.leftWheelTicks;
 	status.rightPosition = mLastTick.rightWheelTicks;
+	status.leftVelocity = mLastTick.leftWheelVelocity;
+	status.rightVelocity = mLastTick.rightWheelVelocity;
 	status.acceleration = mLastTick.linearAcceleration;
 	status.autoFlag = false;
 

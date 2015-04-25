@@ -25,4 +25,17 @@ protected slots:
 
 };
 
+class KratosDecawave : public Decawave
+{
+	Q_OBJECT
+
+public:
+	nzmqt::ZMQSocket* mSubSocket;
+
+	KratosDecawave(nzmqt::ZMQContext* context, QObject* parent);
+
+public slots:
+	void messageReceived(const QList<QByteArray>& messages);
+};
+
 }
