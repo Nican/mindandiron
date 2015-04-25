@@ -20,9 +20,7 @@ bool BaseState::IsValid()
 RootState::RootState(Kratos2 *parent) : BaseState(parent), mState(nullptr)
 {
 	//MoveToNextState();
-
-	auto newState = new MoveTowardsGoalState(mRobot);
-	SetState(newState);
+	SetState(new MoveTowardsGoalState(mRobot));
 }
 
 void RootState::SetState(ProgressState* nextState)
@@ -90,7 +88,7 @@ MoveTowardsGoalState::MoveTowardsGoalState(Kratos2 *parent) :
 void MoveTowardsGoalState::Start()
 {
 	mStartTime = QDateTime::currentDateTime();
-	mRobot->mWheelPID->Reset();
+	//mRobot->mWheelPID->Reset();
 
 	connect(mRobot->GetTeensy(), &Teensy::statusUpdate, this, &MoveTowardsGoalState::TeensyStatus);
 	connect(mRobot->mPlanner, SIGNAL(ObstacleMapUpdate(std::vector<Eigen::Vector2i>)), this, SLOT(UpdateTrajectory(std::vector<Eigen::Vector2i>)));
@@ -102,9 +100,7 @@ void MoveTowardsGoalState::TeensyStatus(TeenseyStatus status)
 {
 	auto odometry = mRobot->GetOdometryTraveledSince(mStartTime);
 
-	mRobot->mWheelPID->SetLeftDesiredVelocity(0.1);
-	mRobot->mWheelPID->SetRightDesiredVelocity(0.15);
-
+	mRobot->SetWheelVelocity(0.15, 0.15);
 }
 
 void MoveTowardsGoalState::UpdateTrajectory(std::vector<Eigen::Vector2i> obstacleList)
@@ -126,7 +122,7 @@ void MoveTowardsGoalState::UpdateTrajectory(std::vector<Eigen::Vector2i> obstacl
 	goal = Rotation2Dd(odometry.mTheta) * goal;
 
 	// std::cout << "Recalcualting trajectroy: \n";
-	// std::cout << "\tOdometry: " << odometry << " \n";
+	std::cout << "\tOdometry: " << odometry << " \n";
 	// std::cout << "\tNew goal: " << goal.transpose() << " \n";
 
 	auto future = QtConcurrent::run([this, obstacleList, goal]() -> std::shared_ptr<TrajectorySearch>{
@@ -167,7 +163,7 @@ void MoveTowardsGoalState::FinishedTrajectory()
 
 void MoveForwardState::Start()
 {
-	mRobot->mWheelPID->Reset();
+	//mRobot->mWheelPID->Reset();
 
 	mStartTime = QDateTime::currentDateTime();
 
@@ -183,8 +179,7 @@ void MoveForwardState::TeensyStatus(TeenseyStatus status)
 
 	auto odometry = mRobot->GetOdometryTraveledSince(mStartTime);
 
-	mRobot->mWheelPID->SetLeftDesiredVelocity(0.5);
-	mRobot->mWheelPID->SetRightDesiredVelocity(0.5);
+	mRobot->SetWheelVelocity(0.2, 0.2);
 
 	//std::cout << "\tDistance traveled " << odometry.mDistanceTraveled << "\n";
 
@@ -204,7 +199,7 @@ void MoveForwardState::TeensyStatus(TeenseyStatus status)
 
 void RotateState::Start()
 {
-	mRobot->mWheelPID->Reset();
+	//mRobot->mWheelPID->Reset();
 
 	mStartTime = QDateTime::currentDateTime();
 
@@ -220,8 +215,7 @@ void RotateState::TeensyStatus(TeenseyStatus status)
 
 	auto odometry = mRobot->GetOdometryTraveledSince(mStartTime);
 
-	mRobot->mWheelPID->SetLeftDesiredVelocity(0.5);
-	mRobot->mWheelPID->SetRightDesiredVelocity(-0.5);
+	mRobot->SetWheelVelocity(0.2, -0.2);
 
 	if(std::abs(odometry.mTheta) > std::abs(mRotation))
 	{

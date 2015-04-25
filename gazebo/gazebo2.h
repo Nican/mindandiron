@@ -3,10 +3,10 @@
 
 struct RobotGazeboControl
 {
-	double leftForce;
-	double rightForce;
+	double leftVelocity;
+	double rightVelocity;
 
-	MSGPACK_DEFINE(leftForce, rightForce)
+	MSGPACK_DEFINE(leftVelocity, rightVelocity)
 };
 
 struct RobotGazeboTickData

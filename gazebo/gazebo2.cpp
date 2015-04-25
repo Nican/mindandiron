@@ -49,10 +49,14 @@ namespace gazebo
 
     math::Pose mStartRobotPose;
 
+    RobotGazeboControl mControl;
+    double lastUpdate;
+
     Kratos() : 
       mZmqContext(1), 
       mZmqPubSocket(mZmqContext, ZMQ_PUB),
-      mZmqSubSocket(mZmqContext, ZMQ_SUB)
+      mZmqSubSocket(mZmqContext, ZMQ_SUB),
+      lastUpdate(0.0)
     {
       mZmqPubSocket.bind ("tcp://*:5556");
 
@@ -210,10 +214,6 @@ namespace gazebo
       return std::atan2(p1.y(), p1.x());
     }
 
-    //double nextTickerUpdate;
-    double lastLeftWheelAngle;
-    double lastRightWheelAngle;
-
     // Called by the world update start event
     void OnUpdate(const common::UpdateInfo &info)
     {      
@@ -225,8 +225,6 @@ namespace gazebo
       auto linAccel = mImuSensor->GetLinearAcceleration();
 
       //One full rotation should be 23330 ticks
-      //tickData.leftWheelTicks = static_cast<int>((currentLeft - lastLeftWheelAngle) / (M_PI*2) * 23330.0);
-      //tickData.rightWheelTicks = static_cast<int>((currentRight - lastRightWheelAngle) / (M_PI*2) * 23330.0);
       tickData.leftWheelTicks = static_cast<int>((currentLeft) / (M_PI*2) * 23330.0);
       tickData.rightWheelTicks = static_cast<int>((currentRight) / (M_PI*2) * 23330.0);
 
@@ -237,10 +235,9 @@ namespace gazebo
       tickData.robotOrientation = GetOrientation();
       tickData.linearAcceleration = Eigen::Vector3d(linAccel.x, linAccel.y, linAccel.z);
 
-      lastLeftWheelAngle = currentLeft;
-      lastRightWheelAngle = currentRight;
-
       SendTelemetry(0, tickData);
+
+      auto jointController = mModel->GetJointController();
 
       zmq::message_t msg;
       while(mZmqSubSocket.recv(&msg, ZMQ_DONTWAIT))
@@ -265,10 +262,28 @@ namespace gazebo
           RobotGazeboControl controlData;
           result.get().convert(&controlData);
 
-          m_leftWheelJoint->SetForce(0, controlData.leftForce);
-          m_rightWheelJoint->SetForce(0, controlData.rightForce);
+          mControl = controlData;
+          lastUpdate = tickData.simTime;
         }
       }
+
+      const double factor = 1 / (0.155);
+      double leftVel = mControl.leftVelocity * factor;
+      double rightVel = mControl.rightVelocity * factor;
+
+      if(std::abs(lastUpdate - tickData.simTime) > 0.4)
+      {
+        leftVel = 0.0;
+        rightVel = 0.0;
+      }
+
+      m_leftWheelJoint->SetMaxForce(0, 100);
+      m_rightWheelJoint->SetMaxForce(0, 100);
+
+      m_leftWheelJoint->SetVelocity(0, leftVel);
+      m_rightWheelJoint->SetVelocity(0, rightVel);
+
+      //std::cout << "Setting veolocities: " << leftVel << "\t/\t" << rightVel << "\n";
     }
 
     std::mutex zmqLock;

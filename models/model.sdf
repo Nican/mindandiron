@@ -12,8 +12,8 @@
     <pose>0 0 0 0 0 0</pose>
 
     <inertial>
-      <pose>0.5 0 0.1 0 0 0</pose>
-      <mass>10</mass>
+      <pose>0.7 0 0 0 0 0</pose>
+      <mass>300</mass>
     </inertial>
 
     <collision name='collision'>
@@ -158,6 +158,9 @@
 
   <link name="left_wheel">
     <pose>0.0 0.345 0.0 1.5707 1.5707 0</pose>
+    <inertial>
+      <mass>12</mass>
+    </inertial>
     <collision name="collision">
       <geometry>
         <cylinder>
@@ -169,10 +172,10 @@
       <surface>
         <friction>
           <ode>
-            <mu>100.0</mu>
-            <mu2>100.0</mu2>
-            <slip1>1.0</slip1>
-            <slip2>1.0</slip2>
+            <mu>100000.0</mu>
+            <mu2>100000.0</mu2>
+            <slip1>0.0</slip1>
+              <slip2>0.0</slip2>
           </ode>
         </friction>
       </surface>
@@ -190,6 +193,9 @@
 
   <link name="right_wheel">
     <pose>0.0 -0.345 0.0 1.5707 1.5707 0</pose>
+    <inertial>
+      <mass>12</mass>
+    </inertial>
     <collision name="collision">
       <geometry>
         <cylinder>
@@ -201,10 +207,10 @@
       <surface>
         <friction>
           <ode>
-            <mu>100.0</mu>
-            <mu2>100.0</mu2>
-            <slip1>1.0</slip1>
-            <slip2>1.0</slip2>
+            <mu>100000.0</mu>
+            <mu2>100000.0</mu2>
+            <slip1>0.0</slip1>
+              <slip2>0.0</slip2>
           </ode>
         </friction>
       </surface>

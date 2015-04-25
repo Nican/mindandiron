@@ -80,8 +80,10 @@ public slots:
 	void teensyStatus(TeenseyStatus status);
 	void decawaveUpdate(double distance);
 	void SendObstacles(std::vector<Eigen::Vector2i>);
+	void WheelVelocityUpdate(double left, double right);
 };
 
+/*
 class WheelPID : public QObject
 {
 	Q_OBJECT
@@ -114,11 +116,15 @@ public slots:
 signals:
     void forceUpdated();
 };
+*/
 
 
 class Kratos2 : public QObject
 {
 	Q_OBJECT
+
+	double mLeftWheelVelocity;
+	double mRightWheelVelocity;
 
 public:
 	nzmqt::ZMQContext* mContext;
@@ -127,7 +133,7 @@ public:
 	QFutureWatcher<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> mFutureWatcher;
 
 	TrajectoryPlanner2* mPlanner;
-	WheelPID* mWheelPID;
+	//WheelPID* mWheelPID;
 
 	RootState *mState;
 
@@ -144,8 +150,11 @@ public:
 	virtual Teensy* GetTeensy() = 0;
 	virtual Decawave* GetDecawave() = 0;
 
-	virtual void SetLeftWheelPower(double power) = 0;
-	virtual void SetRightWheelPower(double power) = 0;
+	//Set the velocities in m/s
+	//Upper limit at ~0.66
+	void SetWheelVelocity(double left, double right);
+	double GetLeftVelocity();
+	double GetRightVelocity();
 
 	Odometry GetOdometryTraveledSince(QDateTime time);
 
@@ -153,12 +162,10 @@ public slots:
 	void ProccessPointCloud(DepthImgData mat);
 	void TeensyStatus(TeenseyStatus status);
 	void FinishedPointCloud();
-	void updateForces();
 	
-
 signals:
 	void pauseUpdate(bool); //True when paused
-
+	void WheelVelocityUpdate(double left, double right);
 };
 
 

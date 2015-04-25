@@ -67,7 +67,7 @@ mDb(QSqlDatabase::addDatabase("QSQLITE"))
 		"distance REAL"\
 		")");
 
-	mDb.exec("CREATE TABLE IF NOT EXISTS forceLog(" \
+	mDb.exec("CREATE TABLE IF NOT EXISTS velocityLog(" \
 		"id INTEGER PRIMARY KEY ASC,"\
 		"timestamp INTEGER,"\
 		"leftForce REAL, rightForce REAL"\
@@ -165,23 +165,23 @@ void SensorLog::SendObstacles(std::vector<Eigen::Vector2i> points)
 	mSocket->sendMessage(msg);
 }
 
-void SensorLog::forceUpdated(double leftForce, double rightForce)
+void SensorLog::WheelVelocityUpdate(double left, double right)
 {
 	QSqlQuery query(mDb);
-	query.prepare("INSERT INTO forceLog(timestamp, leftForce, rightForce) VALUES "\
+	query.prepare("INSERT INTO velocityLog(timestamp, leftForce, rightForce) VALUES "\
 		"(:timestamp, :left, :right)");
 	query.bindValue(":timestamp", QDateTime::currentDateTime().toMSecsSinceEpoch() , QSql::In);
-	query.bindValue(":left", leftForce, QSql::In);
-	query.bindValue(":right", rightForce, QSql::In);
+	query.bindValue(":left", left, QSql::In);
+	query.bindValue(":right", right, QSql::In);
 	query.exec();
 
-	std::vector<double> forces = {
-		leftForce,
-		rightForce
+	std::vector<double> velocities = {
+		left,
+		right
 	};
 
 	msgpack::sbuffer sbuf;
-	msgpack::pack(sbuf, forces);
+	msgpack::pack(sbuf, velocities);
 
 	QList<QByteArray> msg;
 	msg += QByteArray("\x06");
@@ -204,6 +204,7 @@ void SensorLog::ReceivePath(const std::vector<Eigen::Vector2d> &points)
 /// WheelPID
 //////////////////////////
 
+/*
 WheelPID::WheelPID(QObject* parent) : 
 	mLeftDesiredVelocity(0.0), 
 	mRightDesiredVelocity(0.0), 
@@ -308,19 +309,25 @@ void WheelPID::Reset()
 
 	emit forceUpdated();
 }
+*/
 
 //////////////////////////
 /// Kratos2
 //////////////////////////
 
-Kratos2::Kratos2(QObject* parent) : QObject(parent), mState(nullptr), mIsPaused(false)
+Kratos2::Kratos2(QObject* parent) : 
+	QObject(parent),
+	mLeftWheelVelocity(0.0),
+	mRightWheelVelocity(0.0),
+	mState(nullptr), 
+	mIsPaused(false)
 {
 	mContext = nzmqt::createDefaultContext(this);
 	mContext->start();
 
 	mSensorLog = new SensorLog(this, mContext);
 	mPlanner = new TrajectoryPlanner2(this);
-	mWheelPID = new WheelPID(this);
+	//mWheelPID = new WheelPID(this);
 }
 
 
@@ -336,7 +343,7 @@ void Kratos2::Initialize()
 	}
 
 	connect(GetTeensy(), &Teensy::statusUpdate, mSensorLog, &SensorLog::teensyStatus);
-	connect(GetTeensy(), &Teensy::statusUpdate, mWheelPID, &WheelPID::teensyStatus);
+	//connect(GetTeensy(), &Teensy::statusUpdate, mWheelPID, &WheelPID::teensyStatus);
 	connect(GetTeensy(), &Teensy::statusUpdate, this, &Kratos2::TeensyStatus);
 	
 	auto decawave = GetDecawave();
@@ -349,7 +356,8 @@ void Kratos2::Initialize()
 	
 	connect(&mFutureWatcher, SIGNAL(finished()), this, SLOT(FinishedPointCloud()));
 	connect(mPlanner, SIGNAL(ObstacleMapUpdate(std::vector<Eigen::Vector2i>)), mSensorLog, SLOT(SendObstacles(std::vector<Eigen::Vector2i>)));
-	connect(mWheelPID, &WheelPID::forceUpdated, this, &Kratos2::updateForces);
+	connect(this, &Kratos2::WheelVelocityUpdate, mSensorLog, &SensorLog::WheelVelocityUpdate);
+	//connect(mWheelPID, &WheelPID::forceUpdated, this, &Kratos2::updateForces);
 
 	mState = new RootState(this);
 	mState->Start();
@@ -365,20 +373,27 @@ void Kratos2::TeensyStatus(TeenseyStatus status)
 	}
 }
 
-void Kratos2::updateForces()
+void Kratos2::SetWheelVelocity(double left, double right)
 {
-	SetLeftWheelPower(mWheelPID->mLeftForce);
-	SetRightWheelPower(mWheelPID->mRightForce);
+	mLeftWheelVelocity = left;
+	mRightWheelVelocity = right;
 
-	mSensorLog->forceUpdated(mWheelPID->mLeftForce, mWheelPID->mRightForce);
+	emit WheelVelocityUpdate(left, right);
 }
+
+double Kratos2::GetLeftVelocity()
+{
+	return mLeftWheelVelocity;
+}
+
+double Kratos2::GetRightVelocity()
+{
+	return mRightWheelVelocity;
+}
+
 
 void Kratos2::ProccessPointCloud(DepthImgData mat)
 {
-	//QDateTime currentTime = QDateTime::currentDateTime();
-
-	//std::cout << "Processing point cloud;\n";
-
 	if(mFutureWatcher.future().isRunning()){
 		std::cout << "Point cloud is still processing. not starting a new one\n";
 		return;

@@ -142,9 +142,7 @@ bool KratosKinect::onNewFrame(libfreenect2::Frame::Type type, libfreenect2::Fram
 RealRobot::RealRobot(QObject* parent) : 
 	Robot::Kratos2(parent),
 	mKinect(nullptr),
-	bFirstTeenseyMessage(true),
-	mLeftVelocity(0.0),
-	mRightVelocity(0.0)
+	bFirstTeenseyMessage(true)
 {
 
 	/*
@@ -209,16 +207,6 @@ RealRobot::RealRobot(QObject* parent) :
 	*/
 }
 
-void RealRobot::SetLeftWheelPower(double power) 
-{
-	mLeftVelocity = power / 100.0;
-}
-
-void RealRobot::SetRightWheelPower(double power)
-{
-	mRightVelocity = power / 100.0;
-}
-
 
 /*
 void RealRobot::receiveColorImage2(Robot::ImgData mat)
@@ -240,6 +228,6 @@ void RealRobot::receiveDepthImage2(Robot::DepthImgData image)
 
 void RealRobot::updateForces()
 {
-	mTeensy->SetVelocities(mLeftVelocity, mRightVelocity);
+	mTeensy->SetVelocities(GetLeftVelocity(), GetRightVelocity());
 }
 

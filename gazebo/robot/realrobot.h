@@ -55,8 +55,8 @@ class RealRobot : public Robot::Kratos2
     Robot::TeenseyStatus lastStatus;
     bool bFirstTeenseyMessage;
 
-    double mLeftVelocity;
-    double mRightVelocity;
+    //double mLeftVelocity;
+    //double mRightVelocity;
   	//libfreenect2::Freenect2Device *dev;
 
     //std::shared_ptr<Robot::Kratos> m_kratos;
@@ -81,8 +81,8 @@ public:
         return nullptr;
     }
 
-    virtual void SetLeftWheelPower(double power) override;
-    virtual void SetRightWheelPower(double power) override;
+    //virtual void SetLeftWheelPower(double power) override;
+    //virtual void SetRightWheelPower(double power) override;
 
 
 public slots:

@@ -125,12 +125,12 @@ void WheelOdometryTab::ReceiveData(const Robot::TeenseyStatus &data)
     rightPlot->addPoint(key, data.rightPosition);
 }
 
-void WheelOdometryTab::ReceiveWheelForce(const std::vector<double> &forces)
+void WheelOdometryTab::ReceiveWheelVelocities(const std::vector<double> &velocities)
 {
     double key = QDateTime::currentDateTime().toMSecsSinceEpoch() / 1000.0;
 
-    leftForcePlot->addPoint(key, forces[0]);
-    rightForcePlot->addPoint(key, forces[1]);
+    leftForcePlot->addPoint(key, velocities[0]);
+    rightForcePlot->addPoint(key, velocities[1]);
 }
 
 
@@ -232,7 +232,7 @@ void MainWindow::messageReceived(const QList<QByteArray>& messages)
         msgpack::unpacked result;
         msgpack::unpack(result, messages[1].data(), messages[1].size());
         result.get().convert(&points);
-        mWheelOdometry->ReceiveWheelForce(points);
+        mWheelOdometry->ReceiveWheelVelocities(points);
     }
 
      if(id == '\x07')
