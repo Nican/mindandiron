@@ -14,7 +14,7 @@ int calcServoCmdFromDesiredVelocity(int cmd) {
         cmd = MAX_SERVO_SPEED;
     }
     if (cmd < (2 * MIN_SERVO_SPEED - MAX_SERVO_SPEED)) {
-        cmd = MIN_SERVO_SPEED;
+        cmd = 2 * MIN_SERVO_SPEED - MAX_SERVO_SPEED;
     }
     return cmd;
 }

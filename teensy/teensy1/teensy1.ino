@@ -21,11 +21,7 @@
 
 #include "collector_sorter_includes.h"
 #include "rc_includes.h"
-
-
-#define VELOCITY_PERIOD_MICRO 10000  // Period of vel calc, microseconds
-#define PID_PERIOD_MICRO      10000  // Period of wheel PID, microseconds
-#define WHEEL_TICKS_PER_REV  23330  // Determined experimentally for encoder
+#include "wheel_PID.h"
 
 
 // DRIVE SETUP
@@ -36,8 +32,11 @@ int lastLeftCmd;
 int lastRightCmd;
 
 // WHEEL PID SETUP
-int leftVelocitySetpoint = 0;   // Velocity setpoint from the computer
-int rightVelocitySetpoint = 0;  // Velocity setpoint from the computer
+float leftVelocitySetpoint = 0;   // Velocity setpoint from the computer, m/s
+float rightVelocitySetpoint = 0;  // Velocity setpoint from the computer, m/s
+int leftPositionSetpoint = 0;     // Position setpoint from the computer, global ticks
+int rightPositionSetpoint = 0;    // Position setpoint from the computer, global ticks
+int useVelocityControl = 1;           // 1 to use velocity PID, 0 to use position PID
 
 // COLLECTOR AND SORTER SETUP
 Servo servoSorter;
@@ -69,7 +68,7 @@ void setup() {
 
     // WHEEL PID SETUP
     Timer3.initialize(PID_PERIOD_MICRO);
-    Timer3.attachInterrupt(calculateWheelPIDControl);
+    Timer3.attachInterrupt(calculateVelocityPIDControl);
 
     // TURN ON LIGHT
     pinMode(ledPin, OUTPUT);
@@ -81,10 +80,16 @@ void loop() {
     readAccelerometer();  // Updates accelerometerAxes
     readComputerCommands(&leftVelocitySetpoint,
                          &rightVelocitySetpoint,
+                         &leftPositionSetpoint,
+                         &rightPositionSetpoint,
+                         &useVelocityControl,
                          &collectorAutoCmd,
                          &sorterAutoSlot);
-    setLeftWheelPIDSetpoint(leftVelocitySetpoint);
-    setRightWheelPIDSetpoint(rightVelocitySetpoint);
+    setLeftWheelVelocityPIDSetpoint(leftVelocitySetpoint);
+    setRightWheelVelocityPIDSetpoint(rightVelocitySetpoint);
+    setLeftWheelPositionPIDSetpoint(leftPositionSetpoint);
+    setRightWheelPositionPIDSetpoint(rightPositionSetpoint);
+    setUseVelocityPID(useVelocityControl);
 
     if (switchOn(AUTO_SWITCH_IN)) {
         if (!isSystemAuto) {

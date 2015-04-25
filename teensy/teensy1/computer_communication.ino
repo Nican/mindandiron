@@ -2,45 +2,64 @@
 // Include some type of copyright
 
 
-const int maxWheelSpeed = 160;
+const float maxWheelSpeed = 0.65;  // meters/second
 
 
 // Reads the serial port for a computer command and sets the given int values
-void readComputerCommands(int *leftVelocitySetpoint,
-                          int *rightVelocitySetpoint,
+void readComputerCommands(float *leftVelocitySetpoint,
+                          float *rightVelocitySetpoint,
+                          int *leftPositionSetpoint,
+                          int *rightPositionSetpoint,
+                          int *velocityPID,
                           int *collectorAutoCmd,
                           int *sorterAutoSlot) {
     char incomingByte;
     int tabCounter = 0;
-    int leftVelocityCmd = 0;
-    int rightVelocityCmd = 0;
+    float leftVelocityCmd = 0;
+    float rightVelocityCmd = 0;
+    int leftPositionCmd = 0;
+    int rightPositionCmd = 0;
+    int velocityPIDCmd = 1;
     int collectorCmd = 0;
     int sorterCmd = 0;
+
+    // Format
+    // \tLVEL\tRVEL\tLPOS\tRPOS\tVEL?\tCOLL\tSORT\tEND
     while (Serial.available()) {
         incomingByte = Serial.read();
         if (incomingByte == '\t') {
             if (tabCounter == 0) {
-                leftVelocityCmd = Serial.parseInt();  // 0 when passed non-int
+                leftVelocityCmd = Serial.parseFloat(); // 0 when passed non-float
+            } else if (tabCounter == 1) {
+                rightVelocityCmd = Serial.parseFloat();
             } else if (tabCounter == 2) {
-                rightVelocityCmd = Serial.parseInt();
+                leftPositionCmd = Serial.parseInt();
+            } else if (tabCounter == 3) {
+                rightPositionCmd = Serial.parseInt();
             } else if (tabCounter == 4) {
-                collectorCmd = Serial.parseInt();
+                velocityPIDCmd = Serial.parseInt();
+            } else if (tabCounter == 5) {
+                collectorCmd = Serial.parseInt();      // 0 when passed non-int
             } else if (tabCounter == 6) {
                 sorterCmd = Serial.parseInt();
             }
             tabCounter++;
         }
     }
+
     if (tabCounter == 8) {
         *leftVelocitySetpoint = boundVelocity(leftVelocityCmd);
         *rightVelocitySetpoint = boundVelocity(rightVelocityCmd);
+        *leftPositionSetpoint = leftPositionCmd;
+        *rightPositionSetpoint = rightPositionCmd;
+        *velocityPID = velocityPIDCmd;
         *collectorAutoCmd = boundCollectorSignal(collectorCmd);
         *sorterAutoSlot = boundSorterSignal(sorterCmd);
     }
 }
 
 
-int boundVelocity(int cmd) {
+float boundVelocity(float cmd) {
     // Decided to treat out-of-bound commands as illegitimate to prevent
     // runaways. Could implement this as a clamp function as needed
     if (abs(cmd) > maxWheelSpeed) {
