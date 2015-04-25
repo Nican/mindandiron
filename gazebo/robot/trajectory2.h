@@ -3,8 +3,10 @@
 #include <QObject>
 #include <QVector>
 #include <Box2D/Box2D.h>
+#include <QDateTime>
 #include "../odometry.h"
 #include "../pointcloud.h"
+#include "../msgpack.h"
 
 namespace Robot
 { 
@@ -50,6 +52,8 @@ public:
 	TrajectoryPlanner2* mPlanner;
 	Eigen::Vector2d mGoal;
 	std::unique_ptr<TrajectoryTreeNode2> rootNode;
+
+	QDateTime mCreatedTime;
 
 	bool foundSolution;
 

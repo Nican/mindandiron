@@ -215,7 +215,7 @@ WheelPID::WheelPID(QObject* parent) :
 
 void WheelPID::SetLeftDesiredVelocity(double speed)
 {
-	SetLeftDesiredAngularVelocity(speed / 0.155);
+	SetLeftDesiredAngularVelocity(speed / 0.155 * M_PI);
 }
 
 void WheelPID::SetLeftDesiredAngularVelocity(double speed)
@@ -225,7 +225,7 @@ void WheelPID::SetLeftDesiredAngularVelocity(double speed)
 
 void WheelPID::SetRightDesiredVelocity(double speed)
 {
-	SetRightDesiredAngularVelocity(speed / 0.155);
+	SetRightDesiredAngularVelocity(speed / 0.155 * M_PI);
 }
 
 void WheelPID::SetRightDesiredAngularVelocity(double speed)
@@ -240,13 +240,14 @@ void WheelPID::teensyStatus(TeenseyStatus status)
 	if(!mLastStatusTime.isValid() || mLastStatusTime.msecsTo(currentTime) > 1000 )
 	{
 		mLastStatusTime = QDateTime::currentDateTime();
+		mLastStatus = status;
 		return;
 	}
 
 	double seconds = static_cast<double>(mLastStatusTime.msecsTo(currentTime)) / 1000.0;
 
-	mLeftVelocity = static_cast<double>(mLastStatus.leftPosition - status.leftPosition) / 23330.0 / seconds;
-	mRightVelocity = static_cast<double>(mLastStatus.rightPosition - status.rightPosition) / 23330.0 / seconds;
+	mLeftVelocity = static_cast<double>(status.leftPosition - mLastStatus.leftPosition) / 23330.0 / seconds;
+	mRightVelocity = static_cast<double>(status.rightPosition - mLastStatus.rightPosition) / 23330.0 / seconds;
 
 	double forceStep = 30.0;
 	double forceLimit = 1000.0;
@@ -258,6 +259,8 @@ void WheelPID::teensyStatus(TeenseyStatus status)
 	}
 	else 
 	{
+		std::cout << "velocity: " << status.leftPosition << "/" << seconds << "\t" << mLeftVelocity << "\t / \t " << mLeftDesiredVelocity << "\n";
+
 		//TODO: Look at real implementation of PID
 		if(mLeftVelocity < mLeftDesiredVelocity)
 		{
@@ -290,7 +293,7 @@ void WheelPID::teensyStatus(TeenseyStatus status)
 			mRightForce = -forceLimit;
 	}
 
-
+	mLastStatusTime = QDateTime::currentDateTime();
 	mLastStatus = status;
 
 	emit forceUpdated();
@@ -343,7 +346,7 @@ void Kratos2::Initialize()
 		connect(decawave, &Decawave::statusUpdate, mSensorLog, &SensorLog::decawaveUpdate);
 	}	
 
-	connect(&mPathFutureWatcher, SIGNAL(finished()), this, SLOT(FinishedTrajectory()));
+	
 	connect(&mFutureWatcher, SIGNAL(finished()), this, SLOT(FinishedPointCloud()));
 	connect(mPlanner, SIGNAL(ObstacleMapUpdate(std::vector<Eigen::Vector2i>)), mSensorLog, SLOT(SendObstacles(std::vector<Eigen::Vector2i>)));
 	connect(mWheelPID, &WheelPID::forceUpdated, this, &Kratos2::updateForces);
@@ -374,7 +377,7 @@ void Kratos2::ProccessPointCloud(DepthImgData mat)
 {
 	//QDateTime currentTime = QDateTime::currentDateTime();
 
-	std::cout << "Processing point cloud;\n";
+	//std::cout << "Processing point cloud;\n";
 
 	if(mFutureWatcher.future().isRunning()){
 		std::cout << "Point cloud is still processing. not starting a new one\n";
@@ -396,22 +399,11 @@ void Kratos2::ProccessPointCloud(DepthImgData mat)
 	mFutureWatcher.setFuture(future);
 }
 
-void Kratos2::FinishedTrajectory()
-{
-	auto planner = mPathFutureWatcher.future().result();
 
-	std::vector<Eigen::Vector2d> points;
-	if(planner->GetResult(points))
-	{
-		std::cout << "Path has " << points.size() << " points\n";
-	}
-
-	mSensorLog->ReceivePath(points);
-}
 
 void Kratos2::FinishedPointCloud()
 {
-	std::cout << "Finished point cloud;\n";
+	//std::cout << "Finished point cloud;\n";
 
 	auto pointCloud = mFutureWatcher.future().result();
 	mSensorLog->receiveSegmentedPointcloud(pointCloud);
@@ -421,51 +413,6 @@ void Kratos2::FinishedPointCloud()
 		kinect->requestDepthFrame();
 
 	mPlanner->UpdateObstacles(pointCloud);
-
-	if(mPathFutureWatcher.future().isRunning())
-	{
-		std::cout << "Trajectory is still processing. not starting a new one\n";
-		return;
-	}
-
-	std::vector<Eigen::Vector2i> obstacleList = mPlanner->mObstacleList;
-
-	auto future = QtConcurrent::run([this, obstacleList]() -> std::shared_ptr<TrajectorySearch>{
-		//auto start = std::chrono::high_resolution_clock::now();
-		Eigen::Vector2d goal(5.0, 0.0);
-		auto planner = std::make_shared<TrajectorySearch>(obstacleList, goal);
-		std::size_t i = 0;
-		
-		for(i = 0; i < 500 && !planner->foundSolution; i ++)
-		{
-			planner->rootNode->explore();
-		}
-
-		std::cout << "Found solution after " << i << " iterations\n";
-
-		//auto end = std::chrono::high_resolution_clock::now();
-
-		//std::chrono::duration<double> diff = end-start;
-        //std::cout << "Time to search : " << diff.count() << " s\n"; 
-
-        return planner;
-	});
-
-	mPathFutureWatcher.setFuture(future);
-
-	/*
-	mPlanner->UpdateObstacles(pointCloud);
-	{
-		auto start = std::chrono::high_resolution_clock::now();
-		mPlanner->FindPath({5.0, 0.0});
-		auto end = std::chrono::high_resolution_clock::now();
-
-		std::chrono::duration<double> diff = end-start;
-        std::cout << "Time to search : " << diff.count() << " s\n";
-	}
-	*/
-
-
 }
 
 Odometry Kratos2::GetOdometryTraveledSince(QDateTime time)
@@ -475,7 +422,7 @@ Odometry Kratos2::GetOdometryTraveledSince(QDateTime time)
 	query.bindValue(":startTime", time.toMSecsSinceEpoch());
 
 	if(!query.exec())
-		cout << "error SQL= " <<  query.lastError().text().toStdString() << endl;
+		std::cout << "error SQL= " <<  query.lastError().text().toStdString() << std::endl;
 
 	double lastLeft = 0.0;
 	double lastRight = 0.0;

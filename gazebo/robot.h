@@ -6,3 +6,4 @@
 #include "msgpack.h"
 #include "state.h"
 #include "april.h"
+#include "util.h"

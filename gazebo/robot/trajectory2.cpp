@@ -1,5 +1,5 @@
 #include "trajectory2.h"
-
+#include "../trajectory.h"
 
 using namespace Robot;
 
@@ -101,6 +101,8 @@ TrajectorySearch::TrajectorySearch(const std::vector<Eigen::Vector2i> &obstacleL
 	}
 
 	rootNode.reset(new TrajectoryTreeNode2(this, {0.0, 0.0}, rotationToCompex(0.0)));
+
+	mCreatedTime = QDateTime::currentDateTime();
 }
 
 b2Fixture* TrajectorySearch::CreateRobot()
@@ -204,22 +206,6 @@ QObject(parent) //, mOdometry(0.69), world(b2Vec2(0.0, 0.0))
 {
 }
 
-
-
-/*
-std::shared_ptr<TrajectorySearch> TrajectoryPlanner2::FindPath(const Eigen::Vector2d &goal, int iterations)
-{
-	auto search = std::make_shared<TrajectorySearch>(this, goal);
-
-	for(int i = 0; i < iterations; i ++)
-	{
-		search->rootNode->explore();
-	}
-
-	return search;
-}
-*/
-
 void TrajectoryPlanner2::UpdateObstacles(pcl::PointCloud<pcl::PointXYZRGB>::Ptr pointCloud)
 {
 	//We want to transform the points from x=-2.5...2.5 and z=0...5 
@@ -256,32 +242,7 @@ void TrajectoryPlanner2::UpdateObstacles(pcl::PointCloud<pcl::PointXYZRGB>::Ptr 
 		{
 			mObstacleList.push_back(imagePt);
 		}
-        /*
-        Eigen::Vector2f newPt(imagePt.y() * 5.0 / 512.0 + 0.6, imagePt.x() * 5.0 / 512.0 - 2.5);
-
-        auto rect = new QGraphicsRectItem(newPt.x(), newPt.y(), 5.0 / 512.0, 5.0 / 512.0);
-        rect->setPen(QPen(Qt::red, 0));
-        mCore->addToGroup(rect);
-        */
     }
 
     emit ObstacleMapUpdate(mObstacleList);
-
-    /*
-    for(auto& obstacle : mObstacles)
-	{
-		world.DestroyBody(obstacle);
-	}
-	mObstacles.clear();
-	*/
-
-	
 }
-
-
-/*
-void TrajectoryPlanner2::UpdateOdometry(double leftWheel, double rightWheel)
-{
-
-}
-*/

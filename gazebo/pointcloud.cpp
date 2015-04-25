@@ -1,4 +1,5 @@
 #include "pointcloud.h"
+#include "msgpack.h"
 
 #include <pcl/filters/voxel_grid.h>
 

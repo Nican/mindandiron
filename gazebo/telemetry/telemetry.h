@@ -78,6 +78,7 @@ public:
 
 	QGraphicsItemGroup* mCore;
 	QGraphicsPathItem* trajectoryPath;
+	QGraphicsPathItem* mPlannedTrajectory;
 	QGraphicsPolygonItem* mRobotInstance;
 
 	QVector<QGraphicsLineItem*> mLines;

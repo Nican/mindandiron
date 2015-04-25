@@ -13,7 +13,6 @@
 class TrajectoryTreeNode;
 class TrajectoryPlanner;
 
-typedef std::complex<double> Complex;
 typedef std::unique_ptr<TrajectoryTreeNode> TrajectoryTreeNodePtr;
 
 

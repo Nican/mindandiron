@@ -125,7 +125,6 @@ public:
 
 	SensorLog* mSensorLog;
 	QFutureWatcher<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> mFutureWatcher;
-	QFutureWatcher<std::shared_ptr<TrajectorySearch>> mPathFutureWatcher;
 
 	TrajectoryPlanner2* mPlanner;
 	WheelPID* mWheelPID;
@@ -155,7 +154,7 @@ public slots:
 	void TeensyStatus(TeenseyStatus status);
 	void FinishedPointCloud();
 	void updateForces();
-	void FinishedTrajectory();
+	
 
 signals:
 	void pauseUpdate(bool); //True when paused

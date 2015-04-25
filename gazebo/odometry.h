@@ -17,7 +17,13 @@ public:
 	Eigen::Vector2d mPosition;
 	double mTheta;
 
-	Odometry(double axleDistance) : mAxle(axleDistance), cosPrev(1.0), sinPrev(0.0)
+	Odometry(double axleDistance) : 
+		mAxle(axleDistance), 
+		cosPrev(1.0), 
+		sinPrev(0.0), 
+		mDistanceTraveled(0.0), 
+		mPosition({0.0, 0.0}), 
+		mTheta(0.0)
 	{
 	}
 

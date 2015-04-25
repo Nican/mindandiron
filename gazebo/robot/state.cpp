@@ -1,4 +1,5 @@
 #include "state.h"
+#include <QtConcurrent>
 
 using namespace Robot;
 
@@ -16,9 +17,12 @@ bool BaseState::IsValid()
 ////	RootState
 ////////////////////
 
-RootState::RootState(Kratos2 *parent) : BaseState(parent)
+RootState::RootState(Kratos2 *parent) : BaseState(parent), mState(nullptr)
 {
 	//MoveToNextState();
+
+	auto newState = new MoveTowardsGoalState(mRobot);
+	SetState(newState);
 }
 
 void RootState::SetState(ProgressState* nextState)
@@ -73,19 +77,89 @@ void ProgressState::SetFinished()
 }
 
 ////////////////////
-////	MoveForwardState
+////	MoveTowardsGoalState
 ////////////////////
+
+MoveTowardsGoalState::MoveTowardsGoalState(Kratos2 *parent) : 
+	ProgressState(parent), 
+	mLastResult(nullptr), 
+	mGoal(10.0, 0.0)
+{
+}
 
 void MoveTowardsGoalState::Start()
 {
+	mStartTime = QDateTime::currentDateTime();
 	mRobot->mWheelPID->Reset();
 
 	connect(mRobot->GetTeensy(), &Teensy::statusUpdate, this, &MoveTowardsGoalState::TeensyStatus);
+	connect(mRobot->mPlanner, SIGNAL(ObstacleMapUpdate(std::vector<Eigen::Vector2i>)), this, SLOT(UpdateTrajectory(std::vector<Eigen::Vector2i>)));
+
+	connect(&mPathFutureWatcher, SIGNAL(finished()), this, SLOT(FinishedTrajectory()));
 }
 
 void MoveTowardsGoalState::TeensyStatus(TeenseyStatus status)
 {
+	auto odometry = mRobot->GetOdometryTraveledSince(mStartTime);
+
+	mRobot->mWheelPID->SetLeftDesiredVelocity(0.1);
+	mRobot->mWheelPID->SetRightDesiredVelocity(0.15);
+
 }
+
+void MoveTowardsGoalState::UpdateTrajectory(std::vector<Eigen::Vector2i> obstacleList)
+{
+	using namespace Eigen;
+	if(mPathFutureWatcher.future().isRunning())
+	{
+		std::cout << "Trajectory is still processing. not starting a new one\n";
+		return;
+	}
+
+	auto odometry = mRobot->GetOdometryTraveledSince(mStartTime);
+
+	//Affine2d robotTransform;
+	//robotTransform.prerotate(Rotation2Dd(M_PI/2));
+	//robotTransform.pretranslate({5,2});
+
+	Vector2d goal(mGoal - odometry.mPosition);
+	goal = Rotation2Dd(odometry.mTheta) * goal;
+
+	// std::cout << "Recalcualting trajectroy: \n";
+	// std::cout << "\tOdometry: " << odometry << " \n";
+	// std::cout << "\tNew goal: " << goal.transpose() << " \n";
+
+	auto future = QtConcurrent::run([this, obstacleList, goal]() -> std::shared_ptr<TrajectorySearch>{
+		auto planner = std::make_shared<TrajectorySearch>(obstacleList, goal);
+		std::size_t i = 0;
+		
+		for(i = 0; i < 500 && !planner->foundSolution; i ++)
+		{
+			planner->rootNode->explore();
+		}
+
+        return planner;
+	});
+
+	mPathFutureWatcher.setFuture(future);
+}
+
+void MoveTowardsGoalState::FinishedTrajectory()
+{
+	auto planner = mPathFutureWatcher.future().result();
+
+	std::vector<Eigen::Vector2d> points;
+	if(planner->GetResult(points))
+	{
+		mLastResult = planner;
+		mLastResultPoints = points;
+		std::cout << "Path has " << points.size() << " points\n";
+	}
+
+	mRobot->mSensorLog->ReceivePath(points);
+}
+
+
 
 ////////////////////
 ////	MoveForwardState

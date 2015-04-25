@@ -1,6 +1,8 @@
 #pragma once
 #include <iostream>
 
+typedef std::complex<double> Complex;
+
 namespace Robot
 {
 

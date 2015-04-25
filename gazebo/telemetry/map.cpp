@@ -37,6 +37,7 @@ MapOverview::MapOverview(QWidget *parent)
     view.scale(1, -1);
 
     trajectoryPath = scene.addPath(QPainterPath(), QPen(Qt::blue, 0));
+    mPlannedTrajectory = scene.addPath(QPainterPath(), QPen(Qt::red, 0));
 
     mDecawaveCircle = scene.addEllipse(0, 0, 0, 0, QPen(Qt::black, 0));
 
@@ -127,6 +128,7 @@ void MapOverview::DrawExploreChild(TrajectoryTreeNode* parent, TrajectoryTreeNod
 
 void MapOverview::ReceivePath(std::vector<Eigen::Vector2d> points)
 {
+    /*
     for(auto &line : mLines)
     {
         delete line;
@@ -145,6 +147,24 @@ void MapOverview::ReceivePath(std::vector<Eigen::Vector2d> points)
         auto line = scene.addLine(p1.x(), p1.y(), p2.x(), p2.y(), QPen(color, 0));
         mLines.push_back(line);
     }
+    */
+
+    if(points.size() == 0){
+        mPlannedTrajectory->setPath(QPainterPath());
+        return;
+    }
+
+    QPainterPath path({points[0].x(), points[0].y()});
+
+    for(std::size_t i = 1; i < points.size(); i++)
+    {
+        path.lineTo(points[i].x(), points[i].y());  
+    }
+
+    mPlannedTrajectory->setPath(path);
+    mPlannedTrajectory->setPos(mRobotInstance->pos());
+    mPlannedTrajectory->setRotation(mRobotInstance->rotation());
+
 }
 
 void MapOverview::UpdateWalkabilityMap(DepthViewerTab::PclPointCloud::Ptr pointCloud)

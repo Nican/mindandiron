@@ -6,9 +6,12 @@
 #include <pcl/segmentation/planar_region.h>
 #include <boost/make_shared.hpp>
 
-
-#include "robot.h"
 #include "util.h"
+
+namespace Robot
+{
+class DepthImgData;
+}
 
 void UpdatePointCloud(const Robot::DepthImgData &imgData, pcl::PointCloud<pcl::PointXYZRGB> &cloud);
 

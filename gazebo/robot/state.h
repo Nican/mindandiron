@@ -68,14 +68,21 @@ class MoveTowardsGoalState : public ProgressState
 	Q_OBJECT
 public:
 
-	MoveTowardsGoalState(Kratos2 *parent) : ProgressState(parent)
-	{
-	}
+	QFutureWatcher<std::shared_ptr<TrajectorySearch>> mPathFutureWatcher;
+	std::shared_ptr<TrajectorySearch> mLastResult;
+	std::vector<Eigen::Vector2d> mLastResultPoints;
+
+	Eigen::Vector2d mGoal;
+	QDateTime mStartTime;
+
+	MoveTowardsGoalState(Kratos2 *parent);
 
 	virtual void Start() override;
 
 public slots:
+	void UpdateTrajectory(std::vector<Eigen::Vector2i>);
 	void TeensyStatus(TeenseyStatus status);
+	void FinishedTrajectory();
 };
 
 
