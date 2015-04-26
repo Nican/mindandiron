@@ -2,15 +2,17 @@ import serial
 
 
 def checkForJumps(msg, LPOS, RPOS):
-    data_list = msg.split('\t')
-    lPos = int(data_list[1])
-    rPos = int(data_list[3])
-    if abs(lPos - LPOS) > 2500:
-        print('LPOS had a large jump of %d' % (lPos - LPOS))
-    if abs(rPos - RPOS) > 2500:
-        print('RPOS had a large jump of %d' % (rPos - RPOS))
-    return lPos, rPos
-
+    if len(msg) > 0:
+        data_list = msg.split('\t')
+        if len(data_list) == 16:
+            lPos = int(data_list[1])
+            rPos = int(data_list[3])
+            if abs(lPos - LPOS) > 2500:
+                print('LPOS had a large jump of %d' % (lPos - LPOS))
+            if abs(rPos - RPOS) > 2500:
+                print('RPOS had a large jump of %d' % (rPos - RPOS))
+            return lPos, rPos
+    return LPOS, RPOS
 
 def main():
     ser = serial.Serial('/dev/kratos_teensy', 9600)
@@ -20,11 +22,11 @@ def main():
     lAdd = 0.05
     rVel = -0.55
     rAdd = -0.05
-    lPos = 400000
-    rPos = 400000
+    lPos = 8000
+    rPos = 8000
     LPOS = 0  # Read from the Teensy
     RPOS = 0  # Read from the Teensy
-    useVelocity = 1
+    useVelocity = 0
     Collector = 0
     Sorter = 0
     while(True):
