@@ -8,6 +8,24 @@
 #include <QGraphicsItemGroup>
 
 
+WheelUsageRect::WheelUsageRect(qreal x, qreal y, qreal w, qreal h, QGraphicsItem *parent ) : 
+    QGraphicsRectItem(x, y, w, h, parent), mProgress(0.0)
+{
+    setPen(QPen(Qt::black, 0));
+    setBrush(QBrush(Qt::white, Qt::SolidPattern));
+}
+
+void WheelUsageRect::paint(QPainter * painter, const QStyleOptionGraphicsItem * option, QWidget * widget)
+{
+    QGraphicsRectItem::paint(painter, option, widget);
+
+    auto rect = boundingRect();
+    rect.setWidth( rect.width() * mProgress );
+
+    painter->setBrush(QBrush(Qt::green, Qt::SolidPattern));
+    painter->drawRect(rect);
+}
+
 
 MapOverview::MapOverview(QWidget *parent)
     : QWidget(parent), view(&scene), mCore(nullptr)
@@ -28,6 +46,12 @@ MapOverview::MapOverview(QWidget *parent)
     mRobotInstance->setPen(QPen(Qt::black, 0));
     mRobotInstance->setPolygon(QVector<QPointF>::fromStdVector(GetRobotPoints<QPointF>()));
     scene.addItem(mRobotInstance);
+
+
+    mLeftWheel = new WheelUsageRect(-0.1, 0.3, 0.5, 0.15, mRobotInstance);
+    mRightWheel = new WheelUsageRect(-0.1, -0.3 - 0.15, 0.5, 0.15, mRobotInstance);
+   
+
 
     //Make the whole world visible
     view.setSceneRect(-5, -5, 10, 10);
@@ -60,6 +84,12 @@ void MapOverview::ReceiveDecawaveReading(double distance)
     mDecawaveCircle->setRect(-distance, -distance, distance*2, distance*2);
 }
 
+void MapOverview::ReceiveControlStatus(const std::vector<double> &velocities)
+{
+    mLeftWheel->mProgress = velocities[0] / 0.66;
+    mRightWheel->mProgress = velocities[1] / 0.66;
+}
+
 void MapOverview::ReceiveObstacleMap(std::vector<Eigen::Vector2d> points)
 {
     if(mCore != nullptr)
@@ -67,11 +97,18 @@ void MapOverview::ReceiveObstacleMap(std::vector<Eigen::Vector2d> points)
 
     mCore = new QGraphicsItemGroup();
 
+    int id = 0;
+
     for(const auto& imagePt : points)
     {
+        QColor color;
+        color.setHsvF( (static_cast<double>(id)/points.size()) , 1.0, 1.0);
+
         auto rect = new QGraphicsRectItem(imagePt.x(), imagePt.y(), 5.0 / 512.0, 5.0 / 512.0);
-        rect->setPen(QPen(Qt::red, 0));
+        rect->setPen(QPen(color, 0));
         mCore->addToGroup(rect);
+
+        id++;
     }
 
     mCore->setPos(mRobotInstance->pos());
@@ -170,61 +207,5 @@ void MapOverview::ReceivePath(std::vector<Eigen::Vector2d> points)
     mPlannedTrajectory->setPath(path);
     mPlannedTrajectory->setPos(mRobotInstance->pos());
     mPlannedTrajectory->setRotation(mRobotInstance->rotation());
-
-}
-
-void MapOverview::UpdateWalkabilityMap(DepthViewerTab::PclPointCloud::Ptr pointCloud)
-{
-    if(mCore != nullptr)
-        delete mCore;
-
-    mCore = new QGraphicsItemGroup();
-    //mCore->setScale(5.0 / 512.0);
-
-    //We want to transform the points from x=-2.5...2.5 and z=0...5 
-    //To a 2d image, 512x512 
-    Eigen::MatrixXi walkabilityMap = Eigen::MatrixXi::Zero(512, 512);
-    Eigen::Affine2f toImageTransform = Eigen::Scaling(512.0f / 5.0f, 512.0f / 5.0f) * Eigen::Translation2f(2.5f, 0.0f);
-
-    for(const auto& pt : pointCloud->points)
-    {
-        if(pt.g == 255)
-            continue;
-
-        auto pt2d = Eigen::Vector2f(pt.x, pt.z);
-        Eigen::Vector2i imagePt = (toImageTransform * pt2d).cast<int>();
-
-        if(imagePt.x() < 0 || imagePt.x() > walkabilityMap.rows())
-            continue;
-
-        if(imagePt.y() < 0 || imagePt.y() > walkabilityMap.cols())
-            continue;
-
-        if(walkabilityMap(imagePt.x(), imagePt.y()) != 0)
-            continue;
-
-        walkabilityMap(imagePt.x(), imagePt.y()) = pt.b == 255 ? 2 : 1;
-
-        Eigen::Vector2f newPt(imagePt.y() * 5.0 / 512.0 + 0.6, imagePt.x() * 5.0 / 512.0 - 2.5);
-        //newPt += pointCloud->sensor_origin_.head<2>();
-
-        //std::cout << "\tPt: \t" << pt.getVector3fMap().transpose() << "\n";
-        //std::cout << "\t\t\t" << imagePt.transpose() << "\n";
-        //std::cout << "\t\t\t" << newPt.transpose() << "\n";
-
-        auto rect = new QGraphicsRectItem(newPt.x(), newPt.y(), 5.0 / 512.0, 5.0 / 512.0);
-        rect->setPen(QPen(Qt::red, 0));
-        mCore->addToGroup(rect);
-    }
-
-    auto forward = pointCloud->sensor_orientation_ * Eigen::Vector3f::UnitX();
-    float angle = atan2(forward.y(), forward.x());
-
-    mCore->setPos(pointCloud->sensor_origin_.x(), pointCloud->sensor_origin_.y());
-    mCore->setRotation(angle * 180.0 / M_PI);
-    
-    //mCore->setParentItem(mRobotInstance);
-    scene.addItem(mCore);
-
 
 }

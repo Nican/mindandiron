@@ -21,12 +21,11 @@ bool BaseState::IsValid()
 RootState::RootState(Kratos2 *parent) : BaseState(parent), mState(nullptr)
 {
 	//MoveToNextState();
-	//SetState(new MoveTowardsGoalState(mRobot));
+	SetState(new MoveTowardsGoalState(mRobot));
 
 	//QTimer::singleShot(1000, this, SLOT(MoveToNextState));
 
-	ProgressState* newState = new MoveForwardState(mRobot, 10.0);
-	this->SetState(newState);
+	//SetState(new MoveForwardState(mRobot, 10.0));
 }
 
 void RootState::SetState(ProgressState* nextState)
@@ -111,7 +110,7 @@ void MoveTowardsGoalState::TeensyStatus(TeenseyStatus status)
 
 	//auto odometrySinceStart = mRobot->GetOdometryTraveledSince(mStartTime);
 	auto odometry = mRobot->GetOdometryTraveledSince(mLastResult->mCreatedTime);
-	std::size_t index = 0;
+	int index = 0;
 	double closestDistance(0.0);
 
 	for(std::size_t i = 0; i < mLastResultPoints.size(); i++)
@@ -119,14 +118,15 @@ void MoveTowardsGoalState::TeensyStatus(TeenseyStatus status)
 		double newDistance = (mLastResultPoints[i] - odometry.mPosition).norm();
 		if(closestDistance == 0.0 || closestDistance > newDistance)
 		{
-			index = i;
+			index = (int) i;
 			closestDistance = newDistance;
 		}
 	}
 
-	auto nextTargetIndex = std::max<std::size_t>(index-8, 0);
+	auto nextTargetIndex = std::max<int>(index-3, 0);
 
-	std::cout << "Closest index: " << index << "\t Next: " << nextTargetIndex << "\n";
+	std::cout << "Closest index: " << index << "(" << mLastResultPoints[index].transpose() << ")" 
+			  << "\t Next: " << nextTargetIndex<< "(" << mLastResultPoints[nextTargetIndex].transpose() << ")\n";
 
 	DriveTowards(odometry, mLastResultPoints[nextTargetIndex]);	
 }
@@ -171,8 +171,10 @@ void MoveTowardsGoalState::UpdateTrajectory(std::vector<Eigen::Vector2d> obstacl
 	//robotTransform.prerotate(Rotation2Dd(M_PI/2));
 	//robotTransform.pretranslate({5,2});
 
-	Vector2d goal(mGoal - odometry.mPosition);
-	goal = Rotation2Dd(-odometry.mTheta) * goal;
+	auto rot = Rotation2Dd(odometry.mTheta);
+
+	Vector2d goal(rot*mGoal - rot*odometry.mPosition);
+	//goal = Rotation2Dd(-odometry.mTheta) * goal;
 
 	std::cout << "Recalcualting trajectroy: \n";
 	std::cout << "\tOdometry: " << odometry << " \n";
@@ -182,7 +184,7 @@ void MoveTowardsGoalState::UpdateTrajectory(std::vector<Eigen::Vector2d> obstacl
 		auto planner = std::make_shared<TrajectorySearch>(obstacleList, goal);
 		std::size_t i = 0;
 		
-		for(i = 0; i < 2000 && !planner->foundSolution; i ++)
+		for(i = 0; i < 500 && !planner->foundSolution; i ++)
 		{
 			planner->rootNode->explore();
 		}
@@ -195,6 +197,9 @@ void MoveTowardsGoalState::UpdateTrajectory(std::vector<Eigen::Vector2d> obstacl
 
 void MoveTowardsGoalState::FinishedTrajectory()
 {
+	if(mLastResult != nullptr)
+		return;
+
 	auto planner = mPathFutureWatcher.future().result();
 
 	std::vector<Eigen::Vector2d> points;
@@ -203,6 +208,10 @@ void MoveTowardsGoalState::FinishedTrajectory()
 		mLastResult = planner;
 		mLastResultPoints = points;
 		std::cout << "Path has " << points.size() << " points\n";
+	}
+	else
+	{
+		std::cout << "Found no soultion for the next path. :(\n";
 	}
 
 	mRobot->mSensorLog->ReceivePath(points);
@@ -230,7 +239,7 @@ void MoveForwardState::TeensyStatus(TeenseyStatus status)
 
 	auto odometry = mRobot->GetOdometryTraveledSince(mStartTime);
 
-	mRobot->SetWheelVelocity(0.2, 0.2);
+	mRobot->SetWheelVelocity(0.2, 0.23);
 
 	//std::cout << "\tDistance traveled " << odometry.mDistanceTraveled << "\n";
 

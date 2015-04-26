@@ -9,6 +9,7 @@ find_package(Qt5Widgets)
 find_package(Qt5SerialPort)
 find_package(Qt5Sql)
 find_package(Qt5Concurrent)
+find_package(Qt5Multimedia)
 
 add_executable(kratos_robot 
 	realrobot.cpp 
@@ -19,6 +20,7 @@ add_executable(kratos_robot
 	robot.cpp
 	trajectory2.cpp
 	state.cpp
+	camera.cpp
 )
 
-target_link_libraries(kratos_robot Qt5::Widgets Qt5::SerialPort Qt5::Sql Qt5::Concurrent freenect2 kratos_base)
+target_link_libraries(kratos_robot Qt5::Widgets Qt5::SerialPort Qt5::Sql Qt5::Concurrent Qt5::Multimedia freenect2 kratos_base)

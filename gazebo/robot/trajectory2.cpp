@@ -280,7 +280,7 @@ void TrajectoryPlanner2::UpdateObstacles(pcl::PointCloud<pcl::PointXYZRGB>::Ptr 
 
     auto oldest = GetOldestObstacle();
     auto currentTime = QDateTime::currentDateTime();
-    auto validRange = currentTime.addSecs(-30);
+    auto validRange = currentTime.addSecs(-25);
 
     mObstacleHistory[oldest] = {currentTime, obstacleList};
 
@@ -296,10 +296,11 @@ void TrajectoryPlanner2::UpdateObstacles(pcl::PointCloud<pcl::PointXYZRGB>::Ptr 
 
 		auto odometry = mRobot->GetOdometryTraveledSince(item.mCreatedTime);
 
-		auto tf = Translation2d(odometry.mPosition);
+		auto rotationTf = Rotation2Dd(odometry.mTheta);
+		auto tf = Translation2d(-odometry.mPosition);
 
 		for(const auto pt : item.mObstacleList){
-			mObstacleList.push_back(tf * pt);
+			mObstacleList.push_back(rotationTf * tf * pt);
 		}
 
 	}

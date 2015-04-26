@@ -4,6 +4,65 @@
 
 using namespace Robot;
 
+
+/////////////////////////////
+//// KratosInfoTeensy
+/////////////////////////////
+KratosInfoTeensy::KratosInfoTeensy(QObject* parent) : QObject(parent)
+{
+
+	mSerial = new QSerialPort("/dev/serial/by-id/usb-Teensyduino_USB_Serial_765570-if00", this);
+
+	QObject::connect(mSerial, &QSerialPort::readyRead, this, &KratosInfoTeensy::receiveSerialData);
+	connect(mSerial, SIGNAL(error(QSerialPort::SerialPortError)), this, SLOT(receiveError(QSerialPort::SerialPortError)));
+
+	if(!mSerial->open(QIODevice::ReadWrite))
+	{
+		std::cout << "Unabled to open Serial port for CAMERA teensy\n";
+		return;
+	}
+
+	mSerial->clear();
+}
+
+void KratosInfoTeensy::receiveError(QSerialPort::SerialPortError error)
+{
+	std::cout << "Teensey received error. " << mSerial->error() << "\n";
+}
+
+void KratosInfoTeensy::receiveSerialData()
+{
+	while(mSerial->canReadLine())
+	{
+		char buf[1024]; 
+		qint64 lineLength = mSerial->readLine(buf, sizeof(buf));
+		if (lineLength != -1) {
+			QString line(buf);
+			QStringList parts = line.trimmed().split("\t");
+
+			if(parts.size() != 8)
+			{
+				std::cerr << "Unable to parse Teensey2 string: '" << buf << "'\n";
+				return;
+			}
+
+			Teensy2Status status;
+			status.servoAngle = parts[1].toInt();
+			status.current = parts[3].toDouble();
+			status.voltage = parts[5].toDouble();
+			status.isPaused = parts[7].toInt();
+
+			//emit statusUpdate(status);
+		}
+	}
+	mSerial->clear();
+}
+
+
+/////////////////////////////
+//// KratosTeensy
+/////////////////////////////
+
 KratosTeensy::KratosTeensy(QObject* parent) : Teensy(parent)
 {
 
@@ -12,9 +71,12 @@ KratosTeensy::KratosTeensy(QObject* parent) : Teensy(parent)
 	QObject::connect(mSerial, &QSerialPort::readyRead, this, &KratosTeensy::receiveSerialData);
 	connect(mSerial, SIGNAL(error(QSerialPort::SerialPortError)), this, SLOT(receiveError(QSerialPort::SerialPortError)));
 
-	if(!mSerial->open(QIODevice::ReadWrite))
-		std::cout << "Unabled to open Serial port\n";
+	if(!mSerial->open(QIODevice::ReadWrite)){
+		std::cout << "Unabled to open Serial port for motor teensy\n";
+		return;
+	}
 
+	mSerial->clear();
 }
 
 void KratosTeensy::receiveError(QSerialPort::SerialPortError error)
@@ -24,6 +86,9 @@ void KratosTeensy::receiveError(QSerialPort::SerialPortError error)
 
 void KratosTeensy::SetVelocities(double left, double right)
 {
+	if(!mSerial->isOpen())
+		return;
+
 	int leftPos = 0;
 	int rightPos = 0;
 	int useVelocity = 1;

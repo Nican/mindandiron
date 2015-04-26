@@ -74,6 +74,18 @@ mDb(QSqlDatabase::addDatabase("QSQLITE"))
 		"leftForce REAL, rightForce REAL"\
 		")");
 
+	mDb.exec("CREATE TABLE IF NOT EXISTS aprilTagImageLog(" \
+		"id INTEGER PRIMARY KEY ASC,"\
+		"timestamp INTEGER,"\
+		"data COLLATE BINARY"\
+		")");
+
+	mDb.exec("CREATE TABLE IF NOT EXISTS aprilTagLog(" \
+		"id INTEGER PRIMARY KEY ASC,"\
+		"timestamp INTEGER,"\
+		"tagId INTEGER, x REAL, y REAL, x REAL, rp REAL, ry REAL, rr REAL, data COLLATE BINARY"\
+		")");
+
 	mDb.exec("CREATE INDEX IF NOT EXISTS depthLogTimestampIndex ON depthLog(timestamp)");
 	mDb.exec("CREATE INDEX IF NOT EXISTS teensyLogTimestampIndex ON teensyLog(timestamp)");
 	mDb.exec("CREATE INDEX IF NOT EXISTS pointCloudTimestampIndex ON pointCloudLog(timestamp)");
@@ -199,6 +211,50 @@ void SensorLog::ReceivePath(const std::vector<Eigen::Vector2d> &points)
 	msg += QByteArray("\x07");
 	msg += QByteArray(sbuf.data(), sbuf.size());
 	mSocket->sendMessage(msg);
+}
+
+void SensorLog::ReceiveAprilTagImage(QImage image)
+{
+	QByteArray buffer;
+
+	{
+		QDataStream stream(&buffer, QIODevice::WriteOnly);
+		stream << image;
+	}
+
+	QSqlQuery query(mDb);
+	query.prepare("INSERT INTO aprilTagImageLog(timestamp, data) VALUES(:timestamp, :data)");
+	query.bindValue(":timestamp", QDateTime::currentDateTime().toMSecsSinceEpoch() , QSql::In);
+	query.bindValue(":data", buffer, QSql::In | QSql::Binary);
+	query.exec();
+}
+
+void SensorLog::ReceiveAprilTags(QList<AprilTagDetectionItem> tags)
+{
+	auto date = QDateTime::currentDateTime().toMSecsSinceEpoch();
+
+	for(auto& tag : tags)
+	{
+		QByteArray buffer(reinterpret_cast<char*>(&tag), sizeof(AprilTags::TagDetection));
+
+		QSqlQuery query(mDb);
+		query.prepare("INSERT INTO aprilTagLog(timestamp, tagId, x, y, x, rp, ry, rr, data) VALUES(:timestamp, :id, :x, :y, :z, :rp, :ry, :rr, :data)");
+		query.bindValue(":timestamp", date, QSql::In);
+
+		//auto euler = tag.rotation.eulerAngles(2,0,2);
+
+		query.bindValue(":id", tag.detection.id, QSql::In);
+		query.bindValue(":x", tag.translation.x(), QSql::In);
+		query.bindValue(":y", tag.translation.y(), QSql::In);
+		query.bindValue(":z", tag.translation.z(), QSql::In);
+		query.bindValue(":rp", tag.euler.x(), QSql::In);
+		query.bindValue(":ry", tag.euler.y(), QSql::In);
+		query.bindValue(":rr", tag.euler.z(), QSql::In);
+		query.bindValue(":data", buffer, QSql::In | QSql::Binary);
+		query.exec();
+	}
+
+	
 }
 
 
@@ -345,13 +401,13 @@ Odometry Kratos2::GetOdometryTraveledSince(QDateTime time)
 		double left = query.value(0).toDouble();
 		double right = query.value(1).toDouble();
 
-		double diffLeft = static_cast<double>(lastLeft - left) / 23330.0 * 0.31 * M_PI;
-		double diffRight = static_cast<double>(lastRight - right) / 23330.0 * 0.31 * M_PI;
+		double diffLeft = static_cast<double>(left - lastLeft) / 23330.0 * 0.31 * M_PI;
+		double diffRight = static_cast<double>(right - lastRight) / 23330.0 * 0.31 * M_PI;
 
 		lastLeft = left;
 		lastRight = right;
 
-		if(std::abs(diffLeft) > 0.05 || std::abs(diffRight) > 0.05){
+		if(std::abs(diffLeft) > 0.1 || std::abs(diffRight) > 0.1){
 			std::cout << "\t Skipping large jump: " << diffLeft << "\t" << diffRight << "\n";
 			continue;
 		}
@@ -362,7 +418,3 @@ Odometry Kratos2::GetOdometryTraveledSince(QDateTime time)
 	return odometry;
 }
 
-
-Q_DECLARE_METATYPE(Robot::DepthImgData)
-Q_DECLARE_METATYPE(Robot::ImgData)
-Q_DECLARE_METATYPE(Robot::TeenseyStatus)

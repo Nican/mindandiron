@@ -134,6 +134,8 @@ void WheelOdometryTab::ReceiveWheelVelocities(const std::vector<double> &velocit
 }
 
 
+
+
 MainWindow::MainWindow(QWidget *parent)
 : QMainWindow(parent)
 {
@@ -161,13 +163,7 @@ MainWindow::MainWindow(QWidget *parent)
     tabbed->addTab(mWheelOdometry, "WHEEL ODOMETRY");
 
     connect(mSocket, SIGNAL(messageReceived(const QList<QByteArray>&)), SLOT(messageReceived(const QList<QByteArray>&)));
-    //connect(mDepthViewer->mGrowingRegion, SIGNAL(CloudProcessed()), this, SLOT(UpdateWalkabilityMap()));
 
-}
-
-void MainWindow::UpdateWalkabilityMap()
-{
-    //mGridView->UpdateWalkabilityMap(mDepthViewer->mGrowingRegion->segmenter.lastProccessed);
 }
 
 void MainWindow::messageReceived(const QList<QByteArray>& messages)
@@ -227,12 +223,13 @@ void MainWindow::messageReceived(const QList<QByteArray>& messages)
 
     if(id == '\x06')
     {
-        std::vector<double> points;
+        std::vector<double> vels;
 
         msgpack::unpacked result;
         msgpack::unpack(result, messages[1].data(), messages[1].size());
-        result.get().convert(&points);
-        mWheelOdometry->ReceiveWheelVelocities(points);
+        result.get().convert(&vels);
+        mWheelOdometry->ReceiveWheelVelocities(vels);
+        mGridView->ReceiveControlStatus(vels);
     }
 
      if(id == '\x07')

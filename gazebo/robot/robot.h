@@ -8,12 +8,31 @@
 #include "../pointcloud.h"
 #include "../teensy.h"
 #include "../odometry.h"
+#include "../AprilTags/TagDetector.h"
+#include <QImage>
 
 namespace Robot{
 
 class BaseState;
 class RootState;
 class TrajectoryPlanner2;
+
+struct AprilTagDetectionItem
+{
+	Eigen::Vector3d translation;
+	Eigen::Matrix3d rotation;
+	Eigen::Vector3d euler;
+	 
+	AprilTags::TagDetection detection;
+};
+
+struct Teensy2Status
+{
+	int servoAngle;
+	double current;
+	double voltage;
+	int isPaused;
+};
 
 class Decawave : public QObject
 {
@@ -41,8 +60,8 @@ class Kinect : public QObject
 	virtual void requestDepthFrame() = 0;
 
 signals:
-    void receiveColorImage(ImgData mat);
-    void receiveDepthImage(DepthImgData mat);
+    void receiveColorImage(Robot::ImgData mat);
+    void receiveDepthImage(Robot::DepthImgData mat);
     
 private:
     Q_DISABLE_COPY(Kinect)
@@ -77,11 +96,13 @@ public:
 	void ReceivePath(const std::vector<Eigen::Vector2d> &points);
 
 public slots:
-	void receiveDepthImage(DepthImgData mat);
+	void receiveDepthImage(Robot::DepthImgData mat);
 	void teensyStatus(TeenseyStatus status);
 	void decawaveUpdate(double distance);
 	void SendObstacles(std::vector<Eigen::Vector2d>);
 	void WheelVelocityUpdate(double left, double right);
+	void ReceiveAprilTagImage(QImage image);
+	void ReceiveAprilTags(QList<AprilTagDetectionItem> tags);
 };
 
 class Kratos2 : public QObject
@@ -124,7 +145,7 @@ public:
 	Odometry GetOdometryTraveledSince(QDateTime time);
 
 public slots:
-	void ProccessPointCloud(DepthImgData mat);
+	void ProccessPointCloud(Robot::DepthImgData mat);
 	void TeensyStatus(TeenseyStatus status);
 	void FinishedPointCloud();
 	
