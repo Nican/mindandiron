@@ -1,13 +1,11 @@
 // Put professional header here
 // Include some type of copyright
 
-Encoder sorterEncoder(18, 19);  // TODO(Eric): Redo with actual system
-const double sorterKp    = 0.1;
-const int sorterDeadband = 5;  // Allowable slop
+const int sorterDeadband = 15;  // Allowable slop
 
 // TODO(Eric): Redo with actual system
 const int sorterSlotPositions[NUM_SORTER_SLOTS] =
-    {0, 410, 820, 1230, 1640, 2050, 2460, 2870, 3280, 3690};
+    {0, 102, 204, 306, 409, 511, 613, 716, 818, 920};
 
 
 // Drives collector in for 1, out for -1, and stops for 0
@@ -25,13 +23,32 @@ void commandCollector(int cmd) {
 }
 
 
+// Returns center position of desired slot
+int getSlotCenterPosition(int slot) {
+    int centerPosition;
+    if (slot == NUM_SORTER_SLOTS - 1) {
+        centerPosition = (sorterSlotPositions[slot] + 1023) / 2;
+    } else {
+        centerPosition = (sorterSlotPositions[slot] + 
+                          sorterSlotPositions[slot+1]) / 2;
+    }
+    return centerPosition;
+}
+
+
 // TODO(Eric): put in a timer loop?
 void commandSorter(Servo servo, int slot) {
     if (slot >= 0 && slot < NUM_SORTER_SLOTS) {
-        int currentPosition = sorterEncoder.read();
-        int sortError = sorterSlotPositions[slot] - currentPosition;
+        int currentPosition = analogRead(SORTER_POT_PIN_IN);
+        int sortError = getSlotCenterPosition(slot) - currentPosition;
         if (abs(sortError) > sorterDeadband) {
-            servo.write(calcServoCmdFromDesiredVelocity(sorterKp * sortError));
+            if (sortError > 0) {
+                servo.write(MIN_SERVO_SPEED + 20);
+            } else if (sortError < 0) {
+                servo.write(MIN_SERVO_SPEED - 20);
+            } else {
+                servo.write(MIN_SERVO_SPEED);
+            }
         }
     }
 }

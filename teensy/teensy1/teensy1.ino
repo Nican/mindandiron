@@ -62,13 +62,15 @@ void setup() {
     lastLeftCmd = MIN_SERVO_SPEED;
     servoRight.attach(RIGHT_OUT_PIN); servoRight.write(MIN_SERVO_SPEED);
     lastRightCmd = MIN_SERVO_SPEED;
-    servoSorter.attach(SORTER_OUT_PIN); servoSorter.write(MIN_SERVO_SPEED);
     Timer1.initialize(VELOCITY_PERIOD_MICRO);
     Timer1.attachInterrupt(calculateVelocity);
 
     // WHEEL PID SETUP
     Timer3.initialize(PID_PERIOD_MICRO);
     Timer3.attachInterrupt(calculateVelocityPIDControl);
+
+    // SORTER SETUP
+    servoSorter.attach(SORTER_OUT_PIN); servoSorter.write(MIN_SERVO_SPEED);
 
     // TURN ON LIGHT
     pinMode(ledPin, OUTPUT);
