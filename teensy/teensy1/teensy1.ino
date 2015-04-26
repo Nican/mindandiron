@@ -99,9 +99,7 @@ void loop() {
             isSystemAuto = 1;
             digitalWrite(AUTO_SWITCH_OUT, isSystemAuto);
         } else {
-          Serial.println("Setting LEFT");
           servoLeft.write(getLeftAutoWheelCmd());
-          Serial.println("Setting RIGHT");
           servoRight.write(getRightAutoWheelCmd());
           // commandCollector(collectorAutoCmd);
           // commandSorter(servoSorter, sorterAutoSlot);  Uncomment when wired

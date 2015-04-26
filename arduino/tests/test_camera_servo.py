@@ -18,8 +18,6 @@ def main():
             if abs(command_position + direction * delta) > command_max:
                 direction *= -1
             command_position += direction * delta
-            # TESTS THE ARDUINO SWEEP
-            # command_position = 255
             print('WRITING DATA TO ARDUINO: %s' %(command_position))
             ser.write('\t%s\tEND' %(command_position))
         counter += 1

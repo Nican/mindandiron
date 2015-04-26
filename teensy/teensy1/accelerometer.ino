@@ -12,7 +12,6 @@ int accelerometerAxes[3] = {0, 0, 0};  // Stores {x, y, z} accelerometer data
 
 // TODO(Eric): Make more complex with conversions/filtering after testing
 int readAccelerometerSingleAxis(int pin) {
-    Serial.print("Pin: "); Serial.println(pin);
     int val = analogRead(pin);
     return val;
 }

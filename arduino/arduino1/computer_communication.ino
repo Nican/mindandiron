@@ -25,9 +25,7 @@ void readComputerCommands(int *camServoSetpoint) {
 int boundCamServoCmd(int cmd) {
     // Decided to treat out-of-bound commands as illegitimate to prevent
     // runaways. Could implement this as a clamp function as needed
-    if (cmd == 255) {
-        return 255;  // Used to trigger the "search for fiducial" sweep
-    } else if (abs(cmd) > MAX_CAM_SERVO_ANGLE) {
+    if (abs(cmd) > MAX_CAM_SERVO_ANGLE) {
         return 0;
     } else {
         return cmd;
