@@ -9,6 +9,7 @@
 #include <mutex>
 #include <QElapsedTimer>
 #include <QObject>
+#include <QDateTime>
 #include <QTimer>
 
 #include <libfreenect2/libfreenect2.hpp>
@@ -83,10 +84,13 @@ class RealRobot : public Robot::Kratos2
 	KratosKinect* mKinect;
 
 	Robot::KratosTeensy* mTeensy;
+	Robot::KratosTeensy2* mTeensy2;
 	Robot::TeenseyStatus lastStatus;
 	Robot::KratosDecawave* mDecawave;
 	Robot::KratosAprilTag* mAprilTag;
 	bool bFirstTeenseyMessage;
+
+	QDateTime mLastAprilDetection;
 
 public:
 	RealRobot(QObject* parent = 0);

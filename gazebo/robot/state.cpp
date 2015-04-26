@@ -21,7 +21,7 @@ bool BaseState::IsValid()
 RootState::RootState(Kratos2 *parent) : BaseState(parent), mState(nullptr)
 {
 	//MoveToNextState();
-	SetState(new MoveTowardsGoalState(mRobot));
+	//SetState(new MoveTowardsGoalState(mRobot));
 
 	//QTimer::singleShot(1000, this, SLOT(MoveToNextState));
 

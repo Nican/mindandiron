@@ -24,14 +24,25 @@ void KratosCamera::openCamera()
 
 bool KratosCamera::read(cv::Mat &cv_image)
 {
+	//while(mCapture.grab())
+	//std::cout << "What: " << mCapture.get(CV_CAP_PROP_BUFFERSIZE) << "\n";
+
+	for(int i = 0; i < 4; i++ )
+	{
+		mCapture.grab();
+		//std::cout << "Grabing frame\n";
+	}
+
 	bool result = mCapture.read(cv_image);
 
 	if(!result)
-		return result;		
+		return result;	
+
+	//std::cout << "Finished\n";
 
 	cv::Mat dest;
-    cvtColor(cv_image, dest,CV_BGR2RGB);
-    QImage image((uchar*)dest.data, dest.cols, dest.rows,QImage::Format_RGB888);
+    cvtColor(cv_image, dest, CV_BGR2RGB);
+    QImage image((uchar*)dest.data, dest.cols, dest.rows, QImage::Format_RGB888);
 
     emit CameraFrame(image);
 

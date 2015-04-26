@@ -20,36 +20,35 @@ int main(int argc, char* argv[])
 
 	// QSqlDatabase mDb(QSqlDatabase::addDatabase("QSQLITE"));
 	// mDb.setHostName("localhost");
-	// mDb.setDatabaseName("/home/kratos/projects/mindandiron/gazebo/build/data/real_robot/2015_04_25_14_35_26.db");
+	// mDb.setDatabaseName("/home/kratos/projects/mindandiron/gazebo/build/data/real_robot/2015_04_26_16_09_30.db");
 
 	// if (!mDb.open())
 	// {
 	// 	std::cout << "Unable to open database! :(\n";
 	// }
 
-	// Eigen::Vector2d finalGoal(10,0);
-	// Odometry odometry(0.69);
-	// odometry.mPosition = { 0.375877, 0.0697082};
-	// odometry.mTheta = 21.1342 / 180.0 * M_PI;
+	// QSqlQuery query(mDb);
+	// query.prepare("SELECT timestamp, data FROM aprilTagImageLog");
 
+	// if(!query.exec())
+	// 	std::cout << "error SQL= " <<  query.lastError().text().toStdString() << std::endl;
 
-	// auto goal = Rotation2Dd(odometry.mTheta) * (finalGoal - odometry.mPosition);
-	// std::cout << goal << "\n";
+	// std::cout << "Reading results\n";
 
+	// while (query.next()) 
+	// {
+	// 	QImage image;
+	// 	auto buffer = query.value(1).toByteArray();
 
-	//Expected output
+	// 	QDataStream stream(buffer);
+	// 	stream >> image;
 
-	/*
-	QList<QCameraInfo> cameras = QCameraInfo::availableCameras();
-	for (const QCameraInfo &cameraInfo : cameras) {
-	    std::cout << "Camera: " << cameraInfo.deviceName().toStdString() << "\n";
-	}
-	*/
+	// 	cv::Mat mat(image.height(), image.width(), format, image.bits(), image.bytesPerLine());
 
-	//QFile file("/dev/v4l/by-id/usb-Chicony_USB2.0_HD_UVC_WebCam-video-index0");
-	//std::cout << "Camera: " << file.symLinkTarget().toStdString() << "\n";
+	// 	cv::imwrite ("april.png", mat);
 
-	//KratosCamera camera("usb-Chicony_USB2.0_HD_UVC_WebCam-video-index0", 1920, 1080);
+	// 	break;
+	// }
 
 
 	Robot::RealRobot robot;

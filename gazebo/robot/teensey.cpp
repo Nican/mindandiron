@@ -8,29 +8,29 @@ using namespace Robot;
 /////////////////////////////
 //// KratosInfoTeensy
 /////////////////////////////
-KratosInfoTeensy::KratosInfoTeensy(QObject* parent) : QObject(parent)
+KratosTeensy2::KratosTeensy2(QObject* parent) : QObject(parent)
 {
 
 	mSerial = new QSerialPort("/dev/serial/by-id/usb-Teensyduino_USB_Serial_765570-if00", this);
 
-	QObject::connect(mSerial, &QSerialPort::readyRead, this, &KratosInfoTeensy::receiveSerialData);
+	QObject::connect(mSerial, &QSerialPort::readyRead, this, &KratosTeensy2::receiveSerialData);
 	connect(mSerial, SIGNAL(error(QSerialPort::SerialPortError)), this, SLOT(receiveError(QSerialPort::SerialPortError)));
 
 	if(!mSerial->open(QIODevice::ReadWrite))
 	{
-		std::cout << "Unabled to open Serial port for CAMERA teensy\n";
+		std::cout << "Unabled to open Serial port for CAMERA teensy2\n";
 		return;
 	}
 
 	mSerial->clear();
 }
 
-void KratosInfoTeensy::receiveError(QSerialPort::SerialPortError error)
+void KratosTeensy2::receiveError(QSerialPort::SerialPortError error)
 {
-	std::cout << "Teensey received error. " << mSerial->error() << "\n";
+	std::cout << "Teensey2 received error. " << mSerial->error() << "\n";
 }
 
-void KratosInfoTeensy::receiveSerialData()
+void KratosTeensy2::receiveSerialData()
 {
 	while(mSerial->canReadLine())
 	{
@@ -47,17 +47,35 @@ void KratosInfoTeensy::receiveSerialData()
 			}
 
 			Teensy2Status status;
-			status.servoAngle = parts[1].toInt();
+			status.servoAngle = parts[1].toDouble() / 180.0 * M_PI;
 			status.current = parts[3].toDouble();
 			status.voltage = parts[5].toDouble();
 			status.isPaused = parts[7].toInt();
 
+			lastStatus = status;
 			//emit statusUpdate(status);
 		}
 	}
-	mSerial->clear();
+	//mSerial->clear();
 }
 
+void KratosTeensy2::sendRaw(int intAngle)
+{
+	QString sendString;
+	sendString.sprintf("\t%d\tEND", intAngle);
+	mSerial->write(sendString.toLocal8Bit());
+}
+
+void KratosTeensy2::setAprilAngle(double angle)
+{
+	int intAngle = static_cast<int>(angle * 180.0 / M_PI);
+
+	QString sendString;
+	sendString.sprintf("\t%d\tEND", intAngle);
+	mSerial->write(sendString.toLocal8Bit());
+
+	//std::cout << "Setting camera angle: '" << sendString.toStdString() << "'\n";
+}
 
 /////////////////////////////
 //// KratosTeensy
@@ -132,7 +150,7 @@ void KratosTeensy::receiveSerialData()
 			emit statusUpdate(status);
 		}
 	}
-	mSerial->clear();
+	//mSerial->clear();
 }
 
 
