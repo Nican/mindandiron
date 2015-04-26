@@ -50,6 +50,12 @@ mDb(QSqlDatabase::addDatabase("QSQLITE"))
 		"data COLLATE BINARY"\
 		")");
 
+	mDb.exec("CREATE TABLE IF NOT EXISTS kinectImageLog(" \
+		"id INTEGER PRIMARY KEY ASC,"\
+		"timestamp INTEGER,"\
+		"data COLLATE BINARY"\
+		")");
+
 	mDb.exec("CREATE TABLE IF NOT EXISTS teensyLog(" \
 		"id INTEGER PRIMARY KEY ASC,"\
 		"timestamp INTEGER,"\
@@ -83,8 +89,11 @@ mDb(QSqlDatabase::addDatabase("QSQLITE"))
 	mDb.exec("CREATE TABLE IF NOT EXISTS aprilTagLog(" \
 		"id INTEGER PRIMARY KEY ASC,"\
 		"timestamp INTEGER,"\
-		"tagId INTEGER, x REAL, y REAL, x REAL, rp REAL, ry REAL, rr REAL, data COLLATE BINARY"\
+		"tagId INTEGER, x REAL, y REAL, z REAL, rp REAL, ry REAL, rr REAL, data COLLATE BINARY"\
 		")");
+
+	if (mDb.lastError().isValid())
+    	qDebug() << mDb.lastError();
 
 	mDb.exec("CREATE INDEX IF NOT EXISTS depthLogTimestampIndex ON depthLog(timestamp)");
 	mDb.exec("CREATE INDEX IF NOT EXISTS teensyLogTimestampIndex ON teensyLog(timestamp)");
@@ -94,6 +103,8 @@ mDb(QSqlDatabase::addDatabase("QSQLITE"))
 
 void SensorLog::receiveDepthImage(DepthImgData mat)
 {
+	std::cout << "Received dpeth data\n";
+
 	msgpack::sbuffer sbuf;
 	msgpack::pack(sbuf, mat);
 
@@ -109,6 +120,22 @@ void SensorLog::receiveDepthImage(DepthImgData mat)
 	msg += QByteArray("\x01");
 	msg += data;
 	mSocket->sendMessage(msg);
+}
+
+void SensorLog::receiveKinectImage(Robot::ImgData mat)
+{
+	std::cout << "Received kinect kinectImageLog\n";
+
+	msgpack::sbuffer sbuf;
+	msgpack::pack(sbuf, mat);
+
+	QByteArray data = QByteArray(sbuf.data(), sbuf.size());
+
+	QSqlQuery query(mDb);
+	query.prepare("INSERT INTO kinectImageLog(timestamp, data) VALUES(:timestamp, :data)");
+	query.bindValue(":timestamp", QDateTime::currentDateTime().toMSecsSinceEpoch() , QSql::In);
+	query.bindValue(":data", data, QSql::In | QSql::Binary);
+	query.exec();
 }
 
 void SensorLog::teensyStatus(TeenseyStatus status)
@@ -238,7 +265,7 @@ void SensorLog::ReceiveAprilTags(QList<AprilTagDetectionItem> tags)
 		QByteArray buffer(reinterpret_cast<char*>(&tag), sizeof(AprilTags::TagDetection));
 
 		QSqlQuery query(mDb);
-		query.prepare("INSERT INTO aprilTagLog(timestamp, tagId, x, y, x, rp, ry, rr, data) VALUES(:timestamp, :id, :x, :y, :z, :rp, :ry, :rr, :data)");
+		query.prepare("INSERT INTO aprilTagLog(timestamp, tagId, x, y, z, rp, ry, rr, data) VALUES(:timestamp, :id, :x, :y, :z, :rp, :ry, :rr, :data)");
 		query.bindValue(":timestamp", date, QSql::In);
 
 		//auto euler = tag.rotation.eulerAngles(2,0,2);
@@ -286,6 +313,8 @@ void Kratos2::Initialize()
 	{
 		connect(kinect, &Kinect::receiveDepthImage, mSensorLog, &SensorLog::receiveDepthImage);
 		connect(kinect, &Kinect::receiveDepthImage, this, &Kratos2::ProccessPointCloud);
+
+		connect(kinect, &Kinect::receiveColorImage, mSensorLog, &SensorLog::receiveKinectImage);
 		kinect->requestDepthFrame();
 	}
 

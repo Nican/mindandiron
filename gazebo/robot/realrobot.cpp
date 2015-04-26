@@ -15,7 +15,7 @@ using namespace Robot;
 
 KratosAprilTag::KratosAprilTag(QObject* parent) : 
 	QObject(parent), 
-	mTagSize(0.829),
+	mTagSize(0.829), //0.829 -- 0.159
 	mFx(1315), mFy(1315),
 	mPx(1920/2), mPy(1080/2)
 {
@@ -23,6 +23,14 @@ KratosAprilTag::KratosAprilTag(QObject* parent) :
 	m_tagDetector.reset(new AprilTags::TagDetector(AprilTags::tagCodes25h9));
 
 	connect(&mDetectionFutureWatcher, SIGNAL(finished()), this, SLOT(finishedProcessing()));
+}
+
+static void DebugImage(cv::Mat &input)
+{
+	cv::Mat output;
+	cv::resize(input, output, {960, 540});
+
+	cv::imshow("AA", output);
 }
 
 void KratosAprilTag::readCamera()
@@ -45,7 +53,7 @@ void KratosAprilTag::readCamera()
 		}
 
 		cv::cvtColor(image, image_gray, CV_BGR2GRAY);
-		//cv::imshow("AA", image_gray);
+		DebugImage(image_gray);
 
 		detections = m_tagDetector->extractTags(image_gray);
 
@@ -58,19 +66,19 @@ void KratosAprilTag::readCamera()
 
 inline double standardRad(double t) {
   if (t >= 0.) {
-    t = fmod(t+M_PI, M_PI * 2) - M_PI;
+	t = fmod(t+M_PI, M_PI * 2) - M_PI;
   } else {
-    t = fmod(t-M_PI, M_PI * -2) + M_PI;
+	t = fmod(t-M_PI, M_PI * -2) + M_PI;
   }
   return t;
 }
 
 static void wRo_to_euler(const Eigen::Matrix3d& wRo, double& yaw, double& pitch, double& roll) {
-    yaw = standardRad(atan2(wRo(1,0), wRo(0,0)));
-    double c = cos(yaw);
-    double s = sin(yaw);
-    pitch = standardRad(atan2(-wRo(2,0), wRo(0,0)*c + wRo(1,0)*s));
-    roll  = standardRad(atan2(wRo(0,2)*s - wRo(1,2)*c, -wRo(0,1)*s + wRo(1,1)*c));
+	yaw = standardRad(atan2(wRo(1,0), wRo(0,0)));
+	double c = cos(yaw);
+	double s = sin(yaw);
+	pitch = standardRad(atan2(-wRo(2,0), wRo(0,0)*c + wRo(1,0)*s));
+	roll  = standardRad(atan2(wRo(0,2)*s - wRo(1,2)*c, -wRo(0,1)*s + wRo(1,1)*c));
 }
 
 void KratosAprilTag::finishedProcessing()
@@ -93,13 +101,13 @@ void KratosAprilTag::finishedProcessing()
 		item.rotation = F * item.rotation;
 
 		double yaw, pitch, roll;
-   		wRo_to_euler(item.rotation, yaw, pitch, roll);
+		wRo_to_euler(item.rotation, yaw, pitch, roll);
 
 		item.euler = {yaw, pitch, roll};
 			
-		std::cout << "\tTag id " << item.detection.id << "\n"; 
-		std::cout << "\t\tT " << item.translation.transpose() << " ("<< item.translation.norm() <<")\n"; 
-		std::cout << "\t\tR " << (item.euler / M_PI * 180.0).transpose() << "\n"; 
+		//std::cout << "\tTag id " << item.detection.id << "\n"; 
+		//std::cout << "\t\tT " << item.translation.transpose() << " ("<< item.translation.norm() <<")\n"; 
+		//std::cout << "\t\tR " << (item.euler / M_PI * 180.0).transpose() << "\n"; 
 
 		detectionsItems.append(item);
 	}
@@ -139,7 +147,7 @@ bool KratosKinect::onNewFrame(libfreenect2::Frame::Type type, libfreenect2::Fram
 {
 	std::lock_guard<std::mutex> lock(mRequestLock);
 
-	std::cout << "Received new frame\n";
+	//std::cout << "Received new frame\n";
 
 	if(type == libfreenect2::Frame::Color)
 	{
@@ -195,14 +203,21 @@ bool KratosKinect::onNewFrame(libfreenect2::Frame::Type type, libfreenect2::Fram
 ////	RealRobot
 //////////////////////////
 
+inline double clamp(double x, double a, double b)
+{
+	return x < a ? a : (x > b ? b : x);
+}
+
 RealRobot::RealRobot(QObject* parent) : 
 	Robot::Kratos2(parent),
 	mKinect(nullptr),
 	bFirstTeenseyMessage(true)
 {
+	mLastAprilDetection = QDateTime::currentDateTime();
 
 	mDecawave = new Robot::KratosDecawave(mContext, this);
 	mTeensy = new Robot::KratosTeensy(this);
+	mTeensy2 = new Robot::KratosTeensy2(this);
 	mAprilTag = new Robot::KratosAprilTag(this);
 
 	QObject::connect(mTeensy, &Robot::KratosTeensy::statusUpdate, [this](Robot::TeenseyStatus status){
@@ -230,9 +245,63 @@ RealRobot::RealRobot(QObject* parent) :
 	connect(mAprilTag->mCamera, &KratosCamera::CameraFrame, mSensorLog, &SensorLog::ReceiveAprilTagImage);
 
 	auto timer2 = new QTimer(this);
-	timer2->start(1000/3); //time specified in ms
-	QObject::connect(timer, &QTimer::timeout, this, [this](){
+	timer2->start(300); //time specified in ms
+	QObject::connect(timer2, &QTimer::timeout, this, [this](){
 		this->mAprilTag->readCamera();
+	});
+
+	auto timer4 = new QTimer(this);
+	timer4->start(3000);
+	QObject::connect(timer4, &QTimer::timeout, this, [this](){
+		static QList<int> scanModeValues = {-88, -45, 0, 45, 88, 45, 0, -45};
+		static int lastScanValue = 0;
+
+		auto currentTime = QDateTime::currentDateTime();
+		if(std::abs(this->mLastAprilDetection.msecsTo(currentTime)) > 4000)
+		{
+			std::cout << "Setting it to SCAN MODE ("<< scanModeValues[lastScanValue] <<")\n";	
+
+			//this->mTeensy2->sendRaw(255);
+			this->mTeensy2->sendRaw(scanModeValues[lastScanValue]);
+			lastScanValue = (lastScanValue + 1) % scanModeValues.size();	
+		}
+	});
+
+	connect(mAprilTag, &KratosAprilTag::tagsDetected, this, [this](QList<AprilTagDetectionItem> detections){
+
+		double readValue = this->mTeensy2->lastStatus.servoAngle;
+
+		for(auto& tag : detections)
+		{
+			if(tag.detection.id != 0)
+				continue;
+
+			//double rotation = tag.euler[1];
+
+			double rot2 = std::atan2(tag.translation.y(), tag.translation.x());
+
+			if(std::abs(rot2) < (10.0 * M_PI / 180.0))
+				continue;
+
+			double target = clamp(rot2 + readValue, -M_PI/2, M_PI/2);
+
+			// std::cout << "Moving camera:\n";
+			// std::cout << "\t Teensy2 read value: " << readValue*180/M_PI << "\n";
+			// std::cout << "\t :Angle of the tag: " << rot2*180/M_PI << "\n";
+			// std::cout << "\t :New target: " << target*180/M_PI << "\n";
+
+			this->mTeensy2->setAprilAngle(target);
+			this->mLastAprilDetection = QDateTime::currentDateTime();
+		}
+
+	});
+
+
+	auto timer3 = new QTimer(this);
+	timer3->start(1000); //time specified in ms
+	QObject::connect(timer3, &QTimer::timeout, this, [this](){
+		if(this->mKinect != nullptr)
+			this->mKinect->requestColorFrame();
 	});
 
 	// connect(mAprilTag, &KratosAprilTag::tagsDetected, this, [](QList<AprilTagDetectionItem> detections){
@@ -247,9 +316,6 @@ RealRobot::RealRobot(QObject* parent) :
 	// });
 
 }
-
-
-
 
 void RealRobot::updateForces()
 {

@@ -28,7 +28,7 @@ struct AprilTagDetectionItem
 
 struct Teensy2Status
 {
-	int servoAngle;
+	double servoAngle;
 	double current;
 	double voltage;
 	int isPaused;
@@ -97,6 +97,7 @@ public:
 
 public slots:
 	void receiveDepthImage(Robot::DepthImgData mat);
+	void receiveKinectImage(Robot::ImgData mat);
 	void teensyStatus(TeenseyStatus status);
 	void decawaveUpdate(double distance);
 	void SendObstacles(std::vector<Eigen::Vector2d>);
