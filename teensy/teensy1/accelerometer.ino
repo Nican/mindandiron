@@ -3,7 +3,6 @@
 
 #include <Arduino.h>
 
-// int accelerometerAxes[3] = {0, 0, 0};  // Done in teensy1.ino
 #define accelerometerXPin A3
 #define accelerometerYPin A2
 #define accelerometerZPin A1
@@ -13,6 +12,7 @@ int accelerometerAxes[3] = {0, 0, 0};  // Stores {x, y, z} accelerometer data
 
 // TODO(Eric): Make more complex with conversions/filtering after testing
 int readAccelerometerSingleAxis(int pin) {
+    Serial.print("Pin: "); Serial.println(pin);
     int val = analogRead(pin);
     return val;
 }

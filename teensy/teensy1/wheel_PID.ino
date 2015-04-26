@@ -48,7 +48,7 @@ void calculateVelocityPIDControl() {
         }
         rightAutoWheelCmd = calcServoCmdFromDesiredVelocity(velocityKp * rightError +
                                                             velocityKi * rightVelocityIntegralError);
-        resetPositionIntegralError();
+        // resetPositionIntegralError();
     } else {
         // PI position control is not currently working. Ideas for future
         // Create a one pole tranfer function with c2d
@@ -74,7 +74,7 @@ void calculateVelocityPIDControl() {
 
 void resetWheelIntegralError() {
     resetVelocityIntegralError();
-    resetPositionIntegralError();
+//    resetPositionIntegralError();
 }
 
 void resetVelocityIntegralError() {
@@ -82,10 +82,10 @@ void resetVelocityIntegralError() {
     rightVelocityIntegralError = 0;
 }
 
-void resetPositionIntegralError() {
-    leftPositionIntegralError = 0;
-    rightPositionIntegralError = 0;
-}
+//void resetPositionIntegralError() {
+//    leftPositionIntegralError = 0;
+//    rightPositionIntegralError = 0;
+//}
 
 // Velocity comes in as m/s
 void setLeftWheelVelocityPIDSetpoint(float velocity) {
@@ -97,15 +97,15 @@ void setRightWheelVelocityPIDSetpoint(float velocity) {
     rightVelocityGoal = mPerSVelocityToTicks(velocity);
 }
 
-// Tick goal is absolute ticks, as tracked by the encoder
-void setLeftWheelPositionPIDSetpoint(int tickGoal) {
-    leftPositionGoal = tickGoal;
-}
-
-// Tick goal is absolute ticks, as tracked by the encoder
-void setRightWheelPositionPIDSetpoint(int tickGoal) {
-    rightPositionGoal = tickGoal;
-}
+//// Tick goal is absolute ticks, as tracked by the encoder
+//void setLeftWheelPositionPIDSetpoint(int tickGoal) {
+//    leftPositionGoal = tickGoal;
+//}
+//
+//// Tick goal is absolute ticks, as tracked by the encoder
+//void setRightWheelPositionPIDSetpoint(int tickGoal) {
+//    rightPositionGoal = tickGoal;
+//}
 
 void setUseVelocityPID(int useVelocity){
     useVelocityPID = useVelocity;

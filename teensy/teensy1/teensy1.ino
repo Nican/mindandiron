@@ -87,8 +87,8 @@ void loop() {
                          &sorterAutoSlot);
     setLeftWheelVelocityPIDSetpoint(leftVelocitySetpoint);
     setRightWheelVelocityPIDSetpoint(rightVelocitySetpoint);
-    setLeftWheelPositionPIDSetpoint(leftPositionSetpoint);
-    setRightWheelPositionPIDSetpoint(rightPositionSetpoint);
+//    setLeftWheelPositionPIDSetpoint(leftPositionSetpoint);
+//    setRightWheelPositionPIDSetpoint(rightPositionSetpoint);
     setUseVelocityPID(useVelocityControl);
 
     if (switchOn(AUTO_SWITCH_IN)) {
