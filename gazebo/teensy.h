@@ -8,10 +8,13 @@ struct TeenseyStatus
 {
 	double leftPosition;
 	double rightPosition;
+	double leftVelocity;
+	double rightVelocity;
+
 	Eigen::Vector3d acceleration;
 	bool autoFlag;
 
-	MSGPACK_DEFINE(leftPosition, rightPosition, acceleration, autoFlag);
+	MSGPACK_DEFINE(leftPosition, rightPosition, leftVelocity, rightVelocity, acceleration, autoFlag);
 };
 
 }

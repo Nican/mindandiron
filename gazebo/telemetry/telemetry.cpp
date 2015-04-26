@@ -125,13 +125,15 @@ void WheelOdometryTab::ReceiveData(const Robot::TeenseyStatus &data)
     rightPlot->addPoint(key, data.rightPosition);
 }
 
-void WheelOdometryTab::ReceiveWheelForce(const std::vector<double> &forces)
+void WheelOdometryTab::ReceiveWheelVelocities(const std::vector<double> &velocities)
 {
     double key = QDateTime::currentDateTime().toMSecsSinceEpoch() / 1000.0;
 
-    leftForcePlot->addPoint(key, forces[0]);
-    rightForcePlot->addPoint(key, forces[1]);
+    leftForcePlot->addPoint(key, velocities[0]);
+    rightForcePlot->addPoint(key, velocities[1]);
 }
+
+
 
 
 MainWindow::MainWindow(QWidget *parent)
@@ -161,13 +163,7 @@ MainWindow::MainWindow(QWidget *parent)
     tabbed->addTab(mWheelOdometry, "WHEEL ODOMETRY");
 
     connect(mSocket, SIGNAL(messageReceived(const QList<QByteArray>&)), SLOT(messageReceived(const QList<QByteArray>&)));
-    //connect(mDepthViewer->mGrowingRegion, SIGNAL(CloudProcessed()), this, SLOT(UpdateWalkabilityMap()));
 
-}
-
-void MainWindow::UpdateWalkabilityMap()
-{
-    //mGridView->UpdateWalkabilityMap(mDepthViewer->mGrowingRegion->segmenter.lastProccessed);
 }
 
 void MainWindow::messageReceived(const QList<QByteArray>& messages)
@@ -217,7 +213,7 @@ void MainWindow::messageReceived(const QList<QByteArray>& messages)
 
     if(id == '\x05')
     {
-        std::vector<Eigen::Vector2i> points;
+        std::vector<Eigen::Vector2d> points;
 
         msgpack::unpacked result;
         msgpack::unpack(result, messages[1].data(), messages[1].size());
@@ -227,12 +223,13 @@ void MainWindow::messageReceived(const QList<QByteArray>& messages)
 
     if(id == '\x06')
     {
-        std::vector<double> points;
+        std::vector<double> vels;
 
         msgpack::unpacked result;
         msgpack::unpack(result, messages[1].data(), messages[1].size());
-        result.get().convert(&points);
-        mWheelOdometry->ReceiveWheelForce(points);
+        result.get().convert(&vels);
+        mWheelOdometry->ReceiveWheelVelocities(vels);
+        mGridView->ReceiveControlStatus(vels);
     }
 
      if(id == '\x07')

@@ -73,9 +73,6 @@ public:
 
 	QTimer* mSendControlTimer;
 
-	double leftWheel;
-	double rightWheel;
-
 	GazeboKratos(QObject* parent = 0);
 
 	virtual Kinect* GetKinect() override
@@ -91,16 +88,6 @@ public:
 	virtual Decawave* GetDecawave() override
 	{
 		return mDecaWave;
-	}
-
-	virtual void SetLeftWheelPower(double power) override
-	{
-		leftWheel = power;
-	}
-
-	virtual void SetRightWheelPower(double power) override
-	{
-		rightWheel = power;
 	}
 
 protected slots:

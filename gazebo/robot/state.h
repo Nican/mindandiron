@@ -6,6 +6,8 @@
 namespace Robot
 {
 
+class TrajectorySearch;
+
 class BaseState : public QObject
 {
 	Q_OBJECT
@@ -78,9 +80,10 @@ public:
 	MoveTowardsGoalState(Kratos2 *parent);
 
 	virtual void Start() override;
+	void DriveTowards(Odometry odometry, Eigen::Vector2d goal);
 
 public slots:
-	void UpdateTrajectory(std::vector<Eigen::Vector2i>);
+	void UpdateTrajectory(std::vector<Eigen::Vector2d>);
 	void TeensyStatus(TeenseyStatus status);
 	void FinishedTrajectory();
 };

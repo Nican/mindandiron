@@ -63,6 +63,8 @@ void GazeboTeensey::fireUpdate()
 	Robot::TeenseyStatus status;
 	status.leftPosition = mLastTick.leftWheelTicks;
 	status.rightPosition = mLastTick.rightWheelTicks;
+	status.leftVelocity = mLastTick.leftWheelVelocity;
+	status.rightVelocity = mLastTick.rightWheelVelocity;
 	status.acceleration = mLastTick.linearAcceleration;
 	status.autoFlag = false;
 
@@ -72,7 +74,7 @@ void GazeboTeensey::fireUpdate()
 }
 
 GazeboKratos::GazeboKratos(QObject* parent) 
-	: Kratos2(parent), leftWheel(0.0), rightWheel(0.0)
+	: Kratos2(parent)
 {
 	mSubSocket = mContext->createSocket(nzmqt::ZMQSocket::TYP_SUB, this);
 	mSubSocket->setObjectName("Subscriber.Socket.socket(SUB)");
@@ -97,8 +99,8 @@ GazeboKratos::GazeboKratos(QObject* parent)
 void GazeboKratos::fireControlUpdate()
 {
 	RobotGazeboControl control;
-	control.leftForce = leftWheel;
-	control.rightForce = rightWheel;
+	control.leftVelocity = GetLeftVelocity();
+	control.rightVelocity = GetRightVelocity();
 
 	char id = 0;
 

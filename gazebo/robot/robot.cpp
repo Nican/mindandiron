@@ -1,3 +1,4 @@
+#include "trajectory2.h"
 #include "robot.h"
 #include "state.h"
 #include <QDateTime>
@@ -67,10 +68,22 @@ mDb(QSqlDatabase::addDatabase("QSQLITE"))
 		"distance REAL"\
 		")");
 
-	mDb.exec("CREATE TABLE IF NOT EXISTS forceLog(" \
+	mDb.exec("CREATE TABLE IF NOT EXISTS velocityLog(" \
 		"id INTEGER PRIMARY KEY ASC,"\
 		"timestamp INTEGER,"\
 		"leftForce REAL, rightForce REAL"\
+		")");
+
+	mDb.exec("CREATE TABLE IF NOT EXISTS aprilTagImageLog(" \
+		"id INTEGER PRIMARY KEY ASC,"\
+		"timestamp INTEGER,"\
+		"data COLLATE BINARY"\
+		")");
+
+	mDb.exec("CREATE TABLE IF NOT EXISTS aprilTagLog(" \
+		"id INTEGER PRIMARY KEY ASC,"\
+		"timestamp INTEGER,"\
+		"tagId INTEGER, x REAL, y REAL, x REAL, rp REAL, ry REAL, rr REAL, data COLLATE BINARY"\
 		")");
 
 	mDb.exec("CREATE INDEX IF NOT EXISTS depthLogTimestampIndex ON depthLog(timestamp)");
@@ -154,7 +167,7 @@ void SensorLog::decawaveUpdate(double distance)
 	mSocket->sendMessage(msg);
 }
 
-void SensorLog::SendObstacles(std::vector<Eigen::Vector2i> points)
+void SensorLog::SendObstacles(std::vector<Eigen::Vector2d> points)
 {
 	msgpack::sbuffer sbuf;
 	msgpack::pack(sbuf, points);
@@ -165,23 +178,23 @@ void SensorLog::SendObstacles(std::vector<Eigen::Vector2i> points)
 	mSocket->sendMessage(msg);
 }
 
-void SensorLog::forceUpdated(double leftForce, double rightForce)
+void SensorLog::WheelVelocityUpdate(double left, double right)
 {
 	QSqlQuery query(mDb);
-	query.prepare("INSERT INTO forceLog(timestamp, leftForce, rightForce) VALUES "\
+	query.prepare("INSERT INTO velocityLog(timestamp, leftForce, rightForce) VALUES "\
 		"(:timestamp, :left, :right)");
 	query.bindValue(":timestamp", QDateTime::currentDateTime().toMSecsSinceEpoch() , QSql::In);
-	query.bindValue(":left", leftForce, QSql::In);
-	query.bindValue(":right", rightForce, QSql::In);
+	query.bindValue(":left", left, QSql::In);
+	query.bindValue(":right", right, QSql::In);
 	query.exec();
 
-	std::vector<double> forces = {
-		leftForce,
-		rightForce
+	std::vector<double> velocities = {
+		left,
+		right
 	};
 
 	msgpack::sbuffer sbuf;
-	msgpack::pack(sbuf, forces);
+	msgpack::pack(sbuf, velocities);
 
 	QList<QByteArray> msg;
 	msg += QByteArray("\x06");
@@ -200,127 +213,68 @@ void SensorLog::ReceivePath(const std::vector<Eigen::Vector2d> &points)
 	mSocket->sendMessage(msg);
 }
 
-//////////////////////////
-/// WheelPID
-//////////////////////////
-
-WheelPID::WheelPID(QObject* parent) : 
-	mLeftDesiredVelocity(0.0), 
-	mRightDesiredVelocity(0.0), 
-	mLeftForce(0.0), 
-	mRightForce(0.0)
+void SensorLog::ReceiveAprilTagImage(QImage image)
 {
+	QByteArray buffer;
 
-}
-
-void WheelPID::SetLeftDesiredVelocity(double speed)
-{
-	SetLeftDesiredAngularVelocity(speed / 0.155 * M_PI);
-}
-
-void WheelPID::SetLeftDesiredAngularVelocity(double speed)
-{
-	mLeftDesiredVelocity = speed;
-}
-
-void WheelPID::SetRightDesiredVelocity(double speed)
-{
-	SetRightDesiredAngularVelocity(speed / 0.155 * M_PI);
-}
-
-void WheelPID::SetRightDesiredAngularVelocity(double speed)
-{
-	mRightDesiredVelocity = speed;
-}
-
-void WheelPID::teensyStatus(TeenseyStatus status)
-{
-	QDateTime currentTime = QDateTime::currentDateTime();
-
-	if(!mLastStatusTime.isValid() || mLastStatusTime.msecsTo(currentTime) > 1000 )
 	{
-		mLastStatusTime = QDateTime::currentDateTime();
-		mLastStatus = status;
-		return;
+		QDataStream stream(&buffer, QIODevice::WriteOnly);
+		stream << image;
 	}
 
-	double seconds = static_cast<double>(mLastStatusTime.msecsTo(currentTime)) / 1000.0;
-
-	mLeftVelocity = static_cast<double>(status.leftPosition - mLastStatus.leftPosition) / 23330.0 / seconds;
-	mRightVelocity = static_cast<double>(status.rightPosition - mLastStatus.rightPosition) / 23330.0 / seconds;
-
-	double forceStep = 30.0;
-	double forceLimit = 1000.0;
-
-	if(status.autoFlag == true)
-	{
-		mLeftForce = 0.0;
-		mRightForce = 0.0;
-	}
-	else 
-	{
-		std::cout << "velocity: " << status.leftPosition << "/" << seconds << "\t" << mLeftVelocity << "\t / \t " << mLeftDesiredVelocity << "\n";
-
-		//TODO: Look at real implementation of PID
-		if(mLeftVelocity < mLeftDesiredVelocity)
-		{
-			mLeftForce += forceStep;
-		}
-		else
-		{
-			mLeftForce -= forceStep;
-		}
-
-		if(mRightVelocity < mRightDesiredVelocity)
-		{
-			mRightForce += forceStep;
-		}
-		else
-		{
-			mRightForce -= forceStep;
-		}
-
-		if(mLeftForce >= forceLimit)
-			mLeftForce = forceLimit;
-
-		if(mLeftForce <= -forceLimit)
-			mLeftForce = -forceLimit;
-
-		if(mRightForce >= forceLimit)
-			mRightForce = forceLimit;
-
-		if(mRightForce <= -forceLimit)
-			mRightForce = -forceLimit;
-	}
-
-	mLastStatusTime = QDateTime::currentDateTime();
-	mLastStatus = status;
-
-	emit forceUpdated();
+	QSqlQuery query(mDb);
+	query.prepare("INSERT INTO aprilTagImageLog(timestamp, data) VALUES(:timestamp, :data)");
+	query.bindValue(":timestamp", QDateTime::currentDateTime().toMSecsSinceEpoch() , QSql::In);
+	query.bindValue(":data", buffer, QSql::In | QSql::Binary);
+	query.exec();
 }
 
-void WheelPID::Reset()
+void SensorLog::ReceiveAprilTags(QList<AprilTagDetectionItem> tags)
 {
-	mRightForce = 0.0;
-	mLeftForce = 0.0;
-	SetLeftDesiredAngularVelocity(0.0);
-	SetRightDesiredAngularVelocity(0.0);
+	auto date = QDateTime::currentDateTime().toMSecsSinceEpoch();
 
-	emit forceUpdated();
+	for(auto& tag : tags)
+	{
+		QByteArray buffer(reinterpret_cast<char*>(&tag), sizeof(AprilTags::TagDetection));
+
+		QSqlQuery query(mDb);
+		query.prepare("INSERT INTO aprilTagLog(timestamp, tagId, x, y, x, rp, ry, rr, data) VALUES(:timestamp, :id, :x, :y, :z, :rp, :ry, :rr, :data)");
+		query.bindValue(":timestamp", date, QSql::In);
+
+		//auto euler = tag.rotation.eulerAngles(2,0,2);
+
+		query.bindValue(":id", tag.detection.id, QSql::In);
+		query.bindValue(":x", tag.translation.x(), QSql::In);
+		query.bindValue(":y", tag.translation.y(), QSql::In);
+		query.bindValue(":z", tag.translation.z(), QSql::In);
+		query.bindValue(":rp", tag.euler.x(), QSql::In);
+		query.bindValue(":ry", tag.euler.y(), QSql::In);
+		query.bindValue(":rr", tag.euler.z(), QSql::In);
+		query.bindValue(":data", buffer, QSql::In | QSql::Binary);
+		query.exec();
+	}
+
+	
 }
+
 
 //////////////////////////
 /// Kratos2
 //////////////////////////
 
-Kratos2::Kratos2(QObject* parent) : QObject(parent), mState(nullptr), mIsPaused(false)
+Kratos2::Kratos2(QObject* parent) : 
+	QObject(parent),
+	mLeftWheelVelocity(0.0),
+	mRightWheelVelocity(0.0),
+	mState(nullptr), 
+	mIsPaused(false)
 {
 	mContext = nzmqt::createDefaultContext(this);
 	mContext->start();
 
 	mSensorLog = new SensorLog(this, mContext);
 	mPlanner = new TrajectoryPlanner2(this);
-	mWheelPID = new WheelPID(this);
+	//mWheelPID = new WheelPID(this);
 }
 
 
@@ -336,7 +290,7 @@ void Kratos2::Initialize()
 	}
 
 	connect(GetTeensy(), &Teensy::statusUpdate, mSensorLog, &SensorLog::teensyStatus);
-	connect(GetTeensy(), &Teensy::statusUpdate, mWheelPID, &WheelPID::teensyStatus);
+	//connect(GetTeensy(), &Teensy::statusUpdate, mWheelPID, &WheelPID::teensyStatus);
 	connect(GetTeensy(), &Teensy::statusUpdate, this, &Kratos2::TeensyStatus);
 	
 	auto decawave = GetDecawave();
@@ -348,8 +302,9 @@ void Kratos2::Initialize()
 
 	
 	connect(&mFutureWatcher, SIGNAL(finished()), this, SLOT(FinishedPointCloud()));
-	connect(mPlanner, SIGNAL(ObstacleMapUpdate(std::vector<Eigen::Vector2i>)), mSensorLog, SLOT(SendObstacles(std::vector<Eigen::Vector2i>)));
-	connect(mWheelPID, &WheelPID::forceUpdated, this, &Kratos2::updateForces);
+	connect(mPlanner, SIGNAL(ObstacleMapUpdate(std::vector<Eigen::Vector2d>)), mSensorLog, SLOT(SendObstacles(std::vector<Eigen::Vector2d>)));
+	connect(this, &Kratos2::WheelVelocityUpdate, mSensorLog, &SensorLog::WheelVelocityUpdate);
+	//connect(mWheelPID, &WheelPID::forceUpdated, this, &Kratos2::updateForces);
 
 	mState = new RootState(this);
 	mState->Start();
@@ -365,20 +320,27 @@ void Kratos2::TeensyStatus(TeenseyStatus status)
 	}
 }
 
-void Kratos2::updateForces()
+void Kratos2::SetWheelVelocity(double left, double right)
 {
-	SetLeftWheelPower(mWheelPID->mLeftForce);
-	SetRightWheelPower(mWheelPID->mRightForce);
+	mLeftWheelVelocity = left;
+	mRightWheelVelocity = right;
 
-	mSensorLog->forceUpdated(mWheelPID->mLeftForce, mWheelPID->mRightForce);
+	emit WheelVelocityUpdate(left, right);
 }
+
+double Kratos2::GetLeftVelocity()
+{
+	return mLeftWheelVelocity;
+}
+
+double Kratos2::GetRightVelocity()
+{
+	return mRightWheelVelocity;
+}
+
 
 void Kratos2::ProccessPointCloud(DepthImgData mat)
 {
-	//QDateTime currentTime = QDateTime::currentDateTime();
-
-	//std::cout << "Processing point cloud;\n";
-
 	if(mFutureWatcher.future().isRunning()){
 		std::cout << "Point cloud is still processing. not starting a new one\n";
 		return;
@@ -439,21 +401,20 @@ Odometry Kratos2::GetOdometryTraveledSince(QDateTime time)
 		double left = query.value(0).toDouble();
 		double right = query.value(1).toDouble();
 
-		//std::cout << "\tReading value: " << query.value(0).toDouble() << "\n";
-		odometry.Update(
-			static_cast<double>(lastLeft - left) / 23330.0 * 0.31 * M_PI,
-			static_cast<double>(lastRight - right) / 23330.0 * 0.31 * M_PI);
+		double diffLeft = static_cast<double>(left - lastLeft) / 23330.0 * 0.31 * M_PI;
+		double diffRight = static_cast<double>(right - lastRight) / 23330.0 * 0.31 * M_PI;
 
 		lastLeft = left;
 		lastRight = right;
+
+		if(std::abs(diffLeft) > 0.1 || std::abs(diffRight) > 0.1){
+			std::cout << "\t Skipping large jump: " << diffLeft << "\t" << diffRight << "\n";
+			continue;
+		}
+
+		odometry.Update(diffLeft, diffRight);
     }
 
 	return odometry;
 }
-
-
-Q_DECLARE_METATYPE(Robot::DepthImgData)
-Q_DECLARE_METATYPE(Robot::ImgData)
-Q_DECLARE_METATYPE(Robot::TeenseyStatus)
-
 

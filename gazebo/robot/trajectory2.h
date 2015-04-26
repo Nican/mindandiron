@@ -11,6 +11,7 @@
 namespace Robot
 { 
 
+class Kratos2;
 class TrajectoryTreeNode2;
 class TrajectoryPlanner2;
 class TrajectorySearch;
@@ -57,7 +58,7 @@ public:
 
 	bool foundSolution;
 
-	TrajectorySearch(const std::vector<Eigen::Vector2i> &obstacleList, Eigen::Vector2d goal, QObject* parent = nullptr);
+	TrajectorySearch(const std::vector<Eigen::Vector2d> &obstacleList, Eigen::Vector2d goal, QObject* parent = nullptr);
 
 	bool TestPosition(Eigen::Vector2d pos, double rotation);
 	void AddObstacle(float x, float y);
@@ -66,23 +67,30 @@ public:
 	void Iterate();
 };
 
+class ObstacleMapItem
+{
+public:
+	QDateTime mCreatedTime;
+	std::vector<Eigen::Vector2d> mObstacleList;
+};
+
 class TrajectoryPlanner2 : public QObject
 {
 	Q_OBJECT
 
+	std::size_t GetOldestObstacle();
+
 public:
-	std::vector<Eigen::Vector2i> mObstacleList;
+	Kratos2* mRobot;
+	std::vector<Eigen::Vector2d> mObstacleList;
+	std::array<ObstacleMapItem, 30> mObstacleHistory;
 	
-	TrajectoryPlanner2(QObject* parent);
+	TrajectoryPlanner2(Kratos2* parent);
 
 	void UpdateObstacles(pcl::PointCloud<pcl::PointXYZRGB>::Ptr pointCloud);
-	
-	//void UpdateOdometry(double leftWheel, double rightWheel);
-
-	//std::shared_ptr<TrajectorySearch> FindPath(const Eigen::Vector2d &goal, int iterations = 5000);
 
 signals:
-	void ObstacleMapUpdate(std::vector<Eigen::Vector2i>);
+	void ObstacleMapUpdate(std::vector<Eigen::Vector2d>);
 
 };
 

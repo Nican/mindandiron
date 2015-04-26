@@ -4,6 +4,7 @@
 #include "../robot.h"
 #include "robot.h"
 #include "teensey.h"
+#include "camera.h"
 #include <iostream>
 #include <mutex>
 #include <QElapsedTimer>
@@ -15,84 +16,99 @@
 #include <libfreenect2/threading.h>
 
 #include <opencv2/opencv.hpp>
+#include "../AprilTags/TagDetector.h"
 
 namespace Robot 
 {
 
+class KratosAprilTag : public QObject
+{
+	Q_OBJECT
+public:
+
+	KratosCamera* mCamera;
+	std::shared_ptr<AprilTags::TagDetector> m_tagDetector;
+
+	QFutureWatcher<std::vector<AprilTags::TagDetection>> mDetectionFutureWatcher;
+
+	double mTagSize;
+	double mFx;
+	double mFy;
+	double mPx;
+	double mPy;
+
+	KratosAprilTag(QObject* parent = 0);
+
+	void readCamera();
+
+public slots:
+	void finishedProcessing();
+
+signals:
+	void tagsDetected(QList<AprilTagDetectionItem>);
+};
+
+
+
 class KratosKinect : public Robot::Kinect, public libfreenect2::FrameListener
 {
-    Q_OBJECT
+	Q_OBJECT
 
-    libfreenect2::Freenect2Device *mDev;
+	libfreenect2::Freenect2Device *mDev;
 
-    std::mutex mRequestLock;
-    bool depthRequested; 
-    bool colorRequested;
+	std::mutex mRequestLock;
+	bool depthRequested; 
+	bool colorRequested;
 
 public:
-    
-    KratosKinect(libfreenect2::Freenect2Device *dev, QObject* parent);
+	
+	KratosKinect(libfreenect2::Freenect2Device *dev, QObject* parent);
 
-    virtual bool onNewFrame(libfreenect2::Frame::Type type, libfreenect2::Frame *frame) override;
+	virtual bool onNewFrame(libfreenect2::Frame::Type type, libfreenect2::Frame *frame) override;
 
-    virtual void requestDepthFrame() override;
-    virtual void requestColorFrame() override;
-    
+	virtual void requestDepthFrame() override;
+	virtual void requestColorFrame() override;
+	
 private:
-    Q_DISABLE_COPY(KratosKinect)
+	Q_DISABLE_COPY(KratosKinect)
 
 };
 
 
 class RealRobot : public Robot::Kratos2
 {
-    Q_OBJECT
+	Q_OBJECT
 
-    libfreenect2::Freenect2 freenect2;
-    KratosKinect* mKinect;
+	libfreenect2::Freenect2 freenect2;
+	KratosKinect* mKinect;
 
-    Robot::KratosTeensy* mTeensy;
-    Robot::TeenseyStatus lastStatus;
-    bool bFirstTeenseyMessage;
-
-    double mLeftVelocity;
-    double mRightVelocity;
-  	//libfreenect2::Freenect2Device *dev;
-
-    //std::shared_ptr<Robot::Kratos> m_kratos;
+	Robot::KratosTeensy* mTeensy;
+	Robot::TeenseyStatus lastStatus;
+	Robot::KratosDecawave* mDecawave;
+	Robot::KratosAprilTag* mAprilTag;
+	bool bFirstTeenseyMessage;
 
 public:
-    RealRobot(QObject* parent = 0);
+	RealRobot(QObject* parent = 0);
 
-    QElapsedTimer mElapsedTimer;
+	virtual Kinect* GetKinect() override
+	{
+		return mKinect;
+	}
 
-    virtual Kinect* GetKinect() override
-    {
-        return mKinect;
-    }
+	virtual Teensy* GetTeensy() override
+	{
+		return mTeensy;
+	}
 
-    virtual Teensy* GetTeensy() override
-    {
-        return mTeensy;
-    }
-
-    virtual Decawave* GetDecawave() override
-    {
-        return nullptr;
-    }
-
-    virtual void SetLeftWheelPower(double power) override;
-    virtual void SetRightWheelPower(double power) override;
+	virtual Decawave* GetDecawave() override
+	{
+		return mDecawave;
+	}
 
 
 public slots:
-    void updateForces();
-
-    //void receiveColorImage2(Robot::ImgData mat);
-   // void receiveDepthImage2(Robot::DepthImgData mat);
-
-private:
-    //QTimer *timer;
+	void updateForces();
 };
 
 }

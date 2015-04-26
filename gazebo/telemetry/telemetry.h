@@ -8,7 +8,7 @@
 #include "../nzmqt/nzmqt.hpp"
 #include "pointcloud.h"
 #include "qcustomplot.h"
-
+#include <QGraphicsRectItem>
 
 #include "qr.cpp"
 
@@ -61,10 +61,19 @@ class WheelOdometryTab : public QWidget
 public:
 	WheelOdometryTab(QWidget *parent = 0);
 	void ReceiveData(const Robot::TeenseyStatus &data);
-	void ReceiveWheelForce(const std::vector<double> &forces);
+	void ReceiveWheelVelocities(const std::vector<double> &forces);
 };
 
 
+class WheelUsageRect : public QGraphicsRectItem
+{
+public:
+	double mProgress;
+
+	WheelUsageRect(qreal x, qreal y, qreal w, qreal h, QGraphicsItem *parent = 0);
+
+	virtual void paint(QPainter * painter, const QStyleOptionGraphicsItem * option, QWidget * widget = 0) override;
+};
 
 class MapOverview : public QWidget
 {
@@ -81,16 +90,19 @@ public:
 	QGraphicsPathItem* mPlannedTrajectory;
 	QGraphicsPolygonItem* mRobotInstance;
 
+	WheelUsageRect* mLeftWheel;
+	WheelUsageRect* mRightWheel;
+
 	QVector<QGraphicsLineItem*> mLines;
 
 	QGraphicsEllipseItem* mDecawaveCircle;
 
 	//void ReadLocation(const Robot::LocationDataPoint &historyPoint);
 	void DrawExploreChild(TrajectoryTreeNode* parent, TrajectoryTreeNode* child, int &id);
-	void UpdateWalkabilityMap(DepthViewerTab::PclPointCloud::Ptr pointCloud);
+	void ReceiveControlStatus(const std::vector<double> &velocities);
 
 	void ReceiveDecawaveReading(double distance);
-	void ReceiveObstacleMap(std::vector<Eigen::Vector2i> points);
+	void ReceiveObstacleMap(std::vector<Eigen::Vector2d> points);
 
 	void ReceivePath(std::vector<Eigen::Vector2d> points);
 };
@@ -120,8 +132,6 @@ public:
 
 public slots:
 	void messageReceived(const QList<QByteArray>& messages);
-	//void update();
-	void UpdateWalkabilityMap();
 	
 };
 

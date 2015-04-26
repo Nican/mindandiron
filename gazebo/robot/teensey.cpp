@@ -4,6 +4,65 @@
 
 using namespace Robot;
 
+
+/////////////////////////////
+//// KratosInfoTeensy
+/////////////////////////////
+KratosInfoTeensy::KratosInfoTeensy(QObject* parent) : QObject(parent)
+{
+
+	mSerial = new QSerialPort("/dev/serial/by-id/usb-Teensyduino_USB_Serial_765570-if00", this);
+
+	QObject::connect(mSerial, &QSerialPort::readyRead, this, &KratosInfoTeensy::receiveSerialData);
+	connect(mSerial, SIGNAL(error(QSerialPort::SerialPortError)), this, SLOT(receiveError(QSerialPort::SerialPortError)));
+
+	if(!mSerial->open(QIODevice::ReadWrite))
+	{
+		std::cout << "Unabled to open Serial port for CAMERA teensy\n";
+		return;
+	}
+
+	mSerial->clear();
+}
+
+void KratosInfoTeensy::receiveError(QSerialPort::SerialPortError error)
+{
+	std::cout << "Teensey received error. " << mSerial->error() << "\n";
+}
+
+void KratosInfoTeensy::receiveSerialData()
+{
+	while(mSerial->canReadLine())
+	{
+		char buf[1024]; 
+		qint64 lineLength = mSerial->readLine(buf, sizeof(buf));
+		if (lineLength != -1) {
+			QString line(buf);
+			QStringList parts = line.trimmed().split("\t");
+
+			if(parts.size() != 8)
+			{
+				std::cerr << "Unable to parse Teensey2 string: '" << buf << "'\n";
+				return;
+			}
+
+			Teensy2Status status;
+			status.servoAngle = parts[1].toInt();
+			status.current = parts[3].toDouble();
+			status.voltage = parts[5].toDouble();
+			status.isPaused = parts[7].toInt();
+
+			//emit statusUpdate(status);
+		}
+	}
+	mSerial->clear();
+}
+
+
+/////////////////////////////
+//// KratosTeensy
+/////////////////////////////
+
 KratosTeensy::KratosTeensy(QObject* parent) : Teensy(parent)
 {
 
@@ -12,9 +71,12 @@ KratosTeensy::KratosTeensy(QObject* parent) : Teensy(parent)
 	QObject::connect(mSerial, &QSerialPort::readyRead, this, &KratosTeensy::receiveSerialData);
 	connect(mSerial, SIGNAL(error(QSerialPort::SerialPortError)), this, SLOT(receiveError(QSerialPort::SerialPortError)));
 
-	if(!mSerial->open(QIODevice::ReadWrite))
-		std::cout << "Unabled to open Serial port\n";
+	if(!mSerial->open(QIODevice::ReadWrite)){
+		std::cout << "Unabled to open Serial port for motor teensy\n";
+		return;
+	}
 
+	mSerial->clear();
 }
 
 void KratosTeensy::receiveError(QSerialPort::SerialPortError error)
@@ -24,12 +86,19 @@ void KratosTeensy::receiveError(QSerialPort::SerialPortError error)
 
 void KratosTeensy::SetVelocities(double left, double right)
 {
-	int leftInt = static_cast<int>(left * 10);
-	int rightInt = static_cast<int>(right * 10);
+	if(!mSerial->isOpen())
+		return;
+
+	int leftPos = 0;
+	int rightPos = 0;
+	int useVelocity = 1;
+	int collector = 0;
+	int sorter = 0;
 
 	QString sendString;
-	sendString.sprintf("LVEL\t%d\tRVEL\t%d\tCOLL\t%s\tSORT\t%s\tEND", leftInt, rightInt, "0", "0");
-	std::cout << "Sending value: " << sendString.toStdString() << "\n";
+	//sendString.sprintf("LVEL\t%d\tRVEL\t%d\tCOLL\t%s\tSORT\t%s\tEND", leftInt, rightInt, "0", "0");
+	sendString.sprintf("\t%.2f\t%.2f\t%d\t%d\t%d\t%d\t%d\tEND", left, right, leftPos, rightPos, useVelocity, collector, sorter);
+	//std::cout << "Sending value: " << sendString.toStdString() << "\n";
 	mSerial->write(sendString.toLocal8Bit());
 }
 
@@ -52,8 +121,8 @@ void KratosTeensy::receiveSerialData()
 			TeenseyStatus status;
 			status.leftPosition = parts[1].toDouble(); // * (2 * M_PI / 23330.0) * 0.155;  // Distance traveled in meters
 			status.rightPosition = parts[3].toDouble(); // * (2 * M_PI / 23330.0) * 0.155;  // Distance traveled in meters
-			// status.leftVelocity = parts[5].toDouble();
-			// status.rightVelocity = parts[7].toDouble();
+			status.leftVelocity = parts[5].toDouble();
+			status.rightVelocity = parts[7].toDouble();
 			status.acceleration.x() = parts[9].toDouble() - 512.0;
 			status.acceleration.y() = parts[11].toDouble() - 512.0;
 			status.acceleration.z() = parts[13].toDouble() - 512.0;
@@ -64,4 +133,43 @@ void KratosTeensy::receiveSerialData()
 		}
 	}
 	mSerial->clear();
+}
+
+
+KratosDecawave::KratosDecawave(nzmqt::ZMQContext* context, QObject* parent) : Decawave(parent)
+{
+
+	mSubSocket = context->createSocket(nzmqt::ZMQSocket::TYP_SUB, this);
+	mSubSocket->setObjectName("Subscriber.Socket.socket(SUB)");
+	mSubSocket->connectTo("tcp://127.0.0.1:5560");
+	mSubSocket->setOption(nzmqt::ZMQSocket::OPT_SUBSCRIBE, "", 0);
+
+	connect(mSubSocket, SIGNAL(messageReceived(const QList<QByteArray>&)), SLOT(messageReceived(const QList<QByteArray>&)));
+}
+
+	
+void KratosDecawave::messageReceived(const QList<QByteArray>& messages)
+{
+	//std::cout << "Message size: " << message.size () << "\n";
+
+	std::cout << "Got message! \n";
+	//Why is this a list of arrays?
+	for(auto& byteArray : messages)
+	{
+		QString readString(byteArray);
+
+		if(readString.contains("LAST:"))
+		{
+			QString doubleVal = readString.replace("LAST: ", "");
+
+			double val = doubleVal.toDouble();
+
+			std::cout << "Read decawave value: " << val << "\n";
+
+			emit statusUpdate(val);
+		}
+
+	 	//std::cout << "\tReceived string: " << QString(byteArray).toStdString() << "\n";
+	}
+
 }

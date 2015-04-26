@@ -3,6 +3,11 @@
 
       <physics type="ode">
         <real_time_update_rate>1000.0</real_time_update_rate>
+        <ode>
+          <solver>
+            <iters>1000</iters>
+          </solver>
+        </ode>
       </physics>
 
       <include>
@@ -33,16 +38,11 @@
             <surface>
               <friction>
                 <ode>
-                  <mu>100</mu>
-                  <mu2>50</mu2>
+                  <mu>100000</mu>
+                  <mu2>100000</mu2>
                 </ode>
               </friction>
-              <contact>
-                <ode/>
-              </contact>
-              <bounce/>
             </surface>
-            <max_contacts>10</max_contacts>
           </collision>
           <visual name='visual'>
             <cast_shadows>0</cast_shadows>

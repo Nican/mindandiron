@@ -7,12 +7,32 @@
 #include "../nzmqt/nzmqt.hpp"
 #include "../pointcloud.h"
 #include "../teensy.h"
-#include "trajectory2.h"
+#include "../odometry.h"
+#include "../AprilTags/TagDetector.h"
+#include <QImage>
 
 namespace Robot{
 
 class BaseState;
 class RootState;
+class TrajectoryPlanner2;
+
+struct AprilTagDetectionItem
+{
+	Eigen::Vector3d translation;
+	Eigen::Matrix3d rotation;
+	Eigen::Vector3d euler;
+	 
+	AprilTags::TagDetection detection;
+};
+
+struct Teensy2Status
+{
+	int servoAngle;
+	double current;
+	double voltage;
+	int isPaused;
+};
 
 class Decawave : public QObject
 {
@@ -40,8 +60,8 @@ class Kinect : public QObject
 	virtual void requestDepthFrame() = 0;
 
 signals:
-    void receiveColorImage(ImgData mat);
-    void receiveDepthImage(DepthImgData mat);
+    void receiveColorImage(Robot::ImgData mat);
+    void receiveDepthImage(Robot::DepthImgData mat);
     
 private:
     Q_DISABLE_COPY(Kinect)
@@ -76,49 +96,21 @@ public:
 	void ReceivePath(const std::vector<Eigen::Vector2d> &points);
 
 public slots:
-	void receiveDepthImage(DepthImgData mat);
+	void receiveDepthImage(Robot::DepthImgData mat);
 	void teensyStatus(TeenseyStatus status);
 	void decawaveUpdate(double distance);
-	void SendObstacles(std::vector<Eigen::Vector2i>);
+	void SendObstacles(std::vector<Eigen::Vector2d>);
+	void WheelVelocityUpdate(double left, double right);
+	void ReceiveAprilTagImage(QImage image);
+	void ReceiveAprilTags(QList<AprilTagDetectionItem> tags);
 };
-
-class WheelPID : public QObject
-{
-	Q_OBJECT
-public:
-	double mLeftDesiredVelocity; //in rads/sec
-	double mRightDesiredVelocity; //in rads/sec
-
-	TeenseyStatus mLastStatus;
-	QDateTime mLastStatusTime;
-
-	double mLeftVelocity;
-	double mRightVelocity;
-
-	double mLeftForce;
-	double mRightForce;
-
-	WheelPID(QObject* parent = 0);
-
-	void SetLeftDesiredAngularVelocity(double speed); //In radians per second
-	void SetLeftDesiredVelocity(double speed); // In m/s
-
-	void SetRightDesiredAngularVelocity(double speed); //In radians per second
-	void SetRightDesiredVelocity(double speed); // In m/s
-
-	void Reset();
-
-public slots:
-	void teensyStatus(TeenseyStatus status);
-
-signals:
-    void forceUpdated();
-};
-
 
 class Kratos2 : public QObject
 {
 	Q_OBJECT
+
+	double mLeftWheelVelocity;
+	double mRightWheelVelocity;
 
 public:
 	nzmqt::ZMQContext* mContext;
@@ -127,7 +119,7 @@ public:
 	QFutureWatcher<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> mFutureWatcher;
 
 	TrajectoryPlanner2* mPlanner;
-	WheelPID* mWheelPID;
+	//WheelPID* mWheelPID;
 
 	RootState *mState;
 
@@ -144,21 +136,22 @@ public:
 	virtual Teensy* GetTeensy() = 0;
 	virtual Decawave* GetDecawave() = 0;
 
-	virtual void SetLeftWheelPower(double power) = 0;
-	virtual void SetRightWheelPower(double power) = 0;
+	//Set the velocities in m/s
+	//Upper limit at ~0.66
+	void SetWheelVelocity(double left, double right);
+	double GetLeftVelocity();
+	double GetRightVelocity();
 
 	Odometry GetOdometryTraveledSince(QDateTime time);
 
 public slots:
-	void ProccessPointCloud(DepthImgData mat);
+	void ProccessPointCloud(Robot::DepthImgData mat);
 	void TeensyStatus(TeenseyStatus status);
 	void FinishedPointCloud();
-	void updateForces();
 	
-
 signals:
 	void pauseUpdate(bool); //True when paused
-
+	void WheelVelocityUpdate(double left, double right);
 };
 
 

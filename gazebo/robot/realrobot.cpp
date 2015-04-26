@@ -1,67 +1,116 @@
 #include "realrobot.h"
 
 #include <QMetaType>
+#include <QThread>
+#include <QtConcurrent>
+
+#include "../AprilTags/Tag25h9.h"
 
 using namespace Robot;
 
-/*
-class AprilTagCameraMotorReal : public Robot::AprilTagServo
+
+//////////////////////////
+////	KratosAprilTag
+//////////////////////////
+
+KratosAprilTag::KratosAprilTag(QObject* parent) : 
+	QObject(parent), 
+	mTagSize(0.829),
+	mFx(1315), mFy(1315),
+	mPx(1920/2), mPy(1080/2)
 {
-public:
+	mCamera = new KratosCamera("usb-046d_HD_Pro_Webcam_C920_2245793F-video-index0", 1920, 1080, this);
+	m_tagDetector.reset(new AprilTags::TagDetector(AprilTags::tagCodes25h9));
 
-  AprilTagCameraMotorReal()
-  {
-  }
+	connect(&mDetectionFutureWatcher, SIGNAL(finished()), this, SLOT(finishedProcessing()));
+}
 
-  virtual double GetPosition() const override
-  {
-    return 0.0;
-  }
-
-  virtual void SetPosition(double radians) override
-  {
-  }
-};
-
-class WheelJointReal : public Robot::Wheel
+void KratosAprilTag::readCamera()
 {
-public:
-  WheelJointReal()
-  {
-  }
-
-  virtual double GetRotationVelocity() const override
-  {
-    return 0.0;
-  }
-
-  virtual void SetForce(double force) override
-  {
-  }
-
-};
-
-class TRSReal : public Robot::TotalRoboticStation 
-{
-public:
-	RealRobot* mRobot;
-
-	TRSReal(RealRobot* robot) : mRobot(robot)
+	if(mDetectionFutureWatcher.future().isRunning())
 	{
+		std::cout << "April tags is still processing. not starting a new one\n";
+		return;
 	}
 
-	virtual Eigen::Vector3d GetPosition() const override
-	{
+	auto future = QtConcurrent::run([this](){
+		cv::Mat image;
+		cv::Mat image_gray;
+		std::vector<AprilTags::TagDetection> detections;
 
-		return Eigen::Vector3d(0, 0, 0);
+		if(!this->mCamera->read(image))
+		{
+			std::cout << "Unable to read april tag camera.\n";
+			return detections;
+		}
+
+		cv::cvtColor(image, image_gray, CV_BGR2GRAY);
+		//cv::imshow("AA", image_gray);
+
+		detections = m_tagDetector->extractTags(image_gray);
+
+		return detections;
+	});
+
+	mDetectionFutureWatcher.setFuture(future);
+
+}
+
+inline double standardRad(double t) {
+  if (t >= 0.) {
+    t = fmod(t+M_PI, M_PI * 2) - M_PI;
+  } else {
+    t = fmod(t-M_PI, M_PI * -2) + M_PI;
+  }
+  return t;
+}
+
+static void wRo_to_euler(const Eigen::Matrix3d& wRo, double& yaw, double& pitch, double& roll) {
+    yaw = standardRad(atan2(wRo(1,0), wRo(0,0)));
+    double c = cos(yaw);
+    double s = sin(yaw);
+    pitch = standardRad(atan2(-wRo(2,0), wRo(0,0)*c + wRo(1,0)*s));
+    roll  = standardRad(atan2(wRo(0,2)*s - wRo(1,2)*c, -wRo(0,1)*s + wRo(1,1)*c));
+}
+
+void KratosAprilTag::finishedProcessing()
+{
+	auto detections = mDetectionFutureWatcher.future().result();
+	QList<AprilTagDetectionItem> detectionsItems;
+
+	for(auto &tag : detections)
+	{
+		AprilTagDetectionItem item;
+
+		tag.getRelativeTranslationRotation(mTagSize, mFx, mFy, mPx, mPy, item.translation, item.rotation);
+		item.detection = tag;
+
+		Eigen::Matrix3d F;
+		F <<
+		1, 0,  0,
+		0,  -1,  0,
+		0,  0,  1;
+		item.rotation = F * item.rotation;
+
+		double yaw, pitch, roll;
+   		wRo_to_euler(item.rotation, yaw, pitch, roll);
+
+		item.euler = {yaw, pitch, roll};
+			
+		std::cout << "\tTag id " << item.detection.id << "\n"; 
+		std::cout << "\t\tT " << item.translation.transpose() << " ("<< item.translation.norm() <<")\n"; 
+		std::cout << "\t\tR " << (item.euler / M_PI * 180.0).transpose() << "\n"; 
+
+		detectionsItems.append(item);
 	}
 
-	virtual double GetOrientation() const override
-	{
-		return 0.0;
-	}
-};
-*/
+	emit tagsDetected(detectionsItems);
+}
+
+//////////////////////////
+////	KratosKinect
+//////////////////////////
+
 KratosKinect::KratosKinect(libfreenect2::Freenect2Device *dev, QObject* parent) : 
 	Robot::Kinect(parent), 
 	mDev(dev)
@@ -89,6 +138,8 @@ void KratosKinect::requestColorFrame()
 bool KratosKinect::onNewFrame(libfreenect2::Frame::Type type, libfreenect2::Frame *frame)
 {
 	std::lock_guard<std::mutex> lock(mRequestLock);
+
+	std::cout << "Received new frame\n";
 
 	if(type == libfreenect2::Frame::Color)
 	{
@@ -130,7 +181,7 @@ bool KratosKinect::onNewFrame(libfreenect2::Frame::Type type, libfreenect2::Fram
 			imgData.data[i] = floatData[i] / 1000.0; //Convert cm to m.
 
 		mDev->setIrAndDepthFrameListener(nullptr);
-		
+
 		emit receiveDepthImage(imgData);
 	}
 
@@ -139,51 +190,34 @@ bool KratosKinect::onNewFrame(libfreenect2::Frame::Type type, libfreenect2::Fram
 
 };
 
+
+//////////////////////////
+////	RealRobot
+//////////////////////////
+
 RealRobot::RealRobot(QObject* parent) : 
 	Robot::Kratos2(parent),
 	mKinect(nullptr),
-	bFirstTeenseyMessage(true),
-	mLeftVelocity(0.0),
-	mRightVelocity(0.0)
+	bFirstTeenseyMessage(true)
 {
 
-	/*
-	Robot::RobotMotion motion;
-	motion.mAprilServo = std::make_shared<AprilTagCameraMotorReal>();
-	motion.mLeftWheel = std::make_shared<WheelJointReal>();
-	motion.mRightWheel = std::make_shared<WheelJointReal>();
-
-	Robot::RobotSensors sensors;
-	sensors.mTRS = std::make_shared<TRSReal>(this);
-
-	m_kratos = std::make_shared<Robot::Kratos>(motion, sensors);
-	*/
-
+	mDecawave = new Robot::KratosDecawave(mContext, this);
 	mTeensy = new Robot::KratosTeensy(this);
+	mAprilTag = new Robot::KratosAprilTag(this);
+
 	QObject::connect(mTeensy, &Robot::KratosTeensy::statusUpdate, [this](Robot::TeenseyStatus status){
-
-		if(bFirstTeenseyMessage != true)
-		{
-			/*
-			this->m_kratos->ReceiveWheelTicks(
-				status.leftPosition - lastStatus.leftPosition, 
-				status.rightPosition - lastStatus.rightPosition);
-				*/
-		}
-
 		bFirstTeenseyMessage = false;
 		lastStatus = status;
-		//std::cout << "Got update!\n";
 	});
 
 
-    auto timer = new QTimer(this);
-    timer->start(100); //time specified in ms
-    QObject::connect(timer, SIGNAL(timeout()), this, SLOT(updateForces()));
+	auto timer = new QTimer(this);
+	timer->start(100); //time specified in ms
+	QObject::connect(timer, SIGNAL(timeout()), this, SLOT(updateForces()));
 
-    auto dev = freenect2.openDefaultDevice();
+	auto dev = freenect2.openDefaultDevice();
 
-    if(dev == nullptr)
+	if(dev == nullptr)
 	{
 		std::cout << "no device connected or failure opening the default one!" << std::endl;
 	}
@@ -191,55 +225,34 @@ RealRobot::RealRobot(QObject* parent) :
 	{
 		mKinect = new KratosKinect(dev, this);
 		mKinect->requestDepthFrame();
-		
-		//QObject::connect(mKinect, SIGNAL(receiveColorImage(Robot::ImgData)), this, SLOT(receiveColorImage2(Robot::ImgData)));
-		//QObject::connect(mKinect, SIGNAL(receiveDepthImage(Robot::DepthImgData)), this, SLOT(receiveDepthImage2(Robot::DepthImgData)));
 	}
 
-	
+	connect(mAprilTag->mCamera, &KratosCamera::CameraFrame, mSensorLog, &SensorLog::ReceiveAprilTagImage);
 
-	mElapsedTimer.start();
-
-	/*
 	auto timer2 = new QTimer(this);
-	timer2->start(1000);
-	QObject::connect(timer2, &QTimer::timeout, [this](){
-		//this->m_kratos->Update(static_cast<double>(this->mElapsedTimer.elapsed()) / 1000.0);
+	timer2->start(1000/3); //time specified in ms
+	QObject::connect(timer, &QTimer::timeout, this, [this](){
+		this->mAprilTag->readCamera();
 	});
-	*/
+
+	// connect(mAprilTag, &KratosAprilTag::tagsDetected, this, [](QList<AprilTagDetectionItem> detections){
+	// 	std::cout << "Found " << detections.size() << " april tag entries\n";
+	// 	for(auto& tag : detections)
+	// 	{
+	// 		auto euler = tag.rotation.eulerAngles(2,0,2) * 180.0 / M_PI;
+	// 		std::cout << "\tTag id " << tag.detection.id << "\n"; 
+	// 		std::cout << "\t\tT " << tag.translation.transpose() << "\n"; 
+	// 		std::cout << "\t\tR " << euler.transpose() << "\n"; 
+	// 	}
+	// });
+
 }
 
-void RealRobot::SetLeftWheelPower(double power) 
-{
-	mLeftVelocity = power / 100.0;
-}
 
-void RealRobot::SetRightWheelPower(double power)
-{
-	mRightVelocity = power / 100.0;
-}
-
-
-/*
-void RealRobot::receiveColorImage2(Robot::ImgData mat)
-{
-	//std::cout << "Received color image2\t" << QThread::currentThreadId() << "\n";
-}
-
-void RealRobot::receiveDepthImage2(Robot::DepthImgData image)
-{
-	std::cout << "Sending frame out!\n";
-	//std::cout << "Received depth image2\t" << QThread::currentThreadId() << "\n";	
-
-	if(m_kratos != nullptr)
-		m_kratos->ReceiveDepth(image);
-}
-
-*/
 
 
 void RealRobot::updateForces()
 {
-	mTeensy->SetVelocities(mLeftVelocity, mRightVelocity);
+	mTeensy->SetVelocities(GetLeftVelocity(), GetRightVelocity());
 }
 
