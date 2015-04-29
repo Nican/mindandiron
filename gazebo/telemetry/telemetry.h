@@ -75,10 +75,51 @@ public:
 	virtual void paint(QPainter * painter, const QStyleOptionGraphicsItem * option, QWidget * widget = 0) override;
 };
 
+
+class LabelWithPlot : public QLabel
+{
+	Q_OBJECT
+public:
+	LabelWithPlot(QWidget *parent = 0);
+
+	void addValue(double value){};
+
+protected:
+	virtual void paintEvent(QPaintEvent *) override;
+};
+
+
+class ValuesGrid : public QWidget
+{
+	Q_OBJECT
+public:
+	ValuesGrid(QWidget *parent = 0);
+
+	//Teensy1
+	QLabel* mLeftWheel;
+	QLabel* mRightWheel;
+	QLabel* mLeftVel;
+	QLabel* mRightVel;
+	QLabel* mAccelX;
+	QLabel* mAccelY;
+	QLabel* mAceelZ;
+	QLabel* mAUTO;
+
+	//Teensy2
+	QLabel* mServo;
+	QLabel* mCurrent;
+	QLabel* mVoltage;
+	QLabel* mPaused;
+
+	void ReceiveTeensyData(const Robot::TeenseyStatus &data);
+	void ReceiveTeensy2Data(const Robot::Teensy2Status &data);
+};
+
+
+
 class MapOverview : public QWidget
 {
 	Q_OBJECT
-
 public:
 	MapOverview(QWidget *parent = 0);
 
@@ -96,6 +137,8 @@ public:
 	QVector<QGraphicsLineItem*> mLines;
 
 	QGraphicsEllipseItem* mDecawaveCircle;
+
+	ValuesGrid* mValueGrid;
 
 	//void ReadLocation(const Robot::LocationDataPoint &historyPoint);
 	void DrawExploreChild(TrajectoryTreeNode* parent, TrajectoryTreeNode* child, int &id);

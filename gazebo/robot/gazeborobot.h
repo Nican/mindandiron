@@ -57,6 +57,24 @@ protected slots:
 	void fireUpdate();
 };
 
+class GazeboTeensey2 : public Teensy2
+{
+	Q_OBJECT
+
+public:
+	QTimer* mUpdateTimer;
+	RobotGazeboTickData mLastTick;
+	int mServoAngle;
+
+	GazeboTeensey2(QObject* parent = 0);
+
+	void receiveUpdate(const RobotGazeboTickData &data);
+	virtual void sendRaw(int intAngle) override;
+
+protected slots:
+	void fireUpdate();
+};
+
 
 
 class GazeboKratos : public Kratos2
@@ -70,6 +88,7 @@ public:
 	GazeboTeensey* mTeensey;
 	GazeboKinect* mKinect;
 	GazeboDevawave* mDecaWave;
+	GazeboTeensey2* mTeensy2;
 
 	QTimer* mSendControlTimer;
 
@@ -83,6 +102,11 @@ public:
 	virtual Teensy* GetTeensy() override
 	{
 		return mTeensey;
+	}
+
+	virtual Teensy2* GetTeensy2() override
+	{
+		return mTeensy2;
 	}
 
 	virtual Decawave* GetDecawave() override

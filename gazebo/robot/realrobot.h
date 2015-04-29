@@ -110,6 +110,11 @@ public:
 		return mDecawave;
 	}
 
+	virtual Teensy2* GetTeensy2() override
+	{
+		return mTeensy2;
+	}
+
 
 public slots:
 	void updateForces();

@@ -62,6 +62,12 @@ mDb(QSqlDatabase::addDatabase("QSQLITE"))
 		"leftWheel INTEGER, rightWheel INTEGER, accelX REAL, accelY REAL, accelZ REAL, autoFlag INTEGER"\
 		")");
 
+	mDb.exec("CREATE TABLE IF NOT EXISTS teensy2Log(" \
+		"id INTEGER PRIMARY KEY ASC,"\
+		"timestamp INTEGER,"\
+		"servoAngle REAL, current REAL, voltage REAL, paused INTEGER"\
+		")");
+
 	mDb.exec("CREATE TABLE IF NOT EXISTS pointCloudLog(" \
 		"id INTEGER PRIMARY KEY ASC,"\
 		"timestamp INTEGER,"\
@@ -160,6 +166,28 @@ void SensorLog::teensyStatus(TeenseyStatus status)
 	msg += QByteArray(sbuf.data(), sbuf.size());
 	mSocket->sendMessage(msg);
 }
+
+void SensorLog::teensy2Status(Teensy2Status status)
+{
+	QSqlQuery query(mDb);
+	query.prepare("INSERT INTO teensy2Log(timestamp, servoAngle, current, voltage, paused) VALUES "\
+		"(:timestamp, :servo, :current, :voltage, :paused)");
+	query.bindValue(":timestamp", QDateTime::currentDateTime().toMSecsSinceEpoch() , QSql::In);
+	query.bindValue(":servo", status.servoAngle, QSql::In);
+	query.bindValue(":current", status.current, QSql::In);
+	query.bindValue(":voltage", status.voltage, QSql::In);
+	query.bindValue(":paused", status.isPaused, QSql::In);
+	query.exec();
+
+	msgpack::sbuffer sbuf;
+	msgpack::pack(sbuf, status);
+
+	QList<QByteArray> msg;
+	msg += QByteArray("\x08");
+	msg += QByteArray(sbuf.data(), sbuf.size());
+	mSocket->sendMessage(msg);
+}
+
 
 void SensorLog::receiveSegmentedPointcloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr pointCloud)
 {
@@ -319,6 +347,7 @@ void Kratos2::Initialize()
 	}
 
 	connect(GetTeensy(), &Teensy::statusUpdate, mSensorLog, &SensorLog::teensyStatus);
+	connect(GetTeensy2(), &Teensy2::statusUpdate, mSensorLog, &SensorLog::teensy2Status);
 	//connect(GetTeensy(), &Teensy::statusUpdate, mWheelPID, &WheelPID::teensyStatus);
 	connect(GetTeensy(), &Teensy::statusUpdate, this, &Kratos2::TeensyStatus);
 	

@@ -26,14 +26,6 @@ struct AprilTagDetectionItem
 	AprilTags::TagDetection detection;
 };
 
-struct Teensy2Status
-{
-	double servoAngle;
-	double current;
-	double voltage;
-	int isPaused;
-};
-
 class Decawave : public QObject
 {
 	Q_OBJECT
@@ -81,6 +73,27 @@ signals:
     void statusUpdate(TeenseyStatus);
 };
 
+class Teensy2 : public QObject
+{
+	Q_OBJECT
+public:
+
+	Teensy2(QObject* parent) : QObject(parent)
+	{
+	}
+
+	virtual void setAprilAngle(double angle)
+	{
+		sendRaw(static_cast<int>(angle * 180.0 / M_PI));
+	}
+
+	virtual void sendRaw(int intAngle) = 0;
+	
+
+signals:
+    void statusUpdate(Teensy2Status);
+};
+
 
 class SensorLog : public QObject
 {
@@ -99,6 +112,7 @@ public slots:
 	void receiveDepthImage(Robot::DepthImgData mat);
 	void receiveKinectImage(Robot::ImgData mat);
 	void teensyStatus(TeenseyStatus status);
+	void teensy2Status(Teensy2Status status);
 	void decawaveUpdate(double distance);
 	void SendObstacles(std::vector<Eigen::Vector2d>);
 	void WheelVelocityUpdate(double left, double right);
@@ -135,6 +149,7 @@ public:
 
 	virtual Kinect* GetKinect() = 0;
 	virtual Teensy* GetTeensy() = 0;
+	virtual Teensy2* GetTeensy2() = 0;
 	virtual Decawave* GetDecawave() = 0;
 
 	//Set the velocities in m/s

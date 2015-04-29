@@ -20,7 +20,7 @@ protected slots:
 	void receiveError(QSerialPort::SerialPortError error);
 };
 
-class KratosTeensy2 : public QObject
+class KratosTeensy2 : public Teensy2
 {
 	Q_OBJECT
 	QSerialPort* mSerial;
@@ -29,8 +29,7 @@ public:
 	Teensy2Status lastStatus;
 
 	KratosTeensy2(QObject* parent);
-	void setAprilAngle(double angle);
-	void sendRaw(int intAngle);
+	virtual void sendRaw(int intAngle) override;
 
 protected slots:
 	void receiveSerialData();

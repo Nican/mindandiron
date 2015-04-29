@@ -7,6 +7,8 @@
 #include <QGraphicsRectItem>
 #include <QGraphicsItemGroup>
 
+#include <QFormLayout>
+#include <QGroupBox>
 
 WheelUsageRect::WheelUsageRect(qreal x, qreal y, qreal w, qreal h, QGraphicsItem *parent ) : 
     QGraphicsRectItem(x, y, w, h, parent), mProgress(0.0)
@@ -27,9 +29,79 @@ void WheelUsageRect::paint(QPainter * painter, const QStyleOptionGraphicsItem * 
 }
 
 
+
+
+LabelWithPlot::LabelWithPlot(QWidget *parent)
+    : QLabel("N/A", parent)
+{
+}
+
+
+void LabelWithPlot::paintEvent(QPaintEvent * event)
+{
+    //http://stackoverflow.com/questions/7942996/qt-drawrect-in-background
+    QLabel::paintEvent(event);
+}
+
+
+ValuesGrid::ValuesGrid(QWidget *parent) : QWidget(parent)
+{
+    QGroupBox *groupBox = new QGroupBox(tr("Teensy 1"));
+    QFormLayout *formLayout = new QFormLayout;
+    formLayout->addRow(tr("&Left:"), mLeftWheel = new QLabel("NA"));
+    formLayout->addRow(tr("&Right:"), mRightWheel = new QLabel("NA"));
+    formLayout->addRow(tr("&LeftVel:"), mLeftVel = new QLabel("NA"));
+    formLayout->addRow(tr("&RightVel:"), mRightVel = new QLabel("NA"));
+    formLayout->addRow(tr("&AceelX:"), mAccelX = new QLabel("NA"));
+    formLayout->addRow(tr("&AceelY:"), mAccelY = new QLabel("NA"));
+    formLayout->addRow(tr("&AceelZ:"), mAceelZ = new QLabel("NA"));
+    formLayout->addRow(tr("&AUTO:"), mAUTO = new QLabel("NA"));
+    groupBox->setLayout(formLayout);
+
+    QGroupBox *groupBox2 = new QGroupBox(tr("Teensy 2"));
+    QFormLayout *formLayout2 = new QFormLayout;
+    formLayout2->addRow(tr("&Servo:"), mServo = new QLabel("NA"));
+    formLayout2->addRow(tr("&Current:"), mCurrent = new QLabel("NA"));
+    formLayout2->addRow(tr("&Voltage:"), mVoltage = new QLabel("NA"));
+    formLayout2->addRow(tr("&Paused:"), mPaused = new QLabel("NA"));
+    groupBox2->setLayout(formLayout2);
+
+    QVBoxLayout *vbox = new QVBoxLayout;
+    vbox->addWidget(groupBox);
+    vbox->addWidget(groupBox2);
+
+    setLayout(vbox);
+
+    setMaximumWidth(200);
+}
+
+void ValuesGrid::ReceiveTeensyData(const Robot::TeenseyStatus &data)
+{
+    mLeftWheel->setText(QString::number(data.leftPosition));
+    mRightWheel->setText(QString::number(data.rightPosition));
+    mLeftVel->setText(QString::number(data.leftVelocity));
+    mRightVel->setText(QString::number(data.rightVelocity));
+    mAccelX->setText(QString::number(data.acceleration.x()));
+    mAccelY->setText(QString::number(data.acceleration.y()));
+    mAceelZ->setText(QString::number(data.acceleration.z()));
+    mAUTO->setText(QString::number(data.autoFlag));
+}
+
+void ValuesGrid::ReceiveTeensy2Data(const Robot::Teensy2Status &data)
+{
+    mServo->setText(QString::number(data.servoAngle));
+    mCurrent->setText(QString::number(data.current));
+    mVoltage->setText(QString::number(data.voltage));
+    mPaused->setText(QString::number(data.isPaused));
+}
+
+
 MapOverview::MapOverview(QWidget *parent)
     : QWidget(parent), view(&scene), mCore(nullptr)
 {
+
+
+
 
     //SETUP THE GRID
     qreal windowSize = 10.0;
@@ -65,16 +137,11 @@ MapOverview::MapOverview(QWidget *parent)
 
     mDecawaveCircle = scene.addEllipse(0, 0, 0, 0, QPen(Qt::black, 0));
 
-    /*
-    TrajectoryPlanner mPlanner({0,0}, std::polar(M_PI/2.0, 1.0), {1.0,6.0});
-    mPlanner.run(2000);
-
-    int id = 0;
-    DrawExploreChild(mPlanner.rootNode.get(), mPlanner.rootNode->childs.front().get(), id);
-    */
+    mValueGrid = new ValuesGrid(this);
 
     QGridLayout *layout = new QGridLayout;
-    layout->addWidget(&view, 0, 0);
+    layout->addWidget(&view, 0, 0, 1, 4);
+    layout->addWidget(mValueGrid, 0, 5, 1, 1);
     setLayout(layout);
 
 }
@@ -117,31 +184,6 @@ void MapOverview::ReceiveObstacleMap(std::vector<Eigen::Vector2d> points)
     scene.addItem(mCore);
 }
 
-/*
-void MapOverview::ReadLocation(const Robot::LocationDataPoint &historyPoint)
-{
-    QPointF lastPos = mRobotInstance->pos();
-    QPointF nextPos(historyPoint.mPosition.x(), historyPoint.mPosition.y());
-
-    mRobotInstance->setRotation(historyPoint.mRotation * 180.0 / M_PI);
-
-    if(std::abs((lastPos - nextPos).manhattanLength()) > 0.01)
-    {
-        scene.addLine(nextPos.x(), nextPos.y(), lastPos.x(), lastPos.y(), QPen(Qt::red, 0));
-
-        //Update our robot position
-        mRobotInstance->setPos(nextPos);
-    }
-
-    //Show the positions
-    QString statusStr;
-    std::ostringstream stringStream;
-    stringStream << historyPoint.mPosition.head<2>().transpose();
-    QTextStream(&statusStr) << "Position = " << stringStream.str().c_str() << "\n" << "rotation = " << historyPoint.mRotation;
-    //mStatusText->setText(statusStr);
-}
-*/
-
 void MapOverview::DrawExploreChild(TrajectoryTreeNode* parent, TrajectoryTreeNode* node, int &id)
 {
     QColor color;
@@ -163,27 +205,6 @@ void MapOverview::DrawExploreChild(TrajectoryTreeNode* parent, TrajectoryTreeNod
 
 void MapOverview::ReceivePath(std::vector<Eigen::Vector2d> points)
 {
-    /*
-    for(auto &line : mLines)
-    {
-        delete line;
-    }
-
-    mLines.clear();
-
-    for(std::size_t i = 1; i < points.size(); i++)
-    {
-        QColor color;
-        color.setHsvF(static_cast<double>(i/points.size()), 1.0, 1.0);
-
-        auto p1 = points[i-1];
-        auto p2 = points[i];
-
-        auto line = scene.addLine(p1.x(), p1.y(), p2.x(), p2.y(), QPen(color, 0));
-        mLines.push_back(line);
-    }
-    */
-
     if(points.size() == 0){
         mPlannedTrajectory->setPath(QPainterPath());
         return;

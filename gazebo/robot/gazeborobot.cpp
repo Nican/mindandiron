@@ -68,10 +68,42 @@ void GazeboTeensey::fireUpdate()
 	status.acceleration = mLastTick.linearAcceleration;
 	status.autoFlag = false;
 
-	//std::cout << "Emmiting status update " << mLastTick.linearAcceleration << "\n";
+	emit statusUpdate(status);
+}
+
+GazeboTeensey2::GazeboTeensey2(QObject* parent) 
+	: Teensy2(parent), mServoAngle(0)
+{
+	mUpdateTimer = new QTimer(this);
+	mUpdateTimer->setSingleShot(true);
+
+	connect(mUpdateTimer, SIGNAL(timeout()), this, SLOT(fireUpdate()));
+}
+
+void GazeboTeensey2::receiveUpdate(const RobotGazeboTickData &data)
+{
+	mLastTick = data;
+
+	if(!mUpdateTimer->isActive())
+		mUpdateTimer->start(100);
+}
+
+void GazeboTeensey2::fireUpdate()
+{
+	Robot::Teensy2Status status;
+	status.servoAngle = mServoAngle;
+	status.current = 10.0;
+	status.voltage = 10.0;
+	status.isPaused = false;
 
 	emit statusUpdate(status);
 }
+
+void GazeboTeensey2::sendRaw(int intAngle)
+{
+	mServoAngle = intAngle;
+}
+
 
 GazeboKratos::GazeboKratos(QObject* parent) 
 	: Kratos2(parent)
@@ -88,6 +120,7 @@ GazeboKratos::GazeboKratos(QObject* parent)
 	mTeensey = new GazeboTeensey(this);
 	mKinect = new GazeboKinect(this);
 	mDecaWave = new GazeboDevawave(this);
+	mTeensy2 = new GazeboTeensey2(this);
 
 	mSendControlTimer = new QTimer(this);
 	mSendControlTimer->start(1000/30);
@@ -140,6 +173,7 @@ void GazeboKratos::messageReceived(const QList<QByteArray>& messages)
 	    	result.get().convert(&tickData);
 
 	    	mTeensey->receiveUpdate(tickData);
+	    	mTeensy2->receiveUpdate(tickData);
 	    	mDecaWave->receiveUpdate(tickData);
 	    }
 	    else if(id == 1)

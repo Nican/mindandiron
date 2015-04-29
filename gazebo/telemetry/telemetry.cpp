@@ -10,6 +10,9 @@
 
 using namespace Robot;
 
+
+
+
 DepthViewerTab::DepthViewerTab(QWidget *parent)
 : QWidget(parent), viewer(new pcl::visualization::PCLVisualizer ("viewer", false))
 {
@@ -192,6 +195,7 @@ void MainWindow::messageReceived(const QList<QByteArray>& messages)
 
         result.get().convert(&teensy);
         mWheelOdometry->ReceiveData(teensy);
+        mGridView->mValueGrid->ReceiveTeensyData(teensy);
     }
 
     if(id == '\x03')
@@ -232,7 +236,7 @@ void MainWindow::messageReceived(const QList<QByteArray>& messages)
         mGridView->ReceiveControlStatus(vels);
     }
 
-     if(id == '\x07')
+    if(id == '\x07')
     {
         std::vector<Eigen::Vector2d> points;
 
@@ -240,6 +244,17 @@ void MainWindow::messageReceived(const QList<QByteArray>& messages)
         msgpack::unpack(result, messages[1].data(), messages[1].size());
         result.get().convert(&points);
         mGridView->ReceivePath(points);
+    }
+
+    if(id == '\x08')
+    {
+        msgpack::unpacked result;
+        msgpack::unpack(result, messages[1].data(), messages[1].size());
+
+        Teensy2Status teensy;
+
+        result.get().convert(&teensy);
+        mGridView->mValueGrid->ReceiveTeensy2Data(teensy);
     }
 
 }

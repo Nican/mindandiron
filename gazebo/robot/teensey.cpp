@@ -6,14 +6,14 @@ using namespace Robot;
 
 
 /////////////////////////////
-//// KratosInfoTeensy
+//// KratosTeensy2
 /////////////////////////////
-KratosTeensy2::KratosTeensy2(QObject* parent) : QObject(parent)
+KratosTeensy2::KratosTeensy2(QObject* parent) : Teensy2(parent)
 {
 
 	mSerial = new QSerialPort("/dev/serial/by-id/usb-Teensyduino_USB_Serial_765570-if00", this);
 
-	QObject::connect(mSerial, &QSerialPort::readyRead, this, &KratosTeensy2::receiveSerialData);
+	connect(mSerial, &QSerialPort::readyRead, this, &KratosTeensy2::receiveSerialData);
 	connect(mSerial, SIGNAL(error(QSerialPort::SerialPortError)), this, SLOT(receiveError(QSerialPort::SerialPortError)));
 
 	if(!mSerial->open(QIODevice::ReadWrite))
@@ -53,7 +53,7 @@ void KratosTeensy2::receiveSerialData()
 			status.isPaused = parts[7].toInt();
 
 			lastStatus = status;
-			//emit statusUpdate(status);
+			emit statusUpdate(status);
 		}
 	}
 	//mSerial->clear();
@@ -64,17 +64,6 @@ void KratosTeensy2::sendRaw(int intAngle)
 	QString sendString;
 	sendString.sprintf("\t%d\tEND", intAngle);
 	mSerial->write(sendString.toLocal8Bit());
-}
-
-void KratosTeensy2::setAprilAngle(double angle)
-{
-	int intAngle = static_cast<int>(angle * 180.0 / M_PI);
-
-	QString sendString;
-	sendString.sprintf("\t%d\tEND", intAngle);
-	mSerial->write(sendString.toLocal8Bit());
-
-	//std::cout << "Setting camera angle: '" << sendString.toStdString() << "'\n";
 }
 
 /////////////////////////////
