@@ -15,6 +15,7 @@ const int camServoID = 253;
 
 int camServoSetpoint = 0;
 int ledState = LOW;
+volatile int ledCounter = 0;
 
 
 void setup() {
@@ -31,7 +32,7 @@ void setup() {
     delay(2000);
 
     // This interrupt is going too fast, even when set to 5000000
-    Timer1.initialize(1000000);  // Timer period in microseconds (max 8.3s)
+    Timer1.initialize(5000000);  // Timer period in microseconds (max 8.3s)
     Timer1.attachInterrupt(handleLights);
     pinMode(LIGHT_OUT_PIN, OUTPUT);
 }
@@ -56,10 +57,13 @@ void loop() {
 // Blinks the LED when paused, leaves it solidly on while running
 // Sweeps the cam servo when a sweep direction is set.
 void handleLights(void) {
-    if (ledState == LOW) {
-        ledState = HIGH;
-    } else if (getPaused()) {
-        ledState = LOW;
+    if (ledCounter++ >= 2) {
+        if (ledState == LOW) {
+            ledState = HIGH;
+        } else if (getPaused()) {
+            ledState = LOW;
+        }
+        digitalWrite(LIGHT_OUT_PIN, ledState);
+        ledCounter = 0;
     }
-    digitalWrite(LIGHT_OUT_PIN, ledState);
 }

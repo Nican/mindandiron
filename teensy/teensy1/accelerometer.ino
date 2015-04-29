@@ -3,9 +3,9 @@
 
 #include <Arduino.h>
 
-#define accelerometerXPin A3
-#define accelerometerYPin A2
-#define accelerometerZPin A1
+#define accelerometerXPin A2
+#define accelerometerYPin A1
+#define accelerometerZPin A0
 
 int accelerometerAxes[3] = {0, 0, 0};  // Stores {x, y, z} accelerometer data
 
