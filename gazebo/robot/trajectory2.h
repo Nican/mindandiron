@@ -7,6 +7,7 @@
 #include "../odometry.h"
 #include "../pointcloud.h"
 #include "../msgpack.h"
+#include "../robot.h"
 
 namespace Robot
 { 
@@ -15,6 +16,7 @@ class Kratos2;
 class TrajectoryTreeNode2;
 class TrajectoryPlanner2;
 class TrajectorySearch;
+class SegmentedPointCloud;
 
 typedef std::unique_ptr<TrajectoryTreeNode2> TrajectoryTreeNode2Ptr;
 	
@@ -58,7 +60,7 @@ public:
 
 	bool foundSolution;
 
-	TrajectorySearch(const std::vector<Eigen::Vector2d> &obstacleList, Eigen::Vector2d goal, QObject* parent = nullptr);
+	TrajectorySearch(const std::vector<Eigen::Vector2d> &obstacleList, Eigen::Vector2d current, double currentAngle, Eigen::Vector2d goal, QObject* parent = nullptr);
 
 	bool TestPosition(Eigen::Vector2d pos, double rotation);
 	void AddObstacle(float x, float y);
@@ -67,30 +69,32 @@ public:
 	void Iterate();
 };
 
-class ObstacleMapItem
+
+class ObstacleMap
 {
 public:
 	QDateTime mCreatedTime;
 	std::vector<Eigen::Vector2d> mObstacleList;
 };
 
+
 class TrajectoryPlanner2 : public QObject
 {
 	Q_OBJECT
 
-	std::size_t GetOldestObstacle();
+	//std::size_t GetOldestObstacle();
 
 public:
 	Kratos2* mRobot;
-	std::vector<Eigen::Vector2d> mObstacleList;
-	std::array<ObstacleMapItem, 30> mObstacleHistory;
+	ObstacleMap mObstacleMap;
+	//std::array<ObstacleMapItem, 30> mObstacleHistory;
 	
 	TrajectoryPlanner2(Kratos2* parent);
 
-	void UpdateObstacles(pcl::PointCloud<pcl::PointXYZRGB>::Ptr pointCloud);
+	void UpdateObstacles(SegmentedPointCloud pointCloud);
 
 signals:
-	void ObstacleMapUpdate(std::vector<Eigen::Vector2d>);
+	void ObstacleMapUpdate(ObstacleMap);
 
 };
 

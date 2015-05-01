@@ -146,6 +146,14 @@ MapOverview::MapOverview(QWidget *parent)
 
 }
 
+void MapOverview::SetRobot(Eigen::Vector2d pos, double angle)
+{
+    //std::cout << "Set pos" << pos.tran << "("<< angle << ")\n";
+ 
+    mRobotInstance->setPos(pos.x(), pos.y());
+    mRobotInstance->setRotation(angle * 180 / M_PI);
+}
+
 void MapOverview::ReceiveDecawaveReading(double distance)
 {
     mDecawaveCircle->setRect(-distance, -distance, distance*2, distance*2);
@@ -178,8 +186,10 @@ void MapOverview::ReceiveObstacleMap(std::vector<Eigen::Vector2d> points)
         id++;
     }
 
-    mCore->setPos(mRobotInstance->pos());
-    mCore->setRotation(mRobotInstance->rotation());
+    //std::cout << "Receiving obstacle list with " << id << " items.\n";
+
+    //mCore->setPos(mRobotInstance->pos());
+    //mCore->setRotation(mRobotInstance->rotation());
     
     scene.addItem(mCore);
 }
@@ -226,7 +236,7 @@ void MapOverview::ReceivePath(std::vector<Eigen::Vector2d> points)
     }
 
     mPlannedTrajectory->setPath(path);
-    mPlannedTrajectory->setPos(mRobotInstance->pos());
-    mPlannedTrajectory->setRotation(mRobotInstance->rotation());
+    //mPlannedTrajectory->setPos(mRobotInstance->pos());
+    //mPlannedTrajectory->setRotation(mRobotInstance->rotation());
 
 }

@@ -11,7 +11,7 @@
 using namespace Robot;
 using namespace nzmqt;
 
-SensorLog::SensorLog(QObject* parent, nzmqt::ZMQContext* context) : 
+SensorLog::SensorLog(Kratos2* parent, nzmqt::ZMQContext* context) : 
 QObject(parent),
 mDb(QSqlDatabase::addDatabase("QSQLITE"))
 {
@@ -28,7 +28,7 @@ mDb(QSqlDatabase::addDatabase("QSQLITE"))
 	QString dataFile = date.toString("yyyy_MM_dd_hh_mm_ss");
 
 	mDb.setHostName("localhost");
-	mDb.setDatabaseName(dataFolder.absolutePath() + "/" + dataFile + ".db");
+	mDb.setDatabaseName(dataFolder.absolutePath() + "/" + parent->Name() + "_" + dataFile + ".db");
 
 	if (!mDb.open())
 	{
@@ -70,7 +70,7 @@ mDb(QSqlDatabase::addDatabase("QSQLITE"))
 
 	mDb.exec("CREATE TABLE IF NOT EXISTS pointCloudLog(" \
 		"id INTEGER PRIMARY KEY ASC,"\
-		"timestamp INTEGER,"\
+		"timestamp INTEGER, imageTime INTEGER,"\
 		"data COLLATE BINARY"\
 		")");
 
@@ -109,8 +109,6 @@ mDb(QSqlDatabase::addDatabase("QSQLITE"))
 
 void SensorLog::receiveDepthImage(DepthImgData mat)
 {
-	std::cout << "Received dpeth data\n";
-
 	msgpack::sbuffer sbuf;
 	msgpack::pack(sbuf, mat);
 
@@ -189,16 +187,17 @@ void SensorLog::teensy2Status(Teensy2Status status)
 }
 
 
-void SensorLog::receiveSegmentedPointcloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr pointCloud)
+void SensorLog::receiveSegmentedPointcloud(SegmentedPointCloud pointCloud)
 {
 	QByteArray data(
-		reinterpret_cast<char*>(pointCloud->points.data()), 
-		pointCloud->points.size() * sizeof(pcl::PointXYZRGB)
+		reinterpret_cast<char*>(pointCloud.mPointCloud->points.data()), 
+		pointCloud.mPointCloud->points.size() * sizeof(pcl::PointXYZRGB)
 		);
 
 	QSqlQuery query(mDb);
 	query.prepare("INSERT INTO pointCloudLog(timestamp, data) VALUES(:timestamp, :data)");
 	query.bindValue(":timestamp", QDateTime::currentDateTime().toMSecsSinceEpoch() , QSql::In);
+	query.bindValue(":imageTime", pointCloud.mTimestamp.toMSecsSinceEpoch() , QSql::In);
 	query.bindValue(":data", data, QSql::In | QSql::Binary);
 	query.exec();
 
@@ -230,6 +229,19 @@ void SensorLog::SendObstacles(std::vector<Eigen::Vector2d> points)
 	QList<QByteArray> msg;
 	msg += QByteArray("\x05");
 	msg += QByteArray(sbuf.data(), sbuf.size());
+	mSocket->sendMessage(msg);
+}
+
+void SensorLog::SetRobot(Eigen::Vector2d pos, double ang)
+{
+	std::vector<double> arrVals = {pos.x(), pos.y(), ang};
+
+	msgpack::sbuffer sbuf2;
+	msgpack::pack(sbuf2, arrVals);
+
+	QList<QByteArray> msg;
+	msg += QByteArray("\x09");
+	msg += QByteArray(sbuf2.data(), sbuf2.size());
 	mSocket->sendMessage(msg);
 }
 
@@ -282,6 +294,11 @@ void SensorLog::ReceiveAprilTagImage(QImage image)
 	query.bindValue(":timestamp", QDateTime::currentDateTime().toMSecsSinceEpoch() , QSql::In);
 	query.bindValue(":data", buffer, QSql::In | QSql::Binary);
 	query.exec();
+
+	QList<QByteArray> msg;
+	msg += QByteArray("\x10");
+	msg += QByteArray(buffer.data(), buffer.size());
+	mSocket->sendMessage(msg);
 }
 
 void SensorLog::ReceiveAprilTags(QList<AprilTagDetectionItem> tags)
@@ -360,7 +377,7 @@ void Kratos2::Initialize()
 
 	
 	connect(&mFutureWatcher, SIGNAL(finished()), this, SLOT(FinishedPointCloud()));
-	connect(mPlanner, SIGNAL(ObstacleMapUpdate(std::vector<Eigen::Vector2d>)), mSensorLog, SLOT(SendObstacles(std::vector<Eigen::Vector2d>)));
+	//connect(mPlanner, SIGNAL(ObstacleMapUpdate(std::vector<Eigen::Vector2d>)), mSensorLog, SLOT(SendObstacles(std::vector<Eigen::Vector2d>)));
 	connect(this, &Kratos2::WheelVelocityUpdate, mSensorLog, &SensorLog::WheelVelocityUpdate);
 	//connect(mWheelPID, &WheelPID::forceUpdated, this, &Kratos2::updateForces);
 
@@ -404,7 +421,9 @@ void Kratos2::ProccessPointCloud(DepthImgData mat)
 		return;
 	}
 
-	QFuture<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> future = QtConcurrent::run([mat]() -> pcl::PointCloud<pcl::PointXYZRGB>::Ptr{
+	QDateTime currentTime = QDateTime::currentDateTime();
+
+	QFuture<SegmentedPointCloud> future = QtConcurrent::run([mat, currentTime](){
 
 		auto imgCloud = boost::make_shared<pcl::PointCloud<pcl::PointXYZRGB>>();
 		//imgCloud->sensor_origin_ = Eigen::Vector4f(lastPointPos.x(), lastPointPos.y(), lastPointPos.z(), 0.0);
@@ -413,7 +432,11 @@ void Kratos2::ProccessPointCloud(DepthImgData mat)
 		UpdatePointCloud(mat, *imgCloud);
 
 		RegionGrowingSegmenter growingRegion;
-		return growingRegion.AsyncronousUpdate(imgCloud);
+		SegmentedPointCloud segmented;
+		segmented.mPointCloud = growingRegion.AsyncronousUpdate(imgCloud);
+		segmented.mTimestamp = currentTime;
+
+		return segmented;
 	});
 
 	mFutureWatcher.setFuture(future);
@@ -435,11 +458,12 @@ void Kratos2::FinishedPointCloud()
 	mPlanner->UpdateObstacles(pointCloud);
 }
 
-Odometry Kratos2::GetOdometryTraveledSince(QDateTime time)
+Odometry Kratos2::GetOdometryTraveledSince(QDateTime startTime, QDateTime endTime)
 {
 	QSqlQuery query(mSensorLog->mDb);
-	query.prepare("SELECT leftWheel, rightWheel FROM teensyLog WHERE timestamp > :startTime");
-	query.bindValue(":startTime", time.toMSecsSinceEpoch());
+	query.prepare("SELECT leftWheel, rightWheel FROM teensyLog WHERE timestamp > :startTime AND timestamp < :endTime");
+	query.bindValue(":startTime", startTime.toMSecsSinceEpoch());
+	query.bindValue(":endTime", endTime.toMSecsSinceEpoch());
 
 	if(!query.exec())
 		std::cout << "error SQL= " <<  query.lastError().text().toStdString() << std::endl;

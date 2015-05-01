@@ -1,7 +1,9 @@
 #pragma once
 
 #include "robot.h"
+#include "trajectory2.h"
 #include <QDateTime>
+#include <QQueue>
 
 namespace Robot
 {
@@ -64,11 +66,20 @@ signals:
 };
 
 
+class ObstacleHistory
+{
+public:
+	ObstacleMap mMap;
+	Eigen::Vector2d mPosition;
+	double mRotation;
+};
 
 class MoveTowardsGoalState : public ProgressState
 {
 	Q_OBJECT
 public:
+
+	QQueue<ObstacleHistory> mObstacleHistory;
 
 	QFutureWatcher<std::shared_ptr<TrajectorySearch>> mPathFutureWatcher;
 	std::shared_ptr<TrajectorySearch> mLastResult;
@@ -83,7 +94,7 @@ public:
 	void DriveTowards(Odometry odometry, Eigen::Vector2d goal);
 
 public slots:
-	void UpdateTrajectory(std::vector<Eigen::Vector2d>);
+	void UpdateTrajectory(ObstacleMap);
 	void TeensyStatus(TeenseyStatus status);
 	void FinishedTrajectory();
 };

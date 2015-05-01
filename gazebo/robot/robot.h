@@ -13,9 +13,17 @@
 
 namespace Robot{
 
+class Kratos2;
 class BaseState;
 class RootState;
 class TrajectoryPlanner2;
+
+class SegmentedPointCloud 
+{
+public:
+	QDateTime mTimestamp;
+	pcl::PointCloud<pcl::PointXYZRGB>::Ptr mPointCloud;
+};
 
 struct AprilTagDetectionItem
 {
@@ -24,6 +32,19 @@ struct AprilTagDetectionItem
 	Eigen::Vector3d euler;
 	 
 	AprilTags::TagDetection detection;
+};
+
+
+class AprilTagCamera : public QObject
+{
+	Q_OBJECT
+
+public:
+	AprilTagCamera(QObject* parent) : QObject(parent)
+	{
+	}
+
+	
 };
 
 class Decawave : public QObject
@@ -102,11 +123,14 @@ public:
 	QSqlDatabase mDb;
 	nzmqt::ZMQSocket* mSocket;
 
-	SensorLog(QObject* parent, nzmqt::ZMQContext* context);
+	SensorLog(Kratos2* parent, nzmqt::ZMQContext* context);
 
-	void receiveSegmentedPointcloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr pointCloud);
+	void receiveSegmentedPointcloud(SegmentedPointCloud pointCloud);
 	void forceUpdated(double leftForce, double rightForce);
 	void ReceivePath(const std::vector<Eigen::Vector2d> &points);
+
+	void SendObstacles(std::vector<Eigen::Vector2d>);
+	void SetRobot(Eigen::Vector2d pos, double ang);
 
 public slots:
 	void receiveDepthImage(Robot::DepthImgData mat);
@@ -114,7 +138,6 @@ public slots:
 	void teensyStatus(TeenseyStatus status);
 	void teensy2Status(Teensy2Status status);
 	void decawaveUpdate(double distance);
-	void SendObstacles(std::vector<Eigen::Vector2d>);
 	void WheelVelocityUpdate(double left, double right);
 	void ReceiveAprilTagImage(QImage image);
 	void ReceiveAprilTags(QList<AprilTagDetectionItem> tags);
@@ -131,7 +154,7 @@ public:
 	nzmqt::ZMQContext* mContext;
 
 	SensorLog* mSensorLog;
-	QFutureWatcher<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> mFutureWatcher;
+	QFutureWatcher<SegmentedPointCloud> mFutureWatcher;
 
 	TrajectoryPlanner2* mPlanner;
 	//WheelPID* mWheelPID;
@@ -151,6 +174,7 @@ public:
 	virtual Teensy* GetTeensy() = 0;
 	virtual Teensy2* GetTeensy2() = 0;
 	virtual Decawave* GetDecawave() = 0;
+	virtual QString Name() = 0;
 
 	//Set the velocities in m/s
 	//Upper limit at ~0.66
@@ -158,7 +182,7 @@ public:
 	double GetLeftVelocity();
 	double GetRightVelocity();
 
-	Odometry GetOdometryTraveledSince(QDateTime time);
+	Odometry GetOdometryTraveledSince(QDateTime startTime, QDateTime endTime = QDateTime::currentDateTime());
 
 public slots:
 	void ProccessPointCloud(Robot::DepthImgData mat);

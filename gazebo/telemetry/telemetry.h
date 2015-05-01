@@ -148,6 +148,7 @@ public:
 	void ReceiveObstacleMap(std::vector<Eigen::Vector2d> points);
 
 	void ReceivePath(std::vector<Eigen::Vector2d> points);
+	void SetRobot(Eigen::Vector2d pos, double angle);
 };
 
 

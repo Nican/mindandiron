@@ -21,7 +21,7 @@ bool BaseState::IsValid()
 RootState::RootState(Kratos2 *parent) : BaseState(parent), mState(nullptr)
 {
 	//MoveToNextState();
-	//SetState(new MoveTowardsGoalState(mRobot));
+	SetState(new MoveTowardsGoalState(mRobot));
 
 	//QTimer::singleShot(1000, this, SLOT(MoveToNextState));
 
@@ -98,7 +98,7 @@ void MoveTowardsGoalState::Start()
 	//mRobot->mWheelPID->Reset();
 
 	connect(mRobot->GetTeensy(), &Teensy::statusUpdate, this, &MoveTowardsGoalState::TeensyStatus);
-	connect(mRobot->mPlanner, SIGNAL(ObstacleMapUpdate(std::vector<Eigen::Vector2d>)), this, SLOT(UpdateTrajectory(std::vector<Eigen::Vector2d>)));
+	connect(mRobot->mPlanner, SIGNAL(ObstacleMapUpdate(ObstacleMap)), this, SLOT(UpdateTrajectory(ObstacleMap)));
 
 	connect(&mPathFutureWatcher, SIGNAL(finished()), this, SLOT(FinishedTrajectory()));
 }
@@ -106,7 +106,10 @@ void MoveTowardsGoalState::Start()
 void MoveTowardsGoalState::TeensyStatus(TeenseyStatus status)
 {
 	if(mLastResult == nullptr || mLastResultPoints.size() == 0)
+	{
+		mRobot->SetWheelVelocity(0.2, 0.15);
 		return;
+	}
 
 	//auto odometrySinceStart = mRobot->GetOdometryTraveledSince(mStartTime);
 	auto odometry = mRobot->GetOdometryTraveledSince(mLastResult->mCreatedTime);
@@ -123,10 +126,13 @@ void MoveTowardsGoalState::TeensyStatus(TeenseyStatus status)
 		}
 	}
 
-	auto nextTargetIndex = std::max<int>(index-3, 0);
+	auto nextTargetIndex = std::max<int>(index-5, 0);
 
 	std::cout << "Closest index: " << index << "(" << mLastResultPoints[index].transpose() << ")" 
 			  << "\t Next: " << nextTargetIndex<< "(" << mLastResultPoints[nextTargetIndex].transpose() << ")\n";
+
+	if(nextTargetIndex == 0)
+		return;
 
 	DriveTowards(odometry, mLastResultPoints[nextTargetIndex]);	
 }
@@ -156,38 +162,79 @@ void MoveTowardsGoalState::DriveTowards(Odometry odometry, Eigen::Vector2d goal)
 	}
 }
 
-void MoveTowardsGoalState::UpdateTrajectory(std::vector<Eigen::Vector2d> obstacleList)
+void MoveTowardsGoalState::UpdateTrajectory(ObstacleMap obstacleMap)
 {
 	using namespace Eigen;
+	auto odometry = mRobot->GetOdometryTraveledSince(mStartTime, obstacleMap.mCreatedTime);
+	auto odometry2 = mRobot->GetOdometryTraveledSince(mStartTime);
+
+	mRobot->mSensorLog->SetRobot(odometry2.mPosition, odometry2.mTheta);
+
+	ObstacleHistory historyItem;
+	historyItem.mMap = obstacleMap;
+	historyItem.mPosition = odometry.mPosition;
+	historyItem.mRotation = odometry.mTheta;
+
+	mObstacleHistory.enqueue(historyItem);
+
+	auto currentTime = QDateTime::currentDateTime();
+	auto validRange = currentTime.addSecs(-25);
+
+	while(mObstacleHistory.size() > 0 && mObstacleHistory.head().mMap.mCreatedTime < validRange)
+		mObstacleHistory.dequeue();
+	
 	if(mPathFutureWatcher.future().isRunning())
 	{
 		std::cout << "Trajectory is still processing. not starting a new one\n";
 		return;
 	}
 
-	auto odometry = mRobot->GetOdometryTraveledSince(mStartTime);
+	//Build obstacle map
+	std::vector<Vector2d> buildObstacleMap;
 
-	//Affine2d robotTransform;
-	//robotTransform.prerotate(Rotation2Dd(M_PI/2));
-	//robotTransform.pretranslate({5,2});
+	for(const auto& item : mObstacleHistory)
+	{
+		auto rotationTf = Rotation2Dd(item.mRotation);
+		auto tf = Translation2d(item.mPosition);
 
-	auto rot = Rotation2Dd(odometry.mTheta);
+		for(const auto pt : item.mMap.mObstacleList){
+			Eigen::Vector2d pt2(tf * rotationTf * pt);
+			//pt2.y() *= -1;
+			buildObstacleMap.push_back(pt2);
+		}
+	}
 
-	Vector2d goal(rot*mGoal - rot*odometry.mPosition);
-	//goal = Rotation2Dd(-odometry.mTheta) * goal;
+	
+	mRobot->mSensorLog->SendObstacles(buildObstacleMap);
 
-	std::cout << "Recalcualting trajectroy: \n";
-	std::cout << "\tOdometry: " << odometry << " \n";
-	std::cout << "\tNew goal: " << goal.transpose() << " \n";
+	auto future = QtConcurrent::run([this, buildObstacleMap, odometry2](){
+		std::cout << "Started search from: " << odometry2 << "\n";
 
-	auto future = QtConcurrent::run([this, obstacleList, goal]() -> std::shared_ptr<TrajectorySearch>{
-		auto planner = std::make_shared<TrajectorySearch>(obstacleList, goal);
+		std::vector<Vector2d> reducedObstacles;
+
+		for(const auto pt : buildObstacleMap){
+			bool hasNeighbor = false;
+			for(const auto pt2 : reducedObstacles){
+				if((pt - pt2).norm() < 0.1)
+				{
+					hasNeighbor = true;
+					break;
+				}
+			}
+
+			if(!hasNeighbor)
+				reducedObstacles.emplace_back(pt);
+		}
+
+		auto planner = std::make_shared<TrajectorySearch>(reducedObstacles, odometry2.mPosition, odometry2.mTheta, this->mGoal);
 		std::size_t i = 0;
 		
-		for(i = 0; i < 500 && !planner->foundSolution; i ++)
+		for(i = 0; i < 500 && !planner->foundSolution; i++)
 		{
 			planner->rootNode->explore();
 		}
+
+		std::cout << "Finished " << planner->foundSolution << " ("<< i <<")\n";
 
         return planner;
 	});

@@ -2,8 +2,8 @@
 #include "odometry.h"
 
 
-
-void Odometry::Update(double leftWheel, double rightWheel)
+//TODO: Inverting wheels to keep axis consistent - Permanent this way?
+void Odometry::Update(double rightWheel, double leftWheel)
 {
 	//http://guiott.com/Rino/dsNavCon/dsNavCon_Odo.htm
 	Eigen::Vector2d Dpos;
@@ -54,5 +54,5 @@ void Odometry::Update(double leftWheel, double rightWheel)
 }
 
 std::ostream& operator<<(std::ostream &strm, const Odometry &a) {
-  return strm << "Odometry({" << a.mPosition.transpose() << "}, " << (a.mTheta * 180.0 / M_PI) << "°)";
+ 	return strm << "Odometry({" << a.mPosition.transpose() << "}, " << (a.mTheta * 180.0 / M_PI) << "°)";
 }

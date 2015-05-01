@@ -115,6 +115,11 @@ public:
 		return mTeensy2;
 	}
 
+	virtual QString Name() override
+	{
+		return "robot";
+	}
+
 
 public slots:
 	void updateForces();

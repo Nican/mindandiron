@@ -54,7 +54,7 @@ bool TrajectoryTreeNode2::explore()
 
 		availableAngles.remove(bestAngle);
 
-		auto newPoint = mPoint + Eigen::Vector2d(std::real(bestAngle), std::imag(bestAngle)) * 0.3;
+		Eigen::Vector2d newPoint(mPoint + Eigen::Vector2d(std::real(bestAngle), std::imag(bestAngle)) * 0.3);
 		auto node = std::unique_ptr<TrajectoryTreeNode2>(new TrajectoryTreeNode2(mPlanner, newPoint, bestAngle));
 		//double x = node->mPoint.x();
 		//double y = node->mPoint.y();
@@ -100,7 +100,7 @@ inline bool TrajectoryTreeNode2::inGoal() const
 ///////////////////////////////
 //// TrajectorySearch
 ///////////////////////////////
-TrajectorySearch::TrajectorySearch(const std::vector<Eigen::Vector2d> &obstacleList, Eigen::Vector2d goal, QObject* parent) : 
+TrajectorySearch::TrajectorySearch(const std::vector<Eigen::Vector2d> &obstacleList, Eigen::Vector2d current, double currentAngle, Eigen::Vector2d goal, QObject* parent) : 
 	QObject(parent), world(b2Vec2(0.0, 0.0)), mGoal(goal), foundSolution(false)
 {
 	world.SetAllowSleeping(false);
@@ -112,7 +112,7 @@ TrajectorySearch::TrajectorySearch(const std::vector<Eigen::Vector2d> &obstacleL
 		AddObstacle(pt.x(), pt.y());
 	}
 
-	rootNode.reset(new TrajectoryTreeNode2(this, {0.0, 0.0}, rotationToCompex(0.0)));
+	rootNode.reset(new TrajectoryTreeNode2(this, current, rotationToCompex(currentAngle)));
 
 	mCreatedTime = QDateTime::currentDateTime();
 }
@@ -128,8 +128,8 @@ b2Fixture* TrajectorySearch::CreateRobot()
 	b2PolygonShape robotShape;
 	static std::vector<b2Vec2> robotPoints = GetRobotPoints<b2Vec2>();
 
-	// for(auto& pt : robotPoints)
-	// 	pt *= 1.5;
+	 for(auto& pt : robotPoints)
+	 	pt *= 1.05;
 
 	robotShape.Set(robotPoints.data(), robotPoints.size());
 
@@ -199,6 +199,7 @@ bool TrajectorySearch::GetResult(std::vector<Eigen::Vector2d> &points)
 	{
 		for(auto &node : outVector)
 		{
+			std::cout << "AW\n";
 			points.push_back(node->mPoint);
 		}
 		return true;
@@ -221,6 +222,7 @@ QObject(parent), mRobot(parent) //, mOdometry(0.69), world(b2Vec2(0.0, 0.0))
 {
 }
 
+/*
 std::size_t TrajectoryPlanner2::GetOldestObstacle()
 {
 	std::size_t oldest = 0;
@@ -236,8 +238,9 @@ std::size_t TrajectoryPlanner2::GetOldestObstacle()
 
 	return oldest;
 }
+*/
 
-void TrajectoryPlanner2::UpdateObstacles(pcl::PointCloud<pcl::PointXYZRGB>::Ptr pointCloud)
+void TrajectoryPlanner2::UpdateObstacles(SegmentedPointCloud pointCloud)
 {
 	using namespace Eigen;
 	//We want to transform the points from x=-2.5...2.5 and z=0...5 
@@ -248,7 +251,7 @@ void TrajectoryPlanner2::UpdateObstacles(pcl::PointCloud<pcl::PointXYZRGB>::Ptr 
 	//mObstacleList.clear();
 	std::vector<Eigen::Vector2d> obstacleList;
 
-	for(const auto& pt : pointCloud->points)
+	for(const auto& pt : pointCloud.mPointCloud->points)
 	{
     	//Green points are good to move through
 		if(pt.g == 255)
@@ -278,6 +281,10 @@ void TrajectoryPlanner2::UpdateObstacles(pcl::PointCloud<pcl::PointXYZRGB>::Ptr 
 		}
     }
 
+    mObstacleMap.mCreatedTime = QDateTime::currentDateTime();
+    mObstacleMap.mObstacleList = obstacleList;
+
+    /*
     auto oldest = GetOldestObstacle();
     auto currentTime = QDateTime::currentDateTime();
     auto validRange = currentTime.addSecs(-25);
@@ -304,8 +311,9 @@ void TrajectoryPlanner2::UpdateObstacles(pcl::PointCloud<pcl::PointXYZRGB>::Ptr 
 		}
 
 	}
+	*/
 
 
 
-    emit ObstacleMapUpdate(mObstacleList);
+    emit ObstacleMapUpdate(mObstacleMap);
 }

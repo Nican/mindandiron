@@ -114,6 +114,11 @@ public:
 		return mDecaWave;
 	}
 
+		virtual QString Name() override
+	{
+		return "gazebo";
+	}
+
 protected slots:
 	void fireControlUpdate();
     void messageReceived(const QList<QByteArray>& message);

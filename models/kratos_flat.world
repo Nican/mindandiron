@@ -172,7 +172,7 @@
       </model>
 
       <model name='unit_box_6'>
-        <pose>5 -8 0.5 0 0 0</pose>
+        <pose>5 -5 0.5 0 0 0</pose>
         <static>1</static>
         <link name='link'>
           <collision name='collision'>
