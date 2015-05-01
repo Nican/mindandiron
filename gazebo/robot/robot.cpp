@@ -426,9 +426,9 @@ void AprilTagCamera::finishedProcessing()
 
 		item.euler = {yaw, pitch, roll};
 			
-		//std::cout << "\tTag id " << item.detection.id << "\n"; 
-		//std::cout << "\t\tT " << item.translation.transpose() << " ("<< item.translation.norm() <<")\n"; 
-		//std::cout << "\t\tR " << (item.euler / M_PI * 180.0).transpose() << "\n"; 
+		std::cout << "\tTag id " << item.detection.id << "\n"; 
+		std::cout << "\t\tT " << item.translation.transpose() << " ("<< item.translation.norm() <<")\n"; 
+		std::cout << "\t\tR " << (item.euler / M_PI * 180.0).transpose() << "\n"; 
 
 		detectionsItems.append(item);
 	}

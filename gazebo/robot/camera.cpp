@@ -1,4 +1,6 @@
 #include "camera.h"
+#include  <thread>
+#include <chrono>
 #include <QDir>
 #include <QFile>
 
@@ -20,13 +22,11 @@ void KratosCamera::openCamera()
 
     mCapture.set(CV_CAP_PROP_FRAME_WIDTH, mWidth);
     mCapture.set(CV_CAP_PROP_FRAME_HEIGHT, mHeight);
+
 }
 
 bool KratosCamera::read(cv::Mat &cv_image)
 {
-	//while(mCapture.grab())
-	//std::cout << "What: " << mCapture.get(CV_CAP_PROP_BUFFERSIZE) << "\n";
-
 	for(int i = 0; i < 4; i++ )
 	{
 		mCapture.grab();
@@ -38,12 +38,16 @@ bool KratosCamera::read(cv::Mat &cv_image)
 	if(!result)
 		return result;	
 
+	//cv::imwrite ("april.png", cv_image);
+
 	//std::cout << "Finished\n";
 
 	cv::Mat dest;
     cvtColor(cv_image, dest, CV_BGR2RGB);
     QImage image((uchar*)dest.data, dest.cols, dest.rows, QImage::Format_RGB888);
     image.bits();
+
+    //image.save("qt.png");
 
     emit CameraFrame(image);
 
