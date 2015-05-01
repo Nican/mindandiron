@@ -130,7 +130,9 @@ namespace gazebo
     {
       std::vector<unsigned char> imgData(width * height * depth);
       assert(imgData.size() > 0);
-      memcpy( imgData.data(), image, imgData.size());
+      memcpy(imgData.data(), image, imgData.size());
+
+     //std::cout << width << "x" << height << "x" << depth << " ("<< imgData.size() <<")\n";
 
       Robot::ImgData data;
       data.width = width;

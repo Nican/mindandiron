@@ -7,6 +7,17 @@ class QTimer;
 
 namespace Robot{
 
+class GazeboAprilTag : public AprilTagCamera
+{
+	Q_OBJECT
+public:
+	bool mFrameRequested;
+
+	GazeboAprilTag(QObject* parent = 0);
+
+	virtual void RequestFrame() override;
+};
+
 class GazeboDevawave : public Decawave
 {
 	Q_OBJECT
@@ -89,6 +100,7 @@ public:
 	GazeboKinect* mKinect;
 	GazeboDevawave* mDecaWave;
 	GazeboTeensey2* mTeensy2;
+	GazeboAprilTag* mAprilTag;
 
 	QTimer* mSendControlTimer;
 
@@ -114,9 +126,14 @@ public:
 		return mDecaWave;
 	}
 
-		virtual QString Name() override
+	virtual AprilTagCamera* GetApril() override
 	{
-		return "gazebo";
+		return mAprilTag;
+	}
+
+	virtual QString Name() override
+	{
+		return QString("gazebo");
 	}
 
 protected slots:

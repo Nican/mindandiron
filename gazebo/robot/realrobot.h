@@ -22,31 +22,15 @@
 namespace Robot 
 {
 
-class KratosAprilTag : public QObject
+class KratosAprilTag : public AprilTagCamera
 {
 	Q_OBJECT
 public:
-
 	KratosCamera* mCamera;
-	std::shared_ptr<AprilTags::TagDetector> m_tagDetector;
-
-	QFutureWatcher<std::vector<AprilTags::TagDetection>> mDetectionFutureWatcher;
-
-	double mTagSize;
-	double mFx;
-	double mFy;
-	double mPx;
-	double mPy;
 
 	KratosAprilTag(QObject* parent = 0);
 
-	void readCamera();
-
-public slots:
-	void finishedProcessing();
-
-signals:
-	void tagsDetected(QList<AprilTagDetectionItem>);
+	virtual void RequestFrame() override;
 };
 
 
@@ -115,9 +99,14 @@ public:
 		return mTeensy2;
 	}
 
+	virtual AprilTagCamera* GetApril() override
+	{
+		return mAprilTag;
+	}
+
 	virtual QString Name() override
 	{
-		return "robot";
+		return QString("robot");
 	}
 
 

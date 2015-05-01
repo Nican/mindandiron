@@ -40,11 +40,28 @@ class AprilTagCamera : public QObject
 	Q_OBJECT
 
 public:
-	AprilTagCamera(QObject* parent) : QObject(parent)
-	{
-	}
+	std::shared_ptr<AprilTags::TagDetector> m_tagDetector;
+	QFutureWatcher<std::vector<AprilTags::TagDetection>> mDetectionFutureWatcher;
 
-	
+	double mTagSize;
+	double mFx;
+	double mFy;
+	double mPx;
+	double mPy;
+
+	AprilTagCamera(QObject* parent);
+
+	virtual void RequestFrame() = 0;
+
+	bool IsProcessing();
+
+public slots:
+	void ReadFrame(QImage image);
+	void finishedProcessing();
+
+signals:
+	void tagsDetected(QList<AprilTagDetectionItem>);
+	void ReceiveFrame(QImage image);
 };
 
 class Decawave : public QObject
@@ -174,6 +191,7 @@ public:
 	virtual Teensy* GetTeensy() = 0;
 	virtual Teensy2* GetTeensy2() = 0;
 	virtual Decawave* GetDecawave() = 0;
+	virtual AprilTagCamera* GetApril() = 0;
 	virtual QString Name() = 0;
 
 	//Set the velocities in m/s

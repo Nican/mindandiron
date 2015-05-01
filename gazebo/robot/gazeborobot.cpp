@@ -5,6 +5,18 @@
 
 using namespace Robot;
 
+
+GazeboAprilTag::GazeboAprilTag(QObject* parent) 
+	: AprilTagCamera(parent), mFrameRequested(false)
+{
+}
+
+void GazeboAprilTag::RequestFrame()
+{
+	mFrameRequested = true;
+}
+
+
 GazeboDevawave::GazeboDevawave(QObject* parent) 
 	: Decawave(parent)
 {
@@ -121,6 +133,7 @@ GazeboKratos::GazeboKratos(QObject* parent)
 	mKinect = new GazeboKinect(this);
 	mDecaWave = new GazeboDevawave(this);
 	mTeensy2 = new GazeboTeensey2(this);
+	mAprilTag = new GazeboAprilTag(this);
 
 	mSendControlTimer = new QTimer(this);
 	mSendControlTimer->start(1000/30);
@@ -153,56 +166,77 @@ void GazeboKratos::messageReceived(const QList<QByteArray>& messages)
 	//Why is this a list of arrays?
 	for(auto& byteArray : messages)
 	{
-	 	auto id = byteArray[0];
+		auto id = byteArray[0];
 
 		//Read result from the network
 		msgpack::unpacked result;
 		try { 
 			//Skip the first byte since that is the ID
-	        msgpack::unpack(result, byteArray.data()+1, byteArray.size() - 1);
-	    }
-	    catch(std::exception &e)
-	    {
-	        std::cerr << "Failed to parse: " << e.what() << "\n";
-	        return;
-	    }
+			msgpack::unpack(result, byteArray.data()+1, byteArray.size() - 1);
+		}
+		catch(std::exception &e)
+		{
+			std::cerr << "Failed to parse: " << e.what() << "\n";
+			return;
+		}
 
-	    if(id == 0)
-	    {
-	    	RobotGazeboTickData tickData;
-	    	result.get().convert(&tickData);
+		if(id == 0)
+		{
+			RobotGazeboTickData tickData;
+			result.get().convert(&tickData);
 
-	    	mTeensey->receiveUpdate(tickData);
-	    	mTeensy2->receiveUpdate(tickData);
-	    	mDecaWave->receiveUpdate(tickData);
-	    }
-	    else if(id == 1)
-	    {
-	    	Robot::ImgData data;
-	    	result.get().convert(&data);
+			mTeensey->receiveUpdate(tickData);
+			mTeensy2->receiveUpdate(tickData);
+			mDecaWave->receiveUpdate(tickData);
+		}
+		else if(id == 1)
+		{
+			Robot::ImgData data;
+			result.get().convert(&data);
 
-	    	if(mKinect->depthFrameRequested)
-	    	{
-	    		emit mKinect->receiveColorImage(data);
-	    		mKinect->depthFrameRequested = false;
-	    	}
-	    }
-	    else if(id == 2)
-	    {
-	    	Robot::DepthImgData data;
-	    	result.get().convert(&data);
+			if(mKinect->depthFrameRequested)
+			{
+				emit mKinect->receiveColorImage(data);
+				mKinect->depthFrameRequested = false;
+			}
+		}
+		else if(id == 2)
+		{
+			Robot::DepthImgData data;
+			result.get().convert(&data);
 
-	    	if(mKinect->depthFrameRequested)
-	    	{
-	    		emit mKinect->receiveDepthImage(data);
-	    		mKinect->depthFrameRequested = false;
-	    	}
-	    	
-	    }
-	    else if(id == 3)
-	    {
-	    	
-	    }
+			if(mKinect->depthFrameRequested)
+			{
+				emit mKinect->receiveDepthImage(data);
+				mKinect->depthFrameRequested = false;
+			}
+			
+		}
+		else if(id == 3)
+		{
+			std::cout << "Received april image\n";
+			Robot::ImgData data;
+			result.get().convert(&data);
+
+			//std::cout << "Robot data image april size: ("<< data.data.size() <<")\n";
+
+			if(mAprilTag->mFrameRequested)
+			{
+				QImage image(data.data.data(), data.width, data.height, QImage::Format_RGB888);
+
+				emit mAprilTag->ReceiveFrame(image);
+				mAprilTag->mFrameRequested = false;
+			}
+
+			QList<QByteArray> msg;
+			msg += QByteArray("\x11");
+			msg += byteArray;
+			mSensorLog->mSocket->sendMessage(msg);
+		}
+		else
+		{
+			std::cout << "Received unkown message from gazebo with id " << id << "\n";
+		}
 
 	}
 

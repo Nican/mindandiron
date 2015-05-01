@@ -199,7 +199,6 @@ bool TrajectorySearch::GetResult(std::vector<Eigen::Vector2d> &points)
 	{
 		for(auto &node : outVector)
 		{
-			std::cout << "AW\n";
 			points.push_back(node->mPoint);
 		}
 		return true;

@@ -270,11 +270,29 @@ void MainWindow::messageReceived(const QList<QByteArray>& messages)
 	if(id == '\x10')
 	{
 		QImage image;
-		QDataStream stream(messages[1]);
-		stream >> image;
+		{
+			QDataStream stream(messages[1]);
+			stream.setVersion(QDataStream::Qt_4_8);
+			stream >> image;
+		}
 
 		mAprilTag->UpdateImage(image);
 	}
+
+	/*
+	if(id == '\x11')
+	{
+		msgpack::unpacked result;
+		msgpack::unpack(result, messages[1].data()+1, messages[1].size() - 1);
+		Robot::ImgData data;
+		result.get().convert(&data);
+
+		QImage image(data.data.data(), data.width, data.height, QImage::Format_RGB888);
+		image.bits();
+		mAprilTag->UpdateImage(image);
+
+	}
+	*/
 
 
 }

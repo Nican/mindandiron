@@ -128,8 +128,8 @@ void MoveTowardsGoalState::TeensyStatus(TeenseyStatus status)
 
 	auto nextTargetIndex = std::max<int>(index-5, 0);
 
-	std::cout << "Closest index: " << index << "(" << mLastResultPoints[index].transpose() << ")" 
-			  << "\t Next: " << nextTargetIndex<< "(" << mLastResultPoints[nextTargetIndex].transpose() << ")\n";
+	//std::cout << "Closest index: " << index << "(" << mLastResultPoints[index].transpose() << ")" 
+	//		  << "\t Next: " << nextTargetIndex<< "(" << mLastResultPoints[nextTargetIndex].transpose() << ")\n";
 
 	if(nextTargetIndex == 0)
 		return;

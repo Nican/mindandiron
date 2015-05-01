@@ -94,7 +94,7 @@ inline object const& operator>> (object const& o, Robot::ImgData& v) {
     o.via.array.ptr[0].convert(v.width);
     o.via.array.ptr[1].convert(v.height);
 
-    v.data.resize(v.width * v.height);
+    v.data.resize(v.width * v.height * 3);
     std::memcpy(v.data.data(), o.via.array.ptr[2].via.bin.ptr, o.via.array.ptr[2].via.bin.size);
 
     return o;
@@ -108,8 +108,8 @@ inline packer<Stream>& operator<< (packer<Stream>& o, Robot::ImgData const& v) {
     o.pack(v.width);
     o.pack(v.height);
 
-    o.pack_bin(v.width * v.height);
-    o.pack_bin_body(reinterpret_cast<const char*>(v.data.data()), v.width * v.height);
+    o.pack_bin(v.width * v.height * 3);
+    o.pack_bin_body(reinterpret_cast<const char*>(v.data.data()), v.width * v.height * 3);
 
     return o;
 }

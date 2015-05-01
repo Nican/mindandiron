@@ -43,6 +43,7 @@ bool KratosCamera::read(cv::Mat &cv_image)
 	cv::Mat dest;
     cvtColor(cv_image, dest, CV_BGR2RGB);
     QImage image((uchar*)dest.data, dest.cols, dest.rows, QImage::Format_RGB888);
+    image.bits();
 
     emit CameraFrame(image);
 

@@ -13,18 +13,6 @@ using namespace Robot;
 ////	KratosAprilTag
 //////////////////////////
 
-KratosAprilTag::KratosAprilTag(QObject* parent) : 
-	QObject(parent), 
-	mTagSize(0.829), //0.829 -- 0.159
-	mFx(1315), mFy(1315),
-	mPx(1920/2), mPy(1080/2)
-{
-	mCamera = new KratosCamera("usb-046d_HD_Pro_Webcam_C920_2245793F-video-index0", 1920, 1080, this);
-	m_tagDetector.reset(new AprilTags::TagDetector(AprilTags::tagCodes25h9));
-
-	connect(&mDetectionFutureWatcher, SIGNAL(finished()), this, SLOT(finishedProcessing()));
-}
-
 static void DebugImage(cv::Mat &input)
 {
 	cv::Mat output;
@@ -33,87 +21,37 @@ static void DebugImage(cv::Mat &input)
 	cv::imshow("AA", output);
 }
 
-void KratosAprilTag::readCamera()
+KratosAprilTag::KratosAprilTag(QObject* parent) : 
+	AprilTagCamera(parent)
 {
-	if(mDetectionFutureWatcher.future().isRunning())
-	{
-		std::cout << "April tags is still processing. not starting a new one\n";
-		return;
-	}
+	mCamera = new KratosCamera("usb-046d_HD_Pro_Webcam_C920_2245793F-video-index0", 1920, 1080, this);
+}
 
-	auto future = QtConcurrent::run([this](){
+void KratosAprilTag::RequestFrame()
+{
+	QtConcurrent::run([this]()
+	{
 		cv::Mat image;
-		cv::Mat image_gray;
-		std::vector<AprilTags::TagDetection> detections;
 
 		if(!this->mCamera->read(image))
 		{
 			std::cout << "Unable to read april tag camera.\n";
-			return detections;
+			return;
 		}
 
-		cv::cvtColor(image, image_gray, CV_BGR2GRAY);
-		DebugImage(image_gray);
+		//DebugImage(image);
+		
+		cv::Mat temp; // make the same cv::Mat
+		cvtColor(image, temp, CV_BGR2RGB); // cvtColor Makes a copt, that what i need
+		QImage dest(reinterpret_cast<const uchar*>(temp.data), temp.cols, temp.rows, temp.step, QImage::Format_RGB888);
+		dest.bits(); // enforce deep copy, see documentation of QImage::QImage ( const uchar * data, int width, int height, Format format )
 
-		detections = m_tagDetector->extractTags(image_gray);
-
-		return detections;
+		emit this->ReceiveFrame(dest);
 	});
 
-	mDetectionFutureWatcher.setFuture(future);
 
 }
 
-inline double standardRad(double t) {
-  if (t >= 0.) {
-	t = fmod(t+M_PI, M_PI * 2) - M_PI;
-  } else {
-	t = fmod(t-M_PI, M_PI * -2) + M_PI;
-  }
-  return t;
-}
-
-static void wRo_to_euler(const Eigen::Matrix3d& wRo, double& yaw, double& pitch, double& roll) {
-	yaw = standardRad(atan2(wRo(1,0), wRo(0,0)));
-	double c = cos(yaw);
-	double s = sin(yaw);
-	pitch = standardRad(atan2(-wRo(2,0), wRo(0,0)*c + wRo(1,0)*s));
-	roll  = standardRad(atan2(wRo(0,2)*s - wRo(1,2)*c, -wRo(0,1)*s + wRo(1,1)*c));
-}
-
-void KratosAprilTag::finishedProcessing()
-{
-	auto detections = mDetectionFutureWatcher.future().result();
-	QList<AprilTagDetectionItem> detectionsItems;
-
-	for(auto &tag : detections)
-	{
-		AprilTagDetectionItem item;
-
-		tag.getRelativeTranslationRotation(mTagSize, mFx, mFy, mPx, mPy, item.translation, item.rotation);
-		item.detection = tag;
-
-		Eigen::Matrix3d F;
-		F <<
-		1, 0,  0,
-		0,  -1,  0,
-		0,  0,  1;
-		item.rotation = F * item.rotation;
-
-		double yaw, pitch, roll;
-		wRo_to_euler(item.rotation, yaw, pitch, roll);
-
-		item.euler = {yaw, pitch, roll};
-			
-		//std::cout << "\tTag id " << item.detection.id << "\n"; 
-		//std::cout << "\t\tT " << item.translation.transpose() << " ("<< item.translation.norm() <<")\n"; 
-		//std::cout << "\t\tR " << (item.euler / M_PI * 180.0).transpose() << "\n"; 
-
-		detectionsItems.append(item);
-	}
-
-	emit tagsDetected(detectionsItems);
-}
 
 //////////////////////////
 ////	KratosKinect
@@ -241,14 +179,6 @@ RealRobot::RealRobot(QObject* parent) :
 		mKinect = new KratosKinect(dev, this);
 		mKinect->requestDepthFrame();
 	}
-
-	connect(mAprilTag->mCamera, &KratosCamera::CameraFrame, mSensorLog, &SensorLog::ReceiveAprilTagImage);
-
-	auto timer2 = new QTimer(this);
-	timer2->start(300); //time specified in ms
-	QObject::connect(timer2, &QTimer::timeout, this, [this](){
-		this->mAprilTag->readCamera();
-	});
 
 	auto timer4 = new QTimer(this);
 	timer4->start(3000);
