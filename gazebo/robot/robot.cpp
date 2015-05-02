@@ -456,6 +456,10 @@ void Kratos2::FinishedPointCloud()
 	//std::cout << "Finished point cloud;\n";
 
 	auto pointCloud = mFutureWatcher.future().result();
+
+	if(pointCloud.mPointCloud == nullptr)
+		return;
+
 	mSensorLog->receiveSegmentedPointcloud(pointCloud);
 
 	auto kinect = GetKinect();

@@ -86,6 +86,13 @@ KratosTeensy::KratosTeensy(QObject* parent) : Teensy(parent)
 	mSerial->clear();
 }
 
+KratosTeensy::~KratosTeensy()
+{
+	std::cout << "Shutting down teensy. Waiting to shut down motors.\n";
+	SetVelocities(0.0, 0.0);
+	std::cout << "\tResult of writing bytes: " << mSerial->waitForBytesWritten(500) << "\n";
+}
+
 void KratosTeensy::receiveError(QSerialPort::SerialPortError error)
 {
 	std::cout << "Teensey received error. " << mSerial->error() << "\n";

@@ -29,7 +29,7 @@ QDataStream &operator>>(QDataStream &in, AprilTagDetectionItem &item)
 //////////////////////////
 /// AprilTagCamera
 //////////////////////////
-
+/*
 static void DebugImage(cv::Mat &input)
 {
 	cv::Mat output;
@@ -37,7 +37,7 @@ static void DebugImage(cv::Mat &input)
 
 	cv::imshow("AA", output);
 }
-
+*/
 inline double standardRad(double t) {
   if (t >= 0.) {
 	t = fmod(t+M_PI, M_PI * 2) - M_PI;

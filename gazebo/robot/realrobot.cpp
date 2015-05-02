@@ -12,7 +12,7 @@ using namespace Robot;
 //////////////////////////
 ////	KratosAprilTag
 //////////////////////////
-
+/*
 static void DebugImage(cv::Mat &input)
 {
 	cv::Mat output;
@@ -20,6 +20,7 @@ static void DebugImage(cv::Mat &input)
 
 	cv::imshow("AA", output);
 }
+*/
 
 KratosAprilTag::KratosAprilTag(QObject* parent) : 
 	AprilTagCamera(parent)
