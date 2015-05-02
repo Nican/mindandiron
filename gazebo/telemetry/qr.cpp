@@ -1,34 +1,60 @@
-#include <QLabel>
-#include <QGraphicsScene>
-#include <QGridLayout>
-#include "../april.h"
+#include "qr.h"
 
+#include <QGraphicsTextItem>
+#include <QTextStream>
 
-class AprilTagLabel : public QWidget
+AprilTagLabel::AprilTagLabel(QWidget *parent) : 
+	QWidget(parent), mView(&mScene), mMatches(nullptr)
 {
-	QGraphicsScene mScene;
-	QGraphicsView mView;
+	mImage = mScene.addRect(0, 0, 1.0, 1.0);
 
-	QGraphicsRectItem* mImage;
+	QGridLayout *layout = new QGridLayout;
+	layout->addWidget(&mView, 0, 0);
+	setLayout(layout);
+}
 
-public:
-	AprilTagLabel(QWidget *parent = 0) : 
-		QWidget(parent), mView(&mScene)
+void AprilTagLabel::UpdateImage(QImage &original)
+{
+	mImage->setRect(0, 0, original.width(), original.height());
+	mImage->setBrush(QBrush(original));
+
+	mView.fitInView(mImage, Qt::KeepAspectRatio);
+}
+
+void AprilTagLabel::ReadTags(QList<Robot::AprilTagDetectionItem> tags)
+{
+	static const QFont font("Times", 20, QFont::Bold);
+
+	if(mMatches != nullptr)
+		delete mMatches;
+
+	QList<QGraphicsItem*> items;
+
+	for(auto& tag : tags)
 	{
-		mImage = mScene.addRect(0, 0, 1.0, 1.0);
+		QVector<QPointF> polygon;
+		for(auto& p : tag.detection.p)
+			polygon.append({p.first, p.second});
 
-		QGridLayout *layout = new QGridLayout;
-	    layout->addWidget(&mView, 0, 0);
-	    setLayout(layout);
+		auto polygonItem = new QGraphicsPolygonItem();
+		polygonItem->setPen(QPen(Qt::red, 0));
+		polygonItem->setPolygon(polygon);
+
+		QString descriptionText;
+		QTextStream stream(&descriptionText);
+		stream.setRealNumberPrecision(2);
+		stream << "Tag id(" << tag.detection.id << ")\n"
+			<< "P: " << tag.translation.x() << ", " << tag.translation.y() << ", " << tag.translation.z() << " ("<< tag.translation.norm() <<")\n"
+			<< "R: " << (tag.euler / M_PI * 180.0).y(); 
+
+		auto text = new QGraphicsTextItem(descriptionText);
+		text->setPos(polygon[3]);
+		text->setFont(font);
+		text->setDefaultTextColor(Qt::red);
+
+		items.append(text);
+		items.append(polygonItem);
 	}
 
-	void UpdateImage(QImage &original)
-	{
-		mImage->setRect(0, 0, original.width(), original.height());
-		mImage->setBrush(QBrush(original));
-
-		mView.fitInView(mImage, Qt::KeepAspectRatio);
-	}
-
-};
-
+	mMatches = mScene.createItemGroup(items);
+}

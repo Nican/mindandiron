@@ -126,8 +126,8 @@ void KratosTeensy::receiveSerialData()
 			}
 
 			TeenseyStatus status;
-			status.leftPosition = parts[1].toDouble(); // * (2 * M_PI / 23330.0) * 0.155;  // Distance traveled in meters
-			status.rightPosition = parts[3].toDouble(); // * (2 * M_PI / 23330.0) * 0.155;  // Distance traveled in meters
+			status.leftPosition = parts[1].toDouble();
+			status.rightPosition = parts[3].toDouble(); 
 			status.leftVelocity = parts[5].toDouble();
 			status.rightVelocity = parts[7].toDouble();
 			status.acceleration.x() = parts[9].toDouble() - 512.0;

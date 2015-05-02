@@ -6,14 +6,61 @@
 using namespace Robot;
 
 
-GazeboAprilTag::GazeboAprilTag(QObject* parent) 
-	: AprilTagCamera(parent), mFrameRequested(false)
+GazeboAprilTag::GazeboAprilTag(GazeboKratos* parent) 
+	: AprilTagCamera(parent), mFrameRequested(false), robot(parent)
 {
 }
 
 void GazeboAprilTag::RequestFrame()
 {
 	mFrameRequested = true;
+}
+
+void GazeboAprilTag::finishedProcessing()
+{
+	auto detections = mDetectionFutureWatcher.future().result();
+	QList<AprilTagDetectionItem> detectionsItems;
+
+	RobotGazeboTickData tick = robot->mTeensey->mLastTick;
+
+	std::cout << "Robot rotation " << tick.robotOrientation << "\n";
+
+	for(auto &tag : detections)
+	{
+		AprilTagDetectionItem item;
+		item.detection = tag;
+
+		Eigen::Affine3d affine;
+		Eigen::Vector3d normal(0.9936, 0.1121, 0); 
+		Eigen::Vector3d forward(1, 0, 0);
+
+		if(item.detection.id == 0)
+		{
+			affine.linear() = Eigen::Quaterniond::FromTwoVectors(normal, forward).toRotationMatrix();
+			affine.translation() = Eigen::Vector3d(-1.0565, 0.5, 1.068);
+		}
+		else if (item.detection.id == 1)
+		{
+			normal.y() *= -1;
+			affine.linear() = Eigen::Quaterniond::FromTwoVectors(normal, forward).toRotationMatrix();
+			affine.translation() = Eigen::Vector3d(-1.0565, -0.5, 1.068);
+		}
+		else
+		{
+			std::cout << "Reading unkown tag id: " << item.detection.id << "\n";
+			continue;
+		}
+
+		affine.translation() -= tick.robotPosition;
+		affine.translation().z() -= 0.6;
+
+		std::cout << "Found sample: " << item.detection.id << "("<< affine.translation().transpose() << ")\n";
+
+
+
+	}
+
+	emit tagsDetected(detectionsItems);
 }
 
 
@@ -214,7 +261,6 @@ void GazeboKratos::messageReceived(const QList<QByteArray>& messages)
 		}
 		else if(id == 3)
 		{
-			std::cout << "Received april image\n";
 			Robot::ImgData data;
 			result.get().convert(&data);
 
@@ -227,11 +273,6 @@ void GazeboKratos::messageReceived(const QList<QByteArray>& messages)
 				emit mAprilTag->ReceiveFrame(image);
 				mAprilTag->mFrameRequested = false;
 			}
-
-			QList<QByteArray> msg;
-			msg += QByteArray("\x11");
-			msg += byteArray;
-			mSensorLog->mSocket->sendMessage(msg);
 		}
 		else
 		{

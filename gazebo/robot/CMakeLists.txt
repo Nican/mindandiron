@@ -21,6 +21,7 @@ add_executable(kratos_robot
 	trajectory2.cpp
 	state.cpp
 	camera.cpp
+	../april.cpp
 )
 
 target_link_libraries(kratos_robot Qt5::Widgets Qt5::SerialPort Qt5::Sql Qt5::Concurrent freenect2 kratos_base)

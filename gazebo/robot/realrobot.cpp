@@ -57,11 +57,19 @@ void KratosAprilTag::RequestFrame()
 ////	KratosKinect
 //////////////////////////
 
-KratosKinect::KratosKinect(libfreenect2::Freenect2Device *dev, QObject* parent) : 
-	Robot::Kinect(parent), 
-	mDev(dev)
+KratosKinect::KratosKinect(QObject* parent) : 
+	Robot::Kinect(parent)
 {	
-	mDev->start();
+	mDev = freenect2.openDefaultDevice();
+
+	if(mDev == nullptr)
+	{
+		std::cout << "no device connected or failure opening the default one!" << std::endl;
+	}
+	else
+	{
+		mDev->start();
+	}
 }
 
 void KratosKinect::requestDepthFrame()
@@ -69,7 +77,9 @@ void KratosKinect::requestDepthFrame()
 	std::lock_guard<std::mutex> lock(mRequestLock);
 
 	depthRequested = true;
-	mDev->setIrAndDepthFrameListener(this);
+
+	if(mDev != nullptr)
+		mDev->setIrAndDepthFrameListener(this);
 }
 
 void KratosKinect::requestColorFrame()
@@ -77,7 +87,9 @@ void KratosKinect::requestColorFrame()
 	std::lock_guard<std::mutex> lock(mRequestLock);
 
 	colorRequested = true;
-	mDev->setColorFrameListener(this);
+
+	if(mDev != nullptr)
+		mDev->setColorFrameListener(this);
 }
 
 
@@ -163,22 +175,12 @@ RealRobot::RealRobot(QObject* parent) :
 		lastStatus = status;
 	});
 
+	mKinect = new KratosKinect(this);
+	mKinect->requestDepthFrame();
 
 	auto timer = new QTimer(this);
 	timer->start(100); //time specified in ms
-	QObject::connect(timer, SIGNAL(timeout()), this, SLOT(updateForces()));
-
-	auto dev = freenect2.openDefaultDevice();
-
-	if(dev == nullptr)
-	{
-		std::cout << "no device connected or failure opening the default one!" << std::endl;
-	}
-	else
-	{
-		mKinect = new KratosKinect(dev, this);
-		mKinect->requestDepthFrame();
-	}
+	connect(timer, &QTimer::timeout, this, &RealRobot::updateForces);
 
 	auto timer4 = new QTimer(this);
 	timer4->start(3000);
@@ -206,7 +208,7 @@ RealRobot::RealRobot(QObject* parent) :
 			if(tag.detection.id != 0)
 				continue;
 
-			//double rotation = tag.euler[1];
+			this->mLastAprilDetection = QDateTime::currentDateTime();
 
 			double rot2 = std::atan2(tag.translation.y(), tag.translation.x());
 
@@ -221,7 +223,6 @@ RealRobot::RealRobot(QObject* parent) :
 			// std::cout << "\t :New target: " << target*180/M_PI << "\n";
 
 			this->mTeensy2->setAprilAngle(target);
-			this->mLastAprilDetection = QDateTime::currentDateTime();
 		}
 
 	});
@@ -233,18 +234,6 @@ RealRobot::RealRobot(QObject* parent) :
 		if(this->mKinect != nullptr)
 			this->mKinect->requestColorFrame();
 	});
-
-	// connect(mAprilTag, &KratosAprilTag::tagsDetected, this, [](QList<AprilTagDetectionItem> detections){
-	// 	std::cout << "Found " << detections.size() << " april tag entries\n";
-	// 	for(auto& tag : detections)
-	// 	{
-	// 		auto euler = tag.rotation.eulerAngles(2,0,2) * 180.0 / M_PI;
-	// 		std::cout << "\tTag id " << tag.detection.id << "\n"; 
-	// 		std::cout << "\t\tT " << tag.translation.transpose() << "\n"; 
-	// 		std::cout << "\t\tR " << euler.transpose() << "\n"; 
-	// 	}
-	// });
-
 }
 
 void RealRobot::updateForces()

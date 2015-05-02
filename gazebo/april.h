@@ -1,66 +1,54 @@
 #pragma once
 
-#include "util.h"
-#include "robot.h"
-
-#include "opencv2/opencv.hpp"
+#include <QDataStream>
+#include <QFutureWatcher>
+#include <QImage>
+#include <eigen3/Eigen/Dense>
 #include "AprilTags/TagDetector.h"
-#include "AprilTags/Tag16h5.h"
-#include "AprilTags/Tag36h11.h"
-
-struct QRTagFinder : public BaseGroundProcessor<cv::Mat, std::vector<AprilTags::TagDetection>>
-{
-	AprilTags::TagDetector tagDetector;
-
-	QRTagFinder();
-
-	//Run on a different thread
-	virtual std::vector<AprilTags::TagDetection> AsyncronousUpdate(cv::Mat input) override;
-};
+#include <memory>
 
 namespace Robot {
 
-class Kratos;
-
-struct BaseStationTagInfo
+struct AprilTagDetectionItem
 {
-	int mId;
-
-	//Matrix that transforms a point from the center of the base station
-	//to the tag location
-	Eigen::Affine3d affine;
-
-	BaseStationTagInfo(int id) : mId(id), affine(Eigen::Affine3d::Identity())
-	{
-	}
+	Eigen::Vector3d translation;
+	Eigen::Matrix3d rotation;
+	Eigen::Vector3d euler;
+	 
+	AprilTags::TagDetection detection;
 };
 
-/*
-	Detect the base station through april tags
-*/
-struct BaseStationDetector
+QDataStream &operator<<(QDataStream &out, const AprilTagDetectionItem &item);
+QDataStream &operator>>(QDataStream &in, AprilTagDetectionItem &item);
+
+
+class AprilTagCamera : public QObject
 {
-	Kratos* mRobot;
-	QRTagFinder finder;
+	Q_OBJECT
 
-	std::vector<BaseStationTagInfo> tags;
+public:
+	std::shared_ptr<AprilTags::TagDetector> m_tagDetector;
+	QFutureWatcher<std::vector<AprilTags::TagDetection>> mDetectionFutureWatcher;
 
-	double m_tagSize; // April tag side length in meters of square black frame
-	double m_fx; // camera focal length in pixels
-	double m_fy;
-	double m_px; // camera principal point
-	double m_py;
+	double mTagSize;
+	double mFx;
+	double mFy;
+	double mPx;
+	double mPy;
 
-	double lastDetectionTime;
-	Eigen::Affine3d mBaseTransformation;
-	Eigen::Vector2d mSolution;
+	AprilTagCamera(QObject* parent);
 
-	BaseStationDetector(Kratos* robot);
+	virtual void RequestFrame() = 0;
 
-	void Update(cv::Mat input);
+	bool IsProcessing();
 
-	Eigen::Affine3d DetectionToAffine(const AprilTags::TagDetection &detection);
+public slots:
+	void ReadFrame(QImage image);
+	virtual void finishedProcessing();
 
+signals:
+	void tagsDetected(QList<AprilTagDetectionItem>);
+	void ReceiveFrame(QImage image);
 };
 
 };

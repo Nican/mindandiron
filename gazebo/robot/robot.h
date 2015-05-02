@@ -8,7 +8,8 @@
 #include "../pointcloud.h"
 #include "../teensy.h"
 #include "../odometry.h"
-#include "../AprilTags/TagDetector.h"
+#include "../april.h"
+
 #include <QImage>
 
 namespace Robot{
@@ -23,45 +24,6 @@ class SegmentedPointCloud
 public:
 	QDateTime mTimestamp;
 	pcl::PointCloud<pcl::PointXYZRGB>::Ptr mPointCloud;
-};
-
-struct AprilTagDetectionItem
-{
-	Eigen::Vector3d translation;
-	Eigen::Matrix3d rotation;
-	Eigen::Vector3d euler;
-	 
-	AprilTags::TagDetection detection;
-};
-
-
-class AprilTagCamera : public QObject
-{
-	Q_OBJECT
-
-public:
-	std::shared_ptr<AprilTags::TagDetector> m_tagDetector;
-	QFutureWatcher<std::vector<AprilTags::TagDetection>> mDetectionFutureWatcher;
-
-	double mTagSize;
-	double mFx;
-	double mFy;
-	double mPx;
-	double mPy;
-
-	AprilTagCamera(QObject* parent);
-
-	virtual void RequestFrame() = 0;
-
-	bool IsProcessing();
-
-public slots:
-	void ReadFrame(QImage image);
-	void finishedProcessing();
-
-signals:
-	void tagsDetected(QList<AprilTagDetectionItem>);
-	void ReceiveFrame(QImage image);
 };
 
 class Decawave : public QObject
