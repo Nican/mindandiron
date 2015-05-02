@@ -14,7 +14,7 @@ int main(int argc, char* argv[])
 	//QCoreApplication does not have a GUI
 	QCoreApplication app(argc, argv);
 
-	qRegisterMetaType<Robot::DepthImgData>("Robot::DepthImgData");	
+	qRegisterMetaType<Robot::DepthImgData>("Robot::DepthImgData");
 	qRegisterMetaType<Robot::ImgData>("Robot::ImgData");
 	qRegisterMetaType<Robot::TeenseyStatus>("Robot::TeenseyStatus");
 
@@ -39,7 +39,7 @@ int main(int argc, char* argv[])
 
 	std::cout << "Reading results\n";
 
-	while (query.next()) 
+	while (query.next())
 	{
 		QImage image;
 		auto buffer = query.value(1).toByteArray();
@@ -60,8 +60,8 @@ int main(int argc, char* argv[])
 	*/
 
 
-	// Robot::RealRobot robot;
-	Robot::GazeboKratos robot;
+	 Robot::RealRobot robot;
+	//Robot::GazeboKratos robot;
 	robot.Initialize();
 
 	return app.exec();
