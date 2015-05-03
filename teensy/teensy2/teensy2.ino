@@ -50,8 +50,7 @@ void loop() {
 //    }
 
     printDataToComputer(Herkulex.getAngle(camServoID),
-                        getCurrent(), getBatteryVoltage(),
-                        getPaused());
+                        getCurrent(), getPaused());
 }
 
 // Blinks the LED when paused, leaves it solidly on while running
