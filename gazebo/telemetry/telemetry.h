@@ -10,7 +10,7 @@
 #include "qcustomplot.h"
 #include <QGraphicsRectItem>
 
-#include "qr.cpp"
+#include "qr.h"
 
 
 class QGraphicsItemGroup;

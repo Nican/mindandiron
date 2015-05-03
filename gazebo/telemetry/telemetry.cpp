@@ -1,6 +1,6 @@
 #include "telemetry.h"
 #include "../trajectory.h"
-
+#include "../april.h"
 
 #include <iostream>
 
@@ -277,6 +277,19 @@ void MainWindow::messageReceived(const QList<QByteArray>& messages)
 		}
 
 		mAprilTag->UpdateImage(image);
+	}
+
+	if(id == '\x11')
+	{
+		QList<AprilTagDetectionItem> tags;
+
+		{
+			QDataStream stream(messages[1]);
+			stream.setVersion(QDataStream::Qt_4_8);
+			stream >> tags;
+		}
+
+		mAprilTag->ReadTags(tags);
 	}
 
 	/*

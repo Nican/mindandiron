@@ -39,6 +39,7 @@ class KratosKinect : public Robot::Kinect, public libfreenect2::FrameListener
 {
 	Q_OBJECT
 
+	libfreenect2::Freenect2 freenect2;
 	libfreenect2::Freenect2Device *mDev;
 
 	std::mutex mRequestLock;
@@ -47,7 +48,7 @@ class KratosKinect : public Robot::Kinect, public libfreenect2::FrameListener
 
 public:
 	
-	KratosKinect(libfreenect2::Freenect2Device *dev, QObject* parent);
+	KratosKinect(QObject* parent);
 
 	virtual bool onNewFrame(libfreenect2::Frame::Type type, libfreenect2::Frame *frame) override;
 
@@ -64,7 +65,6 @@ class RealRobot : public Robot::Kratos2
 {
 	Q_OBJECT
 
-	libfreenect2::Freenect2 freenect2;
 	KratosKinect* mKinect;
 
 	Robot::KratosTeensy* mTeensy;

@@ -91,6 +91,10 @@ namespace Robot
 PointCloud::Ptr RegionGrowingSegmenter::AsyncronousUpdate(PointCloud::Ptr imgCloud)
 {
 	using namespace Eigen;
+
+	if(!imgCloud || imgCloud->points.size() == 0)
+		return nullptr;
+
 	PointCloud::Ptr imgCloud2(new PointCloud());
 
 	pcl::VoxelGrid<PointT> sor;
@@ -169,8 +173,6 @@ PointCloud::Ptr RegionGrowingSegmenter::AsyncronousUpdate(PointCloud::Ptr imgClo
 
 		if(segmentSize < 150)
 			continue;
-
-
 
 		Eigen::Vector3f min(100,100,100);
 		Eigen::Vector3f max(-100,-100,-100);

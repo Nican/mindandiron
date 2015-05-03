@@ -13,9 +13,10 @@ float getCurrent(void) {
     return sensorVal / voltsPerAmp;
 }
 
-float getBatteryVoltage(void) {
-    int sensorVal = analogRead(BATT_VOLTAGE_IN_PIN);
-    float measuredVoltage = (sensorVal * VCC) / 1023.0;  // Converts 0-1023 to volts
-    return ( measuredVoltage * (R1 + R2) / R2 );  // Calculates battery voltage from voltage divider
-}
+// Voltage sensor not currently wired, didn't seem like priority - 5/3/15
+// float getBatteryVoltage(void) {
+//     int sensorVal = analogRead(BATT_VOLTAGE_IN_PIN);
+//     float measuredVoltage = (sensorVal * VCC) / 1023.0;  // Converts 0-1023 to volts
+//     return ( measuredVoltage * (R1 + R2) / R2 );  // Calculates battery voltage from voltage divider
+// }
 

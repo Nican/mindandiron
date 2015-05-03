@@ -7,15 +7,19 @@ class QTimer;
 
 namespace Robot{
 
+class GazeboKratos;
+
 class GazeboAprilTag : public AprilTagCamera
 {
 	Q_OBJECT
 public:
 	bool mFrameRequested;
+	GazeboKratos* robot;
 
-	GazeboAprilTag(QObject* parent = 0);
+	GazeboAprilTag(GazeboKratos* parent = 0);
 
 	virtual void RequestFrame() override;
+	virtual void finishedProcessing() override;
 };
 
 class GazeboDevawave : public Decawave

@@ -13,6 +13,7 @@ class KratosTeensy : public Teensy
 
 public:
 	KratosTeensy(QObject* parent);
+	virtual ~KratosTeensy();
 	void SetVelocities(double left, double right);
 
 protected slots:
