@@ -34,9 +34,8 @@ int boundCamServoCmd(int cmd) {
 
 
 // Prints given string to the computer, tab separated
-void printDataToComputer(int camServoAngle, float current, float batteryVoltage, int isPaused) {
+void printDataToComputer(int camServoAngle, float current, int isPaused) {
     Serial.print("CAMSRV\t"); Serial.print(camServoAngle);
     Serial.print("\tAMPS\t"); Serial.print(current);
-    Serial.print("\tBATTV\t"); Serial.print(batteryVoltage);
     Serial.print("\tPAUSE\t"); Serial.println(isPaused);
 }
