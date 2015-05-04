@@ -184,7 +184,7 @@ RealRobot::RealRobot(QObject* parent) :
 	connect(timer, &QTimer::timeout, this, &RealRobot::updateForces);
 
 	auto timer4 = new QTimer(this);
-	timer4->start(3000);
+	timer4->start(6000);
 	QObject::connect(timer4, &QTimer::timeout, this, [this](){
 		static QList<int> scanModeValues = {-88, -45, 0, 45, 88, 45, 0, -45};
 		static int lastScanValue = 0;
