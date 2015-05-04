@@ -43,9 +43,10 @@ void AprilTagLabel::ReadTags(QList<Robot::AprilTagDetectionItem> tags)
 		QString descriptionText;
 		QTextStream stream(&descriptionText);
 		stream.setRealNumberPrecision(2);
-		stream << "Tag id(" << tag.detection.id << ")\n"
-			<< "P: " << tag.translation.x() << ", " << tag.translation.y() << ", " << tag.translation.z() << " ("<< tag.translation.norm() <<")\n"
-			<< "R: " << (tag.euler / M_PI * 180.0).y(); 
+		stream << "Tag id(" << tag.detection.id << ")\n";
+		stream << "P: " << tag.translation.x() << ", " << tag.translation.y() << ", " << tag.translation.z() << " ("<< tag.translation.norm() <<")\n";
+		stream.setRealNumberPrecision(6);
+		stream << "R: " << (tag.euler / M_PI * 180.0).y(); 
 
 		auto text = new QGraphicsTextItem(descriptionText);
 		text->setPos(polygon[3]);

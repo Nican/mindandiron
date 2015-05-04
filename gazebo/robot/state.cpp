@@ -208,7 +208,7 @@ void MoveTowardsGoalState::UpdateTrajectory(ObstacleMap obstacleMap)
 	mRobot->mSensorLog->SendObstacles(buildObstacleMap);
 
 	auto future = QtConcurrent::run([this, buildObstacleMap, odometry2](){
-		std::cout << "Started search from: " << odometry2 << "\n";
+		//std::cout << "Started search from: " << odometry2 << "\n";
 
 		std::vector<Vector2d> reducedObstacles;
 
@@ -234,7 +234,7 @@ void MoveTowardsGoalState::UpdateTrajectory(ObstacleMap obstacleMap)
 			planner->rootNode->explore();
 		}
 
-		std::cout << "Finished " << planner->foundSolution << " ("<< i <<")\n";
+		//std::cout << "Finished " << planner->foundSolution << " ("<< i <<")\n";
 
         return planner;
 	});

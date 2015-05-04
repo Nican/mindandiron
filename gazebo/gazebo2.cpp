@@ -45,6 +45,7 @@ namespace gazebo
 
     sensors::RaySensorPtr m_sensor;
     sensors::DepthCameraSensorPtr m_depthCameraSensor;
+    sensors::CameraSensorPtr mAprilCamera;
     sensors::ImuSensorPtr mImuSensor;
 
     math::Pose mStartRobotPose;
@@ -103,6 +104,7 @@ namespace gazebo
 
         if(camera_cast != nullptr)
         {
+          mAprilCamera = camera_cast;
           auto camera = camera_cast->GetCamera();
 
           this->newAprilImageFrameConnection = camera->ConnectNewImageFrame(
@@ -220,7 +222,7 @@ namespace gazebo
     void OnUpdate(const common::UpdateInfo &info)
     {      
       RobotGazeboTickData tickData;
-      tickData.simTime = info.simTime.Double();
+      double simTime = info.simTime.Double();
 
       double currentLeft = m_leftWheelJoint->GetAngle(1).Radian();
       double currentRight = m_rightWheelJoint->GetAngle(1).Radian();
@@ -235,11 +237,19 @@ namespace gazebo
 
       tickData.robotPosition = GetRobotPosition();
       tickData.robotOrientation = GetOrientation();
-      tickData.linearAcceleration = Eigen::Vector3d(linAccel.x, linAccel.y, linAccel.z);
-
-      SendTelemetry(0, tickData);
+      tickData.linearAcceleration = Eigen::Vector3d(linAccel.x, linAccel.y, linAccel.z);      
 
       auto jointController = mModel->GetJointController();
+
+      double currentAngle = (mAprilCamera->GetCamera()->GetWorldPose().rot.GetYaw());
+      double targetAngle = (mControl.aprilAngle + tickData.robotOrientation);
+      mAprilCamera->GetCamera()->RotateYaw(targetAngle - currentAngle); //gazebo::math::Angle(0.1 * M_PI / 180.0)
+      //std::cout << "Camera: " << mAprilCamera->GetCamera()->GetWorldPose().rot.GetYaw() << "\n";
+      //std::cout << "Current: " << currentAngle << " / " << targetAngle << "\n";
+
+      tickData.aprilAngle = currentAngle;
+
+      SendTelemetry(0, tickData);
 
       zmq::message_t msg;
       while(mZmqSubSocket.recv(&msg, ZMQ_DONTWAIT))
@@ -265,7 +275,7 @@ namespace gazebo
           result.get().convert(&controlData);
 
           mControl = controlData;
-          lastUpdate = tickData.simTime;
+          lastUpdate = simTime;
         }
       }
 
@@ -273,7 +283,7 @@ namespace gazebo
       double leftVel = mControl.leftVelocity * factor;
       double rightVel = mControl.rightVelocity * factor;
 
-      if(std::abs(lastUpdate - tickData.simTime) > 0.4)
+      if(std::abs(lastUpdate - simTime) > 0.4)
       {
         leftVel = 0.0;
         rightVel = 0.0;

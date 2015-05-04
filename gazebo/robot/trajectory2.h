@@ -4,6 +4,7 @@
 #include <QVector>
 #include <Box2D/Box2D.h>
 #include <QDateTime>
+#include <QFutureWatcher>
 #include "../odometry.h"
 #include "../pointcloud.h"
 #include "../msgpack.h"
@@ -82,16 +83,18 @@ class TrajectoryPlanner2 : public QObject
 {
 	Q_OBJECT
 
-	//std::size_t GetOldestObstacle();
-
 public:
 	Kratos2* mRobot;
 	ObstacleMap mObstacleMap;
-	//std::array<ObstacleMapItem, 30> mObstacleHistory;
+
+	QFutureWatcher<ObstacleMap> mFutureWatcher;
 	
 	TrajectoryPlanner2(Kratos2* parent);
 
 	void UpdateObstacles(SegmentedPointCloud pointCloud);
+
+public slots:
+	void FinishedObstacles();
 
 signals:
 	void ObstacleMapUpdate(ObstacleMap);

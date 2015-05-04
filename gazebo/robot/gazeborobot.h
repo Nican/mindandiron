@@ -86,6 +86,8 @@ public:
 	void receiveUpdate(const RobotGazeboTickData &data);
 	virtual void sendRaw(int intAngle) override;
 
+	double GetAprilGazeboAngle();
+
 protected slots:
 	void fireUpdate();
 };
