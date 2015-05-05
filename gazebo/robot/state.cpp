@@ -21,11 +21,11 @@ bool BaseState::IsValid()
 RootState::RootState(Kratos2 *parent) : BaseState(parent), mState(nullptr)
 {
 	//MoveToNextState();
-	SetState(new MoveTowardsGoalState(mRobot));
+	// SetState(new MoveTowardsGoalState(mRobot));
 
 	//QTimer::singleShot(1000, this, SLOT(MoveToNextState));
 
-	//SetState(new MoveForwardState(mRobot, 10.0));
+	SetState(new MoveForwardState(mRobot, 10.0));
 }
 
 void RootState::SetState(ProgressState* nextState)
@@ -46,7 +46,6 @@ void RootState::SetState(ProgressState* nextState)
 
 void RootState::MoveToNextState()
 {
-	/*
 	if(qobject_cast<MoveForwardState*>(mState) == nullptr)
 	{
 		ProgressState* newState = new MoveForwardState(mRobot, 2.0);
@@ -57,7 +56,6 @@ void RootState::MoveToNextState()
 		ProgressState* newState = new RotateState(mRobot, M_PI / 2);
 		SetState(newState);
 	}
-	*/
 }
 
 
