@@ -4,7 +4,7 @@
 #include <QTimer>
 
 using namespace Robot;
-
+using namespace Eigen;
 
 GazeboAprilTag::GazeboAprilTag(GazeboKratos* parent) 
 	: AprilTagCamera(parent), mFrameRequested(false), robot(parent)
@@ -22,28 +22,29 @@ void GazeboAprilTag::finishedProcessing()
 	QList<AprilTagDetectionItem> detectionsItems;
 
 	RobotGazeboTickData tick = robot->mTeensey->mLastTick;
+	double robotCameraAngle = M_PI - (robot->mTeensy2->mServoAngle * M_PI / 180.0);
 
-	std::cout << "Robot rotation " << tick.robotOrientation << "\n";
+	std::cout << "Robot rotation " << tick.robotOrientation << "\t" << robotCameraAngle << "\n";
 
 	for(auto &tag : detections)
 	{
 		AprilTagDetectionItem item;
 		item.detection = tag;
 
-		Eigen::Affine3d affine;
-		Eigen::Vector3d normal(0.9936, 0.1121, 0); 
-		Eigen::Vector3d forward(1, 0, 0);
+		Affine3d affine;
+		Vector3d normal(0.9936, 0.1121, 0); 
+		Vector3d forward(1, 0, 0);
 
 		if(item.detection.id == 0)
 		{
-			affine.linear() = Eigen::Quaterniond::FromTwoVectors(normal, forward).toRotationMatrix();
-			affine.translation() = Eigen::Vector3d(-1.0565, 0.5, 1.068);
+			affine.linear() = Quaterniond::FromTwoVectors(normal, forward).toRotationMatrix();
+			affine.translation() = Vector3d(-1.0565, 0.5, 1.068);
 		}
 		else if (item.detection.id == 1)
 		{
 			normal.y() *= -1;
-			affine.linear() = Eigen::Quaterniond::FromTwoVectors(normal, forward).toRotationMatrix();
-			affine.translation() = Eigen::Vector3d(-1.0565, -0.5, 1.068);
+			affine.linear() = Quaterniond::FromTwoVectors(normal, forward).toRotationMatrix();
+			affine.translation() = Vector3d(-1.0565, -0.5, 1.068);
 		}
 		else
 		{
@@ -51,13 +52,24 @@ void GazeboAprilTag::finishedProcessing()
 			continue;
 		}
 
+		auto rotation = AngleAxisd(-tick.robotOrientation + robotCameraAngle, Vector3d::UnitZ());
+
 		affine.translation() -= tick.robotPosition;
 		affine.translation().z() -= 0.6;
 
-		std::cout << "Found sample: " << item.detection.id << "("<< affine.translation().transpose() << ")\n";
+		//std::cout << "Found sample: " << item.detection.id << "(" << affine.translation().transpose() << ")\n";
 
+		affine.translation() = AngleAxisd(-tick.robotOrientation + robotCameraAngle, Vector3d::UnitZ()) * affine.translation();
+		affine.linear() = rotation * affine.linear();
 
+		//std::cout << "\tAfter Rotation: " << affine.translation().transpose() << "\n";
+		//std::cout << "\tAngle " << (affine.linear().eulerAngles(1,2,0) * 180 / M_PI).transpose() << "\n";
 
+		item.translation = affine.translation();
+		item.rotation = affine.linear();
+		item.euler = affine.linear().eulerAngles(1,2,0);
+
+		detectionsItems.append(item);
 	}
 
 	emit tagsDetected(detectionsItems);
@@ -163,6 +175,11 @@ void GazeboTeensey2::sendRaw(int intAngle)
 	mServoAngle = intAngle;
 }
 
+double GazeboTeensey2::GetAprilGazeboAngle()
+{
+	return M_PI - (static_cast<double>(mServoAngle) * M_PI / 180.0);
+}
+
 
 GazeboKratos::GazeboKratos(QObject* parent) 
 	: Kratos2(parent)
@@ -194,6 +211,7 @@ void GazeboKratos::fireControlUpdate()
 	RobotGazeboControl control;
 	control.leftVelocity = GetLeftVelocity();
 	control.rightVelocity = GetRightVelocity();
+	control.aprilAngle = mTeensy2->GetAprilGazeboAngle();
 
 	char id = 0;
 

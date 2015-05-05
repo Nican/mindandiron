@@ -39,12 +39,12 @@ static void DebugImage(cv::Mat &input)
 }
 */
 inline double standardRad(double t) {
-  if (t >= 0.) {
-	t = fmod(t+M_PI, M_PI * 2) - M_PI;
-  } else {
-	t = fmod(t-M_PI, M_PI * -2) + M_PI;
-  }
-  return t;
+	if (t >= 0.) {
+		t = fmod(t+M_PI, M_PI * 2) - M_PI;
+	} else {
+		t = fmod(t-M_PI, M_PI * -2) + M_PI;
+	}
+	return t;
 }
 
 static void wRo_to_euler(const Eigen::Matrix3d& wRo, double& yaw, double& pitch, double& roll) {

@@ -6,12 +6,13 @@ struct RobotGazeboControl
 	double leftVelocity;
 	double rightVelocity;
 
-	MSGPACK_DEFINE(leftVelocity, rightVelocity)
+	double aprilAngle;
+
+	MSGPACK_DEFINE(leftVelocity, rightVelocity, aprilAngle)
 };
 
 struct RobotGazeboTickData
 {
-	double simTime;
 	int leftWheelTicks;
 	int rightWheelTicks;
 
@@ -23,7 +24,9 @@ struct RobotGazeboTickData
 	Eigen::Vector3d robotPosition;
 	double robotOrientation;
 
-	MSGPACK_DEFINE(simTime, leftWheelTicks, rightWheelTicks, leftWheelVelocity, rightWheelVelocity, linearAcceleration, robotPosition, robotOrientation);
+	double aprilAngle;
+
+	MSGPACK_DEFINE(leftWheelTicks, rightWheelTicks, leftWheelVelocity, rightWheelVelocity, linearAcceleration, robotPosition, robotOrientation, aprilAngle);
 };
 
 
