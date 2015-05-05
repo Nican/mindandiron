@@ -6,6 +6,8 @@
 
 #define LEFT_CMD_IN      18  // Pin 3 on the receiver
 #define RIGHT_CMD_IN     17  // Pin 2 on the receiver
+#define COLLECTOR_CMD_IN 3   // Pin X on the reciever
+#define SORTER_CMD_IN    4   // Pin X on the reciever
 #define AUTO_SWITCH_IN   19  // Pin 5 on the receiver
 #define AUTO_SWITCH_OUT  7   // Pin 7 on the Teensy, goes to Pin 4 on the Arduino
 #define LEFT_OUT_PIN     20  // PWM control on the left wheel

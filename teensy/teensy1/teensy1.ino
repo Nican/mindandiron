@@ -53,11 +53,14 @@ void setup() {
     // DRIVE SETUP
     pinMode(LEFT_CMD_IN, INPUT);
     pinMode(RIGHT_CMD_IN, INPUT);
+    pinMode(COLLECTOR_CMD_IN, INPUT);
+    pinMode(SORTER_CMD_IN, INPUT);
     pinMode(AUTO_SWITCH_IN, INPUT);
     pinMode(AUTO_SWITCH_OUT, OUTPUT);
     pinMode(COLLECTOR_OUT_A, OUTPUT);
     pinMode(COLLECTOR_OUT_B, OUTPUT);
-    commandCollector(0);  // 0 stops the collector (drives both pins LOW)
+    pinMode(COLLECTOR_OUT_PWM, OUTPUT);
+    commandCollector(0, 0);  // 0 stops the collector (drives both pins LOW)
     servoLeft.attach(LEFT_OUT_PIN); servoLeft.write(MIN_SERVO_SPEED);
     lastLeftCmd = MIN_SERVO_SPEED;
     servoRight.attach(RIGHT_OUT_PIN); servoRight.write(MIN_SERVO_SPEED);
@@ -111,6 +114,7 @@ void loop() {
         }
         lastLeftCmd = passThroughRC(servoLeft, LEFT_CMD_IN, lastLeftCmd);
         lastRightCmd = passThroughRC(servoRight, RIGHT_CMD_IN, lastRightCmd);
+        controlCollectorWithRC(COLLECTOR_CMD_IN);
     }
 
     printDataToComputer(getLeftPosition(), getRightPosition(),

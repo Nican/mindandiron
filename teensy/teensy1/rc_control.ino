@@ -58,6 +58,33 @@ int passThroughRC(Servo servo, int pin, int lastCmd) {
 }
 
 
+// Controls the direction and speed of the collector
+void controlCollectorWithRC(int collectorSignalPin) {
+    int duration = pulseIn(collectorSignalPin, HIGH);
+    int direction = 0;
+    int speed = 0;
+
+    // Adjusts the direction as appropriate
+    if (duration > MID_SIGNAL) {
+        direction = 1;
+    } else {
+        direction = -1;
+    }
+
+    // Brakes the robot when in the deadband
+    if (within(duration, MID_SIGNAL, IN_DEADBAND)) {
+        direction = 0;
+        speed = 0;
+    } else if (within(duration, MID_SIGNAL, 2*IN_DEADBAND)) {
+        speed = COLLECTOR_LOW_SPEED;
+    } else if (duration < MAX_SIGNAL && duration > MIN_SIGNAL) {
+        speed = COLLECTOR_HIGH_SPEED;
+    }
+
+    commandCollector(direction, speed);
+}
+
+
 // Checks whether the given value is within a given offset from a goal value
 bool within(int value, int goal, int offset) {
     if ((goal + offset > value) && (goal - offset < value)) {
