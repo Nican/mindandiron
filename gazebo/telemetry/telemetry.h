@@ -64,7 +64,6 @@ public:
 	void ReceiveWheelVelocities(const std::vector<double> &forces);
 };
 
-
 class WheelUsageRect : public QGraphicsRectItem
 {
 public:
@@ -73,6 +72,15 @@ public:
 	WheelUsageRect(qreal x, qreal y, qreal w, qreal h, QGraphicsItem *parent = 0);
 
 	virtual void paint(QPainter * painter, const QStyleOptionGraphicsItem * option, QWidget * widget = 0) override;
+};
+
+class RobotRect : public QGraphicsPolygonItem
+{
+public:
+	RobotRect(QGraphicsItem *parent = 0);
+
+	WheelUsageRect* mLeftWheel;
+	WheelUsageRect* mRightWheel;
 };
 
 
@@ -129,10 +137,7 @@ public:
 	QGraphicsItemGroup* mCore;
 	QGraphicsPathItem* trajectoryPath;
 	QGraphicsPathItem* mPlannedTrajectory;
-	QGraphicsPolygonItem* mRobotInstance;
-
-	WheelUsageRect* mLeftWheel;
-	WheelUsageRect* mRightWheel;
+	RobotRect* mRobotInstance;
 
 	QVector<QGraphicsLineItem*> mLines;
 
@@ -140,8 +145,8 @@ public:
 
 	ValuesGrid* mValueGrid;
 
-	//void ReadLocation(const Robot::LocationDataPoint &historyPoint);
-	void DrawExploreChild(TrajectoryTreeNode* parent, TrajectoryTreeNode* child, int &id);
+	QGraphicsItemGroup* mTagDetections;
+
 	void ReceiveControlStatus(const std::vector<double> &velocities);
 
 	void ReceiveDecawaveReading(double distance);
@@ -149,6 +154,8 @@ public:
 
 	void ReceivePath(std::vector<Eigen::Vector2d> points);
 	void SetRobot(Eigen::Vector2d pos, double angle);
+
+	void ReadTags(const QList<Robot::AprilTagDetectionItem> &tags);
 };
 
 

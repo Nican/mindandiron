@@ -290,6 +290,7 @@ void MainWindow::messageReceived(const QList<QByteArray>& messages)
 		}
 
 		mAprilTag->ReadTags(tags);
+		mGridView->ReadTags(tags);
 	}
 
 	/*

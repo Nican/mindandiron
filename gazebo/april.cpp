@@ -100,6 +100,7 @@ void AprilTagCamera::ReadFrame(QImage image)
 
 		return detections;
 	});
+	lastFrameTime = QDateTime::currentDateTime();
 
 	mDetectionFutureWatcher.setFuture(future);
 
@@ -113,9 +114,10 @@ void AprilTagCamera::finishedProcessing()
 	for(auto &tag : detections)
 	{
 		AprilTagDetectionItem item;
+		item.detection = tag;
+		item.time = lastFrameTime.toMSecsSinceEpoch();
 
 		tag.getRelativeTranslationRotation(mTagSize, mFx, mFy, mPx, mPy, item.translation, item.rotation);
-		item.detection = tag;
 
 		Eigen::Matrix3d F;
 		F <<

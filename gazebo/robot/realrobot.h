@@ -74,8 +74,6 @@ class RealRobot : public Robot::Kratos2
 	Robot::KratosAprilTag* mAprilTag;
 	bool bFirstTeenseyMessage;
 
-	QDateTime mLastAprilDetection;
-
 public:
 	RealRobot(QObject* parent = 0);
 

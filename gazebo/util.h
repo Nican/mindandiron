@@ -4,6 +4,11 @@
 #include <memory>
 #include <complex>
 
+inline double clamp(double x, double a, double b)
+{
+	return x < a ? a : (x > b ? b : x);
+}
+
 template <typename T, typename U>
 struct BaseGroundProcessor 
 {

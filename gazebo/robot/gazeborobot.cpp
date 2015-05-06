@@ -24,12 +24,13 @@ void GazeboAprilTag::finishedProcessing()
 	RobotGazeboTickData tick = robot->mTeensey->mLastTick;
 	double robotCameraAngle = M_PI - (robot->mTeensy2->mServoAngle * M_PI / 180.0);
 
-	std::cout << "Robot rotation " << tick.robotOrientation << "\t" << robotCameraAngle << "\n";
+	//std::cout << "Robot rotation " << tick.robotOrientation << "\t" << robotCameraAngle << "\n";
 
 	for(auto &tag : detections)
 	{
 		AprilTagDetectionItem item;
 		item.detection = tag;
+		item.time = lastFrameTime.toMSecsSinceEpoch();
 
 		Affine3d affine;
 		Vector3d normal(0.9936, 0.1121, 0); 
@@ -59,8 +60,8 @@ void GazeboAprilTag::finishedProcessing()
 
 		//std::cout << "Found sample: " << item.detection.id << "(" << affine.translation().transpose() << ")\n";
 
-		affine.translation() = AngleAxisd(-tick.robotOrientation + robotCameraAngle, Vector3d::UnitZ()) * affine.translation();
-		affine.linear() = rotation * affine.linear();
+		affine.translation() = rotation * affine.translation();
+		affine.linear() = AngleAxisd(tick.robotOrientation - robotCameraAngle + M_PI, Vector3d::UnitZ()) * affine.linear();
 
 		//std::cout << "\tAfter Rotation: " << affine.translation().transpose() << "\n";
 		//std::cout << "\tAngle " << (affine.linear().eulerAngles(1,2,0) * 180 / M_PI).transpose() << "\n";
@@ -68,6 +69,11 @@ void GazeboAprilTag::finishedProcessing()
 		item.translation = affine.translation();
 		item.rotation = affine.linear();
 		item.euler = affine.linear().eulerAngles(1,2,0);
+		//item.euler.y() = M_PI - item.euler.y();
+
+		//30m limit range
+		if(item.translation.norm() > 30.0)
+			continue;
 
 		detectionsItems.append(item);
 	}
@@ -162,11 +168,12 @@ void GazeboTeensey2::receiveUpdate(const RobotGazeboTickData &data)
 void GazeboTeensey2::fireUpdate()
 {
 	Robot::Teensy2Status status;
-	status.servoAngle = mServoAngle;
+	status.servoAngle = mServoAngle / 180.0 * M_PI;
 	status.current = 10.0;
 	status.voltage = 10.0;
 	status.isPaused = false;
 
+	lastStatus = status;
 	emit statusUpdate(status);
 }
 
@@ -177,7 +184,7 @@ void GazeboTeensey2::sendRaw(int intAngle)
 
 double GazeboTeensey2::GetAprilGazeboAngle()
 {
-	return M_PI - (static_cast<double>(mServoAngle) * M_PI / 180.0);
+	return (static_cast<double>(mServoAngle) * M_PI / 180.0) - M_PI;
 }
 
 

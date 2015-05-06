@@ -27,8 +27,6 @@ class KratosTeensy2 : public Teensy2
 	QSerialPort* mSerial;
 
 public:
-	Teensy2Status lastStatus;
-
 	KratosTeensy2(QObject* parent);
 	virtual void sendRaw(int intAngle) override;
 

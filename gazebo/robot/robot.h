@@ -77,6 +77,7 @@ class Teensy2 : public QObject
 {
 	Q_OBJECT
 public:
+	Teensy2Status lastStatus;
 
 	Teensy2(QObject* parent) : QObject(parent)
 	{
@@ -101,12 +102,15 @@ class SensorLog : public QObject
 public:
 	QSqlDatabase mDb;
 	nzmqt::ZMQSocket* mSocket;
+	QFutureWatcher<QByteArray> mAprilTagWatcher;
 
 	SensorLog(Kratos2* parent, nzmqt::ZMQContext* context);
 
 	void receiveSegmentedPointcloud(SegmentedPointCloud pointCloud);
 	void forceUpdated(double leftForce, double rightForce);
 	void ReceivePath(const std::vector<Eigen::Vector2d> &points);
+
+	void AprilLocationUpdate(QDateTime time, Eigen::Affine2d location);
 
 	void SendObstacles(std::vector<Eigen::Vector2d>);
 	void SetRobot(Eigen::Vector2d pos, double ang);
@@ -119,6 +123,7 @@ public slots:
 	void decawaveUpdate(double distance);
 	void WheelVelocityUpdate(double left, double right);
 	void ReceiveAprilTagImage(QImage image);
+	void SendAprilTagInfo();
 	void ReceiveAprilTags(QList<AprilTagDetectionItem> tags);
 };
 
@@ -136,11 +141,12 @@ public:
 	QFutureWatcher<SegmentedPointCloud> mFutureWatcher;
 
 	TrajectoryPlanner2* mPlanner;
-	//WheelPID* mWheelPID;
 
 	RootState *mState;
 
 	bool mIsPaused;
+
+	QDateTime mLastAprilDetection;
 
 	Kratos2(QObject* parent);
 
@@ -168,10 +174,14 @@ public slots:
 	void ProccessPointCloud(Robot::DepthImgData mat);
 	void TeensyStatus(TeenseyStatus status);
 	void FinishedPointCloud();
+
+	void AprilTagDetected(QList<AprilTagDetectionItem> detections);
+	void AprilScanTimer();
 	
 signals:
 	void pauseUpdate(bool); //True when paused
 	void WheelVelocityUpdate(double left, double right);
+	void AprilLocationUpdate(Eigen::Affine2d newLocation);
 };
 
 

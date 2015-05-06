@@ -6,6 +6,7 @@
 #include <eigen3/Eigen/Dense>
 #include "AprilTags/TagDetector.h"
 #include <memory>
+#include <QDateTime>
 
 namespace Robot {
 
@@ -14,7 +15,8 @@ struct AprilTagDetectionItem
 	Eigen::Vector3d translation;
 	Eigen::Matrix3d rotation;
 	Eigen::Vector3d euler;
-	 
+	qint64 time;
+
 	AprilTags::TagDetection detection;
 };
 
@@ -29,6 +31,7 @@ class AprilTagCamera : public QObject
 public:
 	std::shared_ptr<AprilTags::TagDetector> m_tagDetector;
 	QFutureWatcher<std::vector<AprilTags::TagDetection>> mDetectionFutureWatcher;
+	QDateTime lastFrameTime;
 
 	double mTagSize;
 	double mFx;
