@@ -249,6 +249,20 @@ void MapOverview::ReceivePath(std::vector<Eigen::Vector2d> points)
 
 }
 
+void MapOverview::RobotTagLocation(Eigen::Affine2d location)
+{
+	qDeleteAll(mTagDetections->childItems());
+
+	Eigen::Rotation2Dd rotation(0);
+	rotation.fromRotationMatrix(location.linear());
+
+	auto robot = new RobotRect();
+	robot->setPos(location.translation().x(), location.translation().y());
+	robot->setRotation(rotation.angle() * 180 / M_PI);
+
+	mTagDetections->addToGroup(robot);
+}
+
 void MapOverview::ReadTags(const QList<Robot::AprilTagDetectionItem> &tags)
 {
 	qDeleteAll(mTagDetections->childItems());

@@ -9,7 +9,7 @@
 #include <QGridLayout>
 
 using namespace Robot;
-
+using namespace Eigen;
 
 
 
@@ -217,7 +217,7 @@ void MainWindow::messageReceived(const QList<QByteArray>& messages)
 
 	if(id == '\x05')
 	{
-		std::vector<Eigen::Vector2d> points;
+		std::vector<Vector2d> points;
 
 		msgpack::unpacked result;
 		msgpack::unpack(result, messages[1].data(), messages[1].size());
@@ -238,7 +238,7 @@ void MainWindow::messageReceived(const QList<QByteArray>& messages)
 
 	if(id == '\x07')
 	{
-		std::vector<Eigen::Vector2d> points;
+		std::vector<Vector2d> points;
 
 		msgpack::unpacked result;
 		msgpack::unpack(result, messages[1].data(), messages[1].size());
@@ -264,7 +264,7 @@ void MainWindow::messageReceived(const QList<QByteArray>& messages)
 		msgpack::unpack(result2, messages[1].data(), messages[1].size());
 		result2.get().convert(&posVals);
 
-		mGridView->SetRobot(Eigen::Vector2d(posVals[0], posVals[1]), posVals[2]);
+		mGridView->SetRobot(Vector2d(posVals[0], posVals[1]), posVals[2]);
 	}
 
 	if(id == '\x10')
@@ -290,25 +290,15 @@ void MainWindow::messageReceived(const QList<QByteArray>& messages)
 		}
 
 		mAprilTag->ReadTags(tags);
-		mGridView->ReadTags(tags);
+		mGridView->ReadTags(tags);		
 	}
 
-	/*
-	if(id == '\x11')
+	if(id == '\x12')
 	{
-		msgpack::unpacked result;
-		msgpack::unpack(result, messages[1].data()+1, messages[1].size() - 1);
-		Robot::ImgData data;
-		result.get().convert(&data);
-
-		QImage image(data.data.data(), data.width, data.height, QImage::Format_RGB888);
-		image.bits();
-		mAprilTag->UpdateImage(image);
-
+		Affine2d tf;
+		memcpy(&tf, messages[1].data(), messages[1].size());
+		mGridView->RobotTagLocation(tf);	
 	}
-	*/
-
-
 }
 
 

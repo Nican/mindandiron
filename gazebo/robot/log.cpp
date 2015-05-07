@@ -115,6 +115,8 @@ mDb(QSqlDatabase::addDatabase("QSQLITE"))
 
 void SensorLog::AprilLocationUpdate(QDateTime time, Eigen::Affine2d location)
 {
+	QByteArray data(reinterpret_cast<char*>(&location), sizeof(location));
+
 	Eigen::Rotation2Dd rotation(0);
 	rotation.fromRotationMatrix(location.linear());
 
@@ -125,6 +127,11 @@ void SensorLog::AprilLocationUpdate(QDateTime time, Eigen::Affine2d location)
 	query.bindValue(":y", location.translation().y(), QSql::In);
 	query.bindValue(":rotation", rotation.angle(), QSql::In);
 	query.exec();
+
+	QList<QByteArray> msg;
+	msg += QByteArray("\x12");
+	msg += data;
+	mSocket->sendMessage(msg);
 }
 
 void SensorLog::receiveDepthImage(DepthImgData mat)
@@ -132,7 +139,7 @@ void SensorLog::receiveDepthImage(DepthImgData mat)
 	msgpack::sbuffer sbuf;
 	msgpack::pack(sbuf, mat);
 
-	QByteArray data = QByteArray(sbuf.data(), sbuf.size());
+	QByteArray data(sbuf.data(), sbuf.size());
 
 	QSqlQuery query(mDb);
 	query.prepare("INSERT INTO depthLog(timestamp, data) VALUES(:timestamp, :data)");

@@ -156,6 +156,7 @@ public:
 	void SetRobot(Eigen::Vector2d pos, double angle);
 
 	void ReadTags(const QList<Robot::AprilTagDetectionItem> &tags);
+	void RobotTagLocation(Eigen::Affine2d location);
 };
 
 
