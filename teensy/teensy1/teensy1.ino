@@ -40,6 +40,7 @@ int useVelocityControl = 1;           // 1 to use velocity PID, 0 to use positio
 
 // COLLECTOR AND SORTER SETUP
 Servo servoSorter;
+int lastSorterCmd = 0;
 int collectorAutoCmd = 0;
 int sorterAutoSlot = 0;  // 10 discrete slots (position control)
 
@@ -53,15 +54,20 @@ void setup() {
     // DRIVE SETUP
     pinMode(LEFT_CMD_IN, INPUT);
     pinMode(RIGHT_CMD_IN, INPUT);
+    pinMode(COLLECTOR_CMD_IN, INPUT);
+    pinMode(SORTER_CMD_IN, INPUT);
     pinMode(AUTO_SWITCH_IN, INPUT);
     pinMode(AUTO_SWITCH_OUT, OUTPUT);
     pinMode(COLLECTOR_OUT_A, OUTPUT);
     pinMode(COLLECTOR_OUT_B, OUTPUT);
-    commandCollector(0);  // 0 stops the collector (drives both pins LOW)
+    pinMode(COLLECTOR_OUT_PWM, OUTPUT);
+    commandCollector(0, 0);  // 0 stops the collector (drives both pins LOW)
     servoLeft.attach(LEFT_OUT_PIN); servoLeft.write(MIN_SERVO_SPEED);
     lastLeftCmd = MIN_SERVO_SPEED;
     servoRight.attach(RIGHT_OUT_PIN); servoRight.write(MIN_SERVO_SPEED);
     lastRightCmd = MIN_SERVO_SPEED;
+    servoSorter.attach(SORTER_OUT_PIN); servoSorter.write(MIN_SERVO_SPEED);
+    lastSorterCmd = MIN_SERVO_SPEED;
     Timer1.initialize(VELOCITY_PERIOD_MICRO);
     Timer1.attachInterrupt(calculateVelocity);
 
@@ -111,6 +117,9 @@ void loop() {
         }
         lastLeftCmd = passThroughRC(servoLeft, LEFT_CMD_IN, lastLeftCmd);
         lastRightCmd = passThroughRC(servoRight, RIGHT_CMD_IN, lastRightCmd);
+        lastSorterCmd = passThroughRC(servoSorter, SORTER_CMD_IN, lastSorterCmd);
+ //       controlCollectorWithRC(COLLECTOR_CMD_IN);
+
     }
 
     printDataToComputer(getLeftPosition(), getRightPosition(),

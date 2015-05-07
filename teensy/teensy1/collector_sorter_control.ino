@@ -9,17 +9,18 @@ const int sorterSlotPositions[NUM_SORTER_SLOTS] =
 
 
 // Drives collector in for 1, out for -1, and stops for 0
-void commandCollector(int cmd) {
-    if (cmd > 0) {
+void commandCollector(int direction, int speed) {
+    if (direction > 0) {
         digitalWrite(COLLECTOR_OUT_A, HIGH);
         digitalWrite(COLLECTOR_OUT_B, LOW);
-    } else if (cmd < 0) {
+    } else if (direction < 0) {
         digitalWrite(COLLECTOR_OUT_A, LOW);
         digitalWrite(COLLECTOR_OUT_B, HIGH);
     } else {
         digitalWrite(COLLECTOR_OUT_A, LOW);
         digitalWrite(COLLECTOR_OUT_B, LOW);
     }
+    analogWrite(COLLECTOR_OUT_PWM, speed);
 }
 
 

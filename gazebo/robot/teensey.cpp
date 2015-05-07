@@ -27,7 +27,7 @@ KratosTeensy2::KratosTeensy2(QObject* parent) : Teensy2(parent)
 
 void KratosTeensy2::receiveError(QSerialPort::SerialPortError error)
 {
-	std::cout << "Teensey2 received error. " << mSerial->error() << "\n";
+	std::cout << "Teensy2 received error. " << mSerial->error() << "\n";
 }
 
 void KratosTeensy2::receiveSerialData()
@@ -40,17 +40,16 @@ void KratosTeensy2::receiveSerialData()
 			QString line(buf);
 			QStringList parts = line.trimmed().split("\t");
 
-			if(parts.size() != 8)
+			if(parts.size() != 6)
 			{
-				std::cerr << "Unable to parse Teensey2 string: '" << buf << "'\n";
+				std::cerr << "Unable to parse Teensy2 string: '" << buf << "'\n";
 				return;
 			}
 
 			Teensy2Status status;
 			status.servoAngle = parts[1].toDouble() / 180.0 * M_PI;
 			status.current = parts[3].toDouble();
-			status.voltage = parts[5].toDouble();
-			status.isPaused = parts[7].toInt();
+			status.isPaused = parts[5].toInt();
 
 			lastStatus = status;
 			emit statusUpdate(status);
@@ -95,7 +94,7 @@ KratosTeensy::~KratosTeensy()
 
 void KratosTeensy::receiveError(QSerialPort::SerialPortError error)
 {
-	std::cout << "Teensey received error. " << mSerial->error() << "\n";
+	std::cout << "Teensy received error. " << mSerial->error() << "\n";
 }
 
 void KratosTeensy::SetVelocities(double left, double right)
@@ -128,7 +127,7 @@ void KratosTeensy::receiveSerialData()
 
 			if(parts.size() != 16)
 			{
-				std::cerr << "Unable to parse teensey string: '" << buf << "'\n";
+				std::cerr << "Unable to parse Teensy string: '" << buf << "'\n";
 				return;
 			}
 
