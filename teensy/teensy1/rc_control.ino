@@ -58,6 +58,21 @@ int passThroughRC(Servo servo, int pin, int lastCmd) {
 }
 
 
+void onOffRCControl(Servo servo, int pin) {
+    int duration = pulseIn(pin, HIGH);
+    int cmd;
+
+    // Brakes the motor when in the deadband
+    if (within(duration, MID_SIGNAL, IN_DEADBAND) || duration < MID_SIGNAL) {
+        cmd = MIN_SERVO_SPEED;
+    } else {
+        cmd = 180;
+    }
+
+    servo.write(cmd);
+}
+
+
 // Controls the direction and speed of the collector
 void controlCollectorWithRC(int collectorSignalPin) {
     int duration = pulseIn(collectorSignalPin, HIGH);

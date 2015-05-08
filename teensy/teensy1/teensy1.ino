@@ -115,10 +115,11 @@ void loop() {
             isSystemAuto = 0;
             digitalWrite(AUTO_SWITCH_OUT, isSystemAuto);
         }
-        lastLeftCmd = passThroughRC(servoLeft, LEFT_CMD_IN, lastLeftCmd);
+        // lastLeftCmd = passThroughRC(servoLeft, LEFT_CMD_IN, lastLeftCmd);
         lastRightCmd = passThroughRC(servoRight, RIGHT_CMD_IN, lastRightCmd);
         lastSorterCmd = passThroughRC(servoSorter, SORTER_CMD_IN, lastSorterCmd);
- //       controlCollectorWithRC(COLLECTOR_CMD_IN);
+        // controlCollectorWithRC(COLLECTOR_CMD_IN);
+        onOffRCControl(servoLeft, LEFT_CMD_IN);
 
     }
 
