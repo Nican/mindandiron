@@ -7,15 +7,13 @@
 
 #include "battery_includes.h"
 #include "rc_includes.h"
+#include "camera_servo_includes.h"
 
-
-// April Tag camera setup
-const int camServoID = 253;
-#define MAX_CAM_SERVO_ANGLE 91
 
 int camServoSetpoint = 0;
 int ledState = LOW;
 volatile int ledCounter = 0;
+uint16_t loopCounter = 0;
 
 
 void setup() {
@@ -23,12 +21,12 @@ void setup() {
     setupRC();
 
     Herkulex.beginSerial1(115200);
-    Herkulex.reboot(camServoID);  // Reboot first motor
+    Herkulex.reboot(CAM_SERVO_ID);  // Reboot first motor
     delay(500);
     Herkulex.initialize();  // Initialize motors
     delay(200);
-    Herkulex.moveOneAngle(camServoID, camServoSetpoint, 500, LED_BLUE);
-    Herkulex.setLed(camServoID, LED_CYAN);
+    Herkulex.moveOneAngle(CAM_SERVO_ID, camServoSetpoint, 500, LED_BLUE);
+    Herkulex.setLed(CAM_SERVO_ID, LED_CYAN);
     delay(2000);
 
     // This interrupt is going too fast, even when set to 5000000
@@ -43,14 +41,25 @@ void loop() {
 //    REMOVE COMMENTS WHEN NOT TESTING UNDER RC
 //    if (getAuto()) {
         int command = camServoSetpoint;  // Make copy in case calue is updated
-        Herkulex.moveOneAngle(camServoID, command, 500, LED_GREEN);
+        Herkulex.moveOneAngle(CAM_SERVO_ID, command, 500, LED_GREEN);
 //    } else {
-//        Herkulex.moveOneAngle(camServoID, 0, 1000, LED_BLUE);
-//        Herkulex.setLed(camServoID, LED_PINK);
+//        Herkulex.moveOneAngle(CAM_SERVO_ID, 0, 1000, LED_BLUE);
+//        Herkulex.setLed(CAM_SERVO_ID, LED_PINK);
 //    }
 
-    printDataToComputer(Herkulex.getAngle(camServoID),
+    printDataToComputer(Herkulex.getAngle(CAM_SERVO_ID),
                         getCurrent(), getPaused());
+    delay(5);
+
+    // Periodically reboots the servo, every three minutes (roughly)
+    loopCounter++;
+    if (loopCounter == 15000) {
+        Herkulex.reboot(CAM_SERVO_ID);  // Reboot first motor
+        delay(500);
+        Herkulex.initialize();  // Initialize motors
+        delay(200);
+        loopCounter = 0;
+    }
 }
 
 // Blinks the LED when paused, leaves it solidly on while running
