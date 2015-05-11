@@ -27,6 +27,7 @@ void calculateVelocity() {
     }
     leftVelocity = leftSum / (encoderHistLength - 1);
     rightVelocity = rightSum / (encoderHistLength - 1);
+    calculateVelocityPIDControl();
 }
 
 // Returns in ticks/hundreth of a second

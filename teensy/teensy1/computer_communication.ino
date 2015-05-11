@@ -95,13 +95,14 @@ int boundSorterSignal(int cmd) {
 // Prints given string to the computer, tab separated
 void printDataToComputer(int leftPosition, int rightPosition,
                          int leftVelocity, int rightVelocity,
-                         int aX, int aY, int aZ,
+                         int slot, int aX, int aY, int aZ,
                          int isAuto) {
     // LVEL and RVEL are in ticks/sec
     Serial.print("LPOS\t"); Serial.print(leftPosition);
     Serial.print("\tRPOS\t"); Serial.print(rightPosition);
     Serial.print("\tLVEL\t"); Serial.print(leftVelocity);
     Serial.print("\tRVEL\t"); Serial.print(rightVelocity);
+    Serial.print("\tSLOT\t"); Serial.print(slot);
     Serial.print("\tAX\t"); Serial.print(aX);
     Serial.print("\tAY\t"); Serial.print(aY);
     Serial.print("\tAZ\t"); Serial.print(aZ);

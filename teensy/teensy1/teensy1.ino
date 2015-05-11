@@ -36,14 +36,14 @@ float leftVelocitySetpoint = 0;   // Velocity setpoint from the computer, m/s
 float rightVelocitySetpoint = 0;  // Velocity setpoint from the computer, m/s
 int leftPositionSetpoint = 0;     // Position setpoint from the computer, global ticks
 int rightPositionSetpoint = 0;    // Position setpoint from the computer, global ticks
-int useVelocityControl = 1;           // 1 to use velocity PID, 0 to use position PID
+int useVelocityControl = 1;       // 1 to use velocity PID, 0 to use position PID (unfinished)
 
 // COLLECTOR AND SORTER SETUP
 Servo servoSorter;
 Servo servoCollector;
 int lastSorterCmd = 0;
-int collectorAutoCmd = 0;
 int sorterAutoSlot = 0;  // 10 discrete slots (position control)
+int collectorAutoCmd = 0;
 
 // TURN ON LIGHT WHEN ON
 int ledPin = 13;
@@ -57,6 +57,7 @@ void setup() {
     pinMode(RIGHT_CMD_IN, INPUT);
     pinMode(COLLECTOR_CMD_IN, INPUT);
     pinMode(SORTER_CMD_IN, INPUT);
+    pinMode(SORTER_MAGNET_PIN, INPUT);
     pinMode(AUTO_SWITCH_IN, INPUT);
     pinMode(AUTO_SWITCH_OUT, OUTPUT);
     pinMode(COLLECTOR_OUT_PIN, OUTPUT);
@@ -68,8 +69,9 @@ void setup() {
     Timer1.attachInterrupt(calculateVelocity);
 
     // WHEEL PID SETUP
-    Timer3.initialize(PID_PERIOD_MICRO);
-    Timer3.attachInterrupt(calculateVelocityPIDControl);
+    // COMMENTED OUT, BUNDLED IN WITH calculateVelocity
+    // Timer3.initialize(PID_PERIOD_MICRO);
+    // Timer3.attachInterrupt(calculateVelocityPIDControl);
 
     // SORTER AND COLLECTOR SETUP
     servoSorter.attach(SORTER_OUT_PIN);
@@ -77,6 +79,8 @@ void setup() {
     lastSorterCmd = MIN_SERVO_SPEED;
     servoCollector.attach(COLLECTOR_OUT_PIN);
     servoCollector.write(MIN_SERVO_SPEED);
+    Timer3.initialize(MAGNET_POLL_PERIOD_MICRO);
+    Timer3.attachInterrupt(checkSorterSlotChange);
 
     // TURN ON LIGHT
     pinMode(ledPin, OUTPUT);
@@ -123,6 +127,6 @@ void loop() {
 
     printDataToComputer(getLeftPosition(), getRightPosition(),
                         getLeftVelocity(), getRightVelocity(),
-                        getAX(), getAY(), getAZ(),
+                        getCurrentSlot(), getAX(), getAY(), getAZ(),
                         isSystemAuto);
 }
