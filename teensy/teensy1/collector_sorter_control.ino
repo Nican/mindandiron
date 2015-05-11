@@ -8,19 +8,13 @@ const int sorterSlotPositions[NUM_SORTER_SLOTS] =
     {0, 102, 204, 306, 409, 511, 613, 716, 818, 920};
 
 
-// Drives collector in for 1, out for -1, and stops for 0
-void commandCollector(int direction, int speed) {
-    if (direction > 0) {
-        digitalWrite(COLLECTOR_OUT_A, HIGH);
-        digitalWrite(COLLECTOR_OUT_B, LOW);
-    } else if (direction < 0) {
-        digitalWrite(COLLECTOR_OUT_A, LOW);
-        digitalWrite(COLLECTOR_OUT_B, HIGH);
+// Speed is a servo, speed goes from -85 to 85, recentered around servo 0 (95)
+void commandCollector(Servo servo, int speed) {
+    if (abs(speed) <= SERVO_OUTPUT_LARGE_DELTA) {
+        servo.write(MIN_SERVO_SPEED + speed);
     } else {
-        digitalWrite(COLLECTOR_OUT_A, LOW);
-        digitalWrite(COLLECTOR_OUT_B, LOW);
+        servo.write(MIN_SERVO_SPEED);
     }
-    analogWrite(COLLECTOR_OUT_PWM, speed);
 }
 
 
@@ -40,7 +34,7 @@ int getSlotCenterPosition(int slot) {
 // TODO(Eric): put in a timer loop?
 void commandSorter(Servo servo, int slot) {
     if (slot >= 0 && slot < NUM_SORTER_SLOTS) {
-        int currentPosition = analogRead(SORTER_POT_PIN_IN);
+        int currentPosition = 0; //analogRead(SORTER_POT_PIN_IN);
         int sortError = getSlotCenterPosition(slot) - currentPosition;
         if (abs(sortError) > sorterDeadband) {
             if (sortError > 0) {
