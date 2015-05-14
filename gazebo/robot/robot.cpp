@@ -203,7 +203,7 @@ void Kratos2::FinishedPointCloud()
 	if(pointCloud.mPointCloud == nullptr)
 		return;
 
-	mSensorLog->receiveSegmentedPointcloud(pointCloud);
+	mSensorLog->ReceiveSegmentedPointcloud(pointCloud);
 
 	auto kinect = GetKinect();
 	if(kinect != nullptr)

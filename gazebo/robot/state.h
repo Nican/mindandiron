@@ -65,6 +65,24 @@ signals:
 	void Finished();
 };
 
+class MoveTowardsGoalState;
+
+class ExploreState : public ProgressState
+{
+	Q_OBJECT
+public:
+
+	MoveTowardsGoalState* mGoalMove;
+	QDateTime mStartTime;
+
+	MoveForwardState(Kratos2 *parent) : ProgressState(parent)
+	{
+	}
+
+	virtual void Start() override;
+};
+
+
 
 class ObstacleHistory
 {

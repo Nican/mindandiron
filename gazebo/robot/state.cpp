@@ -80,6 +80,19 @@ void ProgressState::SetFinished()
 }
 
 ////////////////////
+////	Explore State
+////////////////////
+
+void ExploreState::Start()
+{
+	mGoalMove = new MoveTowardsGoalState();
+	mGoal = Vector2d(10.0, 10.0);
+
+	
+}
+
+
+////////////////////
 ////	MoveTowardsGoalState
 ////////////////////
 

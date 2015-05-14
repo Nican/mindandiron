@@ -6,6 +6,28 @@
 using namespace Robot;
 using namespace Eigen;
 
+
+void GazeboSampleDetection::receiveUpdate(const RobotGazeboTickData &data)
+{
+	static const Vector2d sampleLocation(12, 12);
+
+	Vector2d relative = sampleLocation - data.robotPosition.head<2>();
+	//double angle = std::atan2(relative.y(), relative.x());
+
+	//std::cout << "Robot angle: " << data.robotOrientation << "\n";
+	//std::cout << "\tangle: " << angle << "\n";
+
+	//double relativeAngle = angle - data.robotOrientation;
+
+	Vector2d relative2 = Rotation2Dd(data.robotOrientation) * relative;
+
+	//Assume that the detector can see objects at most 10m away
+	if(relative2.norm() > 10.0)
+		return;
+
+	emit SampleDetected(relative2.x(), relative2.y());
+}
+
 GazeboAprilTag::GazeboAprilTag(GazeboKratos* parent) 
 	: AprilTagCamera(parent), mFrameRequested(false), robot(parent)
 {
@@ -205,6 +227,7 @@ GazeboKratos::GazeboKratos(QObject* parent)
 	mDecaWave = new GazeboDevawave(this);
 	mTeensy2 = new GazeboTeensey2(this);
 	mAprilTag = new GazeboAprilTag(this);
+	mSampleDetection = new GazeboSampleDetection(this);
 
 	mSendControlTimer = new QTimer(this);
 	mSendControlTimer->start(1000/30);
@@ -260,6 +283,7 @@ void GazeboKratos::messageReceived(const QList<QByteArray>& messages)
 			mTeensey->receiveUpdate(tickData);
 			mTeensy2->receiveUpdate(tickData);
 			mDecaWave->receiveUpdate(tickData);
+			mSampleDetection->receiveUpdate(tickData);
 		}
 		else if(id == 1)
 		{
@@ -303,7 +327,5 @@ void GazeboKratos::messageReceived(const QList<QByteArray>& messages)
 		{
 			std::cout << "Received unkown message from gazebo with id " << id << "\n";
 		}
-
 	}
-
 }

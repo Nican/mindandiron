@@ -9,6 +9,16 @@ namespace Robot{
 
 class GazeboKratos;
 
+class GazeboSampleDetection : public SampleDetection
+{
+public:
+	GazeboSampleDetection(QObject* parent) : SampleDetection(parent)
+	{
+	}
+
+	void receiveUpdate(const RobotGazeboTickData &data);
+};
+
 class GazeboAprilTag : public AprilTagCamera
 {
 	Q_OBJECT
@@ -107,6 +117,7 @@ public:
 	GazeboDevawave* mDecaWave;
 	GazeboTeensey2* mTeensy2;
 	GazeboAprilTag* mAprilTag;
+	GazeboSampleDetection* mSampleDetection;
 
 	QTimer* mSendControlTimer;
 
@@ -135,6 +146,11 @@ public:
 	virtual AprilTagCamera* GetApril() override
 	{
 		return mAprilTag;
+	}
+
+	virtual SampleDetection* GetSampleDetection() override
+	{
+		return mSampleDetection;
 	}
 
 	virtual QString Name() override

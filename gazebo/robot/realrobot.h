@@ -102,6 +102,11 @@ public:
 		return mAprilTag;
 	}
 
+	virtual SampleDetection* GetSampleDetection() override
+	{
+		return nullptr;
+	}
+
 	virtual QString Name() override
 	{
 		return QString("robot");

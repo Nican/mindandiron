@@ -214,7 +214,7 @@ void SensorLog::teensy2Status(Teensy2Status status)
 }
 
 
-void SensorLog::receiveSegmentedPointcloud(SegmentedPointCloud pointCloud)
+void SensorLog::ReceiveSegmentedPointcloud(SegmentedPointCloud pointCloud)
 {
 	QByteArray data(
 		reinterpret_cast<char*>(pointCloud.mPointCloud->points.data()), 

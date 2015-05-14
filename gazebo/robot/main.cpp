@@ -8,9 +8,17 @@
 #include <QFile>
 #include "camera.h"
 
+using namespace Eigen;
+
+struct TestItem
+{
+	double rot; 
+	Vector3d value;
+	Vector3d expected;
+};
+
 int main(int argc, char* argv[])
 {
-	using namespace Eigen;
 	//QCoreApplication does not have a GUI
 	QCoreApplication app(argc, argv);
 
@@ -58,10 +66,35 @@ int main(int argc, char* argv[])
 		break;
 	}
 	*/
+ 
+ /*
+	std::vector<TestItem> vecs = {
+		{M_PI / 2, {-3, 5.5, 0}, {5.5, 3.0, 0}},
+		{M_PI, {-3, 0.5, 0}, {3, -0.5, 0}},
+		{M_PI, {-3, -0.5, 0}, {3, 0.5, 0}},
+		{-M_PI / 2, {-3, -5.5, 0}, {5.5, -3.0, 0}}
+	};
+
+	double cameraRot = M_PI;
+
+	for(auto& item : vecs)
+	{
+		auto pos = AngleAxisd(-item.rot, Vector3d::UnitZ()) * (item.value);
+
+		auto rotation = AngleAxisd(M_PI - cameraRot, Vector3d::UnitZ());
+		auto pos2 = rotation * pos;
+
+		std::cout << pos2.transpose() << "\n";
+		std::cout << item.expected.transpose() << "\n";
+		std::cout << "\n";
+	}
 
 
-	 Robot::RealRobot robot;
-	//Robot::GazeboKratos robot;
+	return 0;
+	*/
+
+	//Robot::RealRobot robot;
+	Robot::GazeboKratos robot;
 	robot.Initialize();
 
 	return app.exec();

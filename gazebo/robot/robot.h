@@ -96,6 +96,21 @@ signals:
 };
 
 
+class SampleDetection : public QObject
+{
+	Q_OBJECT
+
+public:
+	SampleDetection(QObject* parent) : QObject(parent)
+	{
+	}
+
+signals:
+	//Returns x / y relative to camera position, in meters
+	void SampleDetected(double x, double y);
+};
+
+
 class SensorLog : public QObject
 {
 	Q_OBJECT
@@ -106,7 +121,7 @@ public:
 
 	SensorLog(Kratos2* parent, nzmqt::ZMQContext* context);
 
-	void receiveSegmentedPointcloud(SegmentedPointCloud pointCloud);
+	void ReceiveSegmentedPointcloud(SegmentedPointCloud pointCloud);
 	void forceUpdated(double leftForce, double rightForce);
 	void ReceivePath(const std::vector<Eigen::Vector2d> &points);
 
@@ -160,6 +175,7 @@ public:
 	virtual Teensy2* GetTeensy2() = 0;
 	virtual Decawave* GetDecawave() = 0;
 	virtual AprilTagCamera* GetApril() = 0;
+	virtual SampleDetection* GetSampleDetection() = 0;
 	virtual QString Name() = 0;
 
 	//Set the velocities in m/s
