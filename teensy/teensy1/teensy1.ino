@@ -36,13 +36,14 @@ float leftVelocitySetpoint = 0;   // Velocity setpoint from the computer, m/s
 float rightVelocitySetpoint = 0;  // Velocity setpoint from the computer, m/s
 int leftPositionSetpoint = 0;     // Position setpoint from the computer, global ticks
 int rightPositionSetpoint = 0;    // Position setpoint from the computer, global ticks
-int useVelocityControl = 1;           // 1 to use velocity PID, 0 to use position PID
+int useVelocityControl = 1;       // 1 to use velocity PID, 0 to use position PID (unfinished)
 
 // COLLECTOR AND SORTER SETUP
 Servo servoSorter;
+Servo servoCollector;
 int lastSorterCmd = 0;
-int collectorAutoCmd = 0;
 int sorterAutoSlot = 0;  // 10 discrete slots (position control)
+int collectorAutoCmd = 0;
 
 // TURN ON LIGHT WHEN ON
 int ledPin = 13;
@@ -56,27 +57,30 @@ void setup() {
     pinMode(RIGHT_CMD_IN, INPUT);
     pinMode(COLLECTOR_CMD_IN, INPUT);
     pinMode(SORTER_CMD_IN, INPUT);
+    pinMode(SORTER_MAGNET_PIN, INPUT);
     pinMode(AUTO_SWITCH_IN, INPUT);
     pinMode(AUTO_SWITCH_OUT, OUTPUT);
-    pinMode(COLLECTOR_OUT_A, OUTPUT);
-    pinMode(COLLECTOR_OUT_B, OUTPUT);
-    pinMode(COLLECTOR_OUT_PWM, OUTPUT);
-    commandCollector(0, 0);  // 0 stops the collector (drives both pins LOW)
+    pinMode(COLLECTOR_OUT_PIN, OUTPUT);
     servoLeft.attach(LEFT_OUT_PIN); servoLeft.write(MIN_SERVO_SPEED);
     lastLeftCmd = MIN_SERVO_SPEED;
     servoRight.attach(RIGHT_OUT_PIN); servoRight.write(MIN_SERVO_SPEED);
     lastRightCmd = MIN_SERVO_SPEED;
-    servoSorter.attach(SORTER_OUT_PIN); servoSorter.write(MIN_SERVO_SPEED);
-    lastSorterCmd = MIN_SERVO_SPEED;
     Timer1.initialize(VELOCITY_PERIOD_MICRO);
     Timer1.attachInterrupt(calculateVelocity);
 
     // WHEEL PID SETUP
-    Timer3.initialize(PID_PERIOD_MICRO);
-    Timer3.attachInterrupt(calculateVelocityPIDControl);
+    // COMMENTED OUT, BUNDLED IN WITH calculateVelocity
+    // Timer3.initialize(PID_PERIOD_MICRO);
+    // Timer3.attachInterrupt(calculateVelocityPIDControl);
 
-    // SORTER SETUP
-    servoSorter.attach(SORTER_OUT_PIN); servoSorter.write(MIN_SERVO_SPEED);
+    // SORTER AND COLLECTOR SETUP
+    servoSorter.attach(SORTER_OUT_PIN);
+    servoSorter.write(MIN_SERVO_SPEED);
+    lastSorterCmd = MIN_SERVO_SPEED;
+    servoCollector.attach(COLLECTOR_OUT_PIN);
+    servoCollector.write(MIN_SERVO_SPEED);
+    Timer3.initialize(MAGNET_POLL_PERIOD_MICRO);
+    Timer3.attachInterrupt(checkSorterSlotChange);
 
     // TURN ON LIGHT
     pinMode(ledPin, OUTPUT);
@@ -107,8 +111,8 @@ void loop() {
         } else {
           servoLeft.write(getLeftAutoWheelCmd());
           servoRight.write(getRightAutoWheelCmd());
-          // commandCollector(collectorAutoCmd);
           // commandSorter(servoSorter, sorterAutoSlot);  Uncomment when wired
+          commandCollector(servoCollector, collectorAutoCmd);
         }
     } else {
         if (isSystemAuto) {
@@ -118,12 +122,11 @@ void loop() {
         lastLeftCmd = passThroughRC(servoLeft, LEFT_CMD_IN, lastLeftCmd);
         lastRightCmd = passThroughRC(servoRight, RIGHT_CMD_IN, lastRightCmd);
         lastSorterCmd = passThroughRC(servoSorter, SORTER_CMD_IN, lastSorterCmd);
- //       controlCollectorWithRC(COLLECTOR_CMD_IN);
-
+        roughlyControlWithRC(servoCollector, COLLECTOR_CMD_IN);
     }
 
     printDataToComputer(getLeftPosition(), getRightPosition(),
                         getLeftVelocity(), getRightVelocity(),
-                        getAX(), getAY(), getAZ(),
+                        getCurrentSlot(), getAX(), getAY(), getAZ(),
                         isSystemAuto);
 }
