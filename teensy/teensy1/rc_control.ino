@@ -80,7 +80,7 @@ void roughlyControlWithRC(Servo servo, int signalPin) {
         speed = SERVO_OUTPUT_LARGE_DELTA;
     }
 
-    commandCollector(servo, direction*speed);
+    commandCollectorSimple(servo, direction*speed);
 }
 
 

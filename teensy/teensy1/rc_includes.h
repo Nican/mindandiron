@@ -14,6 +14,7 @@
 #define RIGHT_OUT_PIN    21  // PWM control on the right wheel
 #define MAX_SERVO_SPEED  130
 #define MIN_SERVO_SPEED  95  // Though it seems 90 should be centered, the motors move at 90, stop at 95
+#define COLLECTOR_MIN_SERVO_SPEED  93
 #define MAX_SIGNAL 1950
 #define MID_SIGNAL 1525
 #define MIN_SIGNAL 1100

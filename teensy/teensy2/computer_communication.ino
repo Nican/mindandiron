@@ -35,7 +35,7 @@ int boundCamServoCmd(int cmd) {
 
 // Prints given string to the computer, tab separated
 void printDataToComputer(int camServoAngle, float current, int isPaused) {
-    Serial.print("CAMSRV\t"); Serial.print(camServoAngle);
-    Serial.print("\tAMPS\t"); Serial.print(current);
-    Serial.print("\tPAUSE\t"); Serial.println(isPaused);
+    Serial.print(camServoAngle);
+    Serial.print("\t"); Serial.print(current);
+    Serial.print("\t"); Serial.println(isPaused);
 }

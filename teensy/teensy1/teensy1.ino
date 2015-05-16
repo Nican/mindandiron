@@ -112,7 +112,8 @@ void loop() {
           servoLeft.write(getLeftAutoWheelCmd());
           servoRight.write(getRightAutoWheelCmd());
           // commandSorter(servoSorter, sorterAutoSlot);  Uncomment when wired
-          commandCollector(servoCollector, collectorAutoCmd);
+          commandCollectorFromWheelV(servoCollector, leftVelocitySetpoint,
+                                                     rightVelocitySetpoint);
         }
     } else {
         if (isSystemAuto) {
