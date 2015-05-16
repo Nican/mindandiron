@@ -73,7 +73,7 @@ float boundVelocity(float cmd) {
 int boundCollectorSignal(int cmd) {
     // Decided to treat out-of-bound commands as illegitimate. Could
     // implement this as a clamp function as needed
-    if (abs(cmd) > 1) {
+    if (abs(cmd) > 1 || cmd < 0) {
         return 0;
     } else {
         return cmd;
