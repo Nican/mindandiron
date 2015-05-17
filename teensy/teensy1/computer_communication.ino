@@ -73,7 +73,7 @@ float boundVelocity(float cmd) {
 int boundCollectorSignal(int cmd) {
     // Decided to treat out-of-bound commands as illegitimate. Could
     // implement this as a clamp function as needed
-    if (abs(cmd) > 1) {
+    if (abs(cmd) > 1 || cmd < 0) {
         return 0;
     } else {
         return cmd;
@@ -98,13 +98,13 @@ void printDataToComputer(int leftPosition, int rightPosition,
                          int slot, int aX, int aY, int aZ,
                          int isAuto) {
     // LVEL and RVEL are in ticks/sec
-    Serial.print("LPOS\t"); Serial.print(leftPosition);
-    Serial.print("\tRPOS\t"); Serial.print(rightPosition);
-    Serial.print("\tLVEL\t"); Serial.print(leftVelocity);
-    Serial.print("\tRVEL\t"); Serial.print(rightVelocity);
-    Serial.print("\tSLOT\t"); Serial.print(slot);
-    Serial.print("\tAX\t"); Serial.print(aX);
-    Serial.print("\tAY\t"); Serial.print(aY);
-    Serial.print("\tAZ\t"); Serial.print(aZ);
-    Serial.print("\tAUTO\t"); Serial.println(isAuto);
+    Serial.print(leftPosition);
+    Serial.print("\t"); Serial.print(rightPosition);
+    Serial.print("\t"); Serial.print(leftVelocity);
+    Serial.print("\t"); Serial.print(rightVelocity);
+    Serial.print("\t"); Serial.print(slot);
+    Serial.print("\t"); Serial.print(aX);
+    Serial.print("\t"); Serial.print(aY);
+    Serial.print("\t"); Serial.print(aZ);
+    Serial.print("\t"); Serial.println(isAuto);
 }
