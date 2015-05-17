@@ -24,9 +24,9 @@ void WheelUsageRect::paint(QPainter * painter, const QStyleOptionGraphicsItem * 
 	QGraphicsRectItem::paint(painter, option, widget);
 
 	auto rect = boundingRect();
-	rect.setWidth( rect.width() * mProgress );
+	rect.setWidth( rect.width() * std::abs(mProgress) );
 
-	painter->setBrush(QBrush(Qt::green, Qt::SolidPattern));
+	painter->setBrush(QBrush(mProgress < 0.0 ? Qt::red : Qt::green, Qt::SolidPattern));
 	painter->drawRect(rect);
 }
 
@@ -137,6 +137,8 @@ MapOverview::MapOverview(QWidget *parent)
 	mPlannedTrajectory = scene.addPath(QPainterPath(), QPen(Qt::red, 0));
 
 	mDecawaveCircle = scene.addEllipse(0, 0, 0, 0, QPen(Qt::black, 0));
+
+	mMovingLine = scene.addLine(0, 0, 0, 0, QPen(Qt::black, 0));
 
 	mValueGrid = new ValuesGrid(this);
 

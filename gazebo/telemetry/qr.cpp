@@ -7,8 +7,11 @@ AprilTagLabel::AprilTagLabel(QWidget *parent) :
 	QWidget(parent), mView(&mScene), mMatches(nullptr)
 {
 	mImage = mScene.addRect(0, 0, 1.0, 1.0);
+	lastUpdateLabel = new QLabel("N/A", this);
+
 
 	QGridLayout *layout = new QGridLayout;
+	layout->addWidget(lastUpdateLabel, 1, 0);
 	layout->addWidget(&mView, 0, 0);
 	setLayout(layout);
 }
@@ -19,6 +22,10 @@ void AprilTagLabel::UpdateImage(QImage &original)
 	mImage->setBrush(QBrush(original));
 
 	mView.fitInView(mImage, Qt::KeepAspectRatio);
+
+	QDateTime currentTime = QDateTime::currentDateTime();
+
+	lastUpdateLabel->setText("Last image update: " + currentTime.toString("hh:mm:ss.zzz"));
 }
 
 void AprilTagLabel::ReadTags(QList<Robot::AprilTagDetectionItem> tags)

@@ -147,6 +147,8 @@ public:
 
 	QGraphicsItemGroup* mTagDetections;
 
+	QGraphicsLineItem* mMovingLine;
+
 	void ReceiveControlStatus(const std::vector<double> &velocities);
 
 	void ReceiveDecawaveReading(double distance);

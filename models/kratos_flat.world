@@ -21,7 +21,7 @@
       <include>
         <uri>model://models</uri>
         <name>kratos</name>
-        <pose>0.0 0 0.29 0 0 0</pose>
+        <pose>5 3 0.29 0 0 0</pose>
       </include>
 
       <model name='kratos_plataform'>
@@ -66,7 +66,7 @@
 
 
       <model name='unit_box_1'>
-        <pose>5 0 0.5 0 0 0</pose>
+        <pose>10 0 0.5 0 0 0</pose>
         <static>1</static>
         <link name='link'>
           <collision name='collision'>
@@ -88,7 +88,7 @@
 
 
       <model name='unit_box_2'>
-        <pose>5 5 0.5 0 0 0</pose>
+        <pose>10 5 0.5 0 0 0</pose>
         <static>1</static>
         <link name='link'>
           <collision name='collision'>
@@ -172,7 +172,7 @@
       </model>
 
       <model name='unit_box_6'>
-        <pose>5 -5 0.5 0 0 0</pose>
+        <pose>10 -5 0.5 0 0 0</pose>
         <static>1</static>
         <link name='link'>
           <collision name='collision'>

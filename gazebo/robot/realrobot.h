@@ -27,6 +27,7 @@ class KratosAprilTag : public AprilTagCamera
 	Q_OBJECT
 public:
 	KratosCamera* mCamera;
+	QFuture<void> runningRequestFuture;
 
 	KratosAprilTag(QObject* parent = 0);
 
@@ -74,6 +75,8 @@ class RealRobot : public Robot::Kratos2
 	Robot::KratosAprilTag* mAprilTag;
 	bool bFirstTeenseyMessage;
 
+	KratosCamera* mFrontCamera;
+
 public:
 	RealRobot(QObject* parent = 0);
 
@@ -102,11 +105,17 @@ public:
 		return mAprilTag;
 	}
 
+	virtual SampleDetection* GetSampleDetection() override
+	{
+		return nullptr;
+	}
+
 	virtual QString Name() override
 	{
 		return QString("robot");
 	}
 
+	void RequestFrontImage();
 
 public slots:
 	void updateForces();

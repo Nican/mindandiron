@@ -74,29 +74,28 @@ void onOffRCControl(Servo servo, int pin) {
 
 
 // Controls the direction and speed of the collector
-void controlCollectorWithRC(int collectorSignalPin) {
-    int duration = pulseIn(collectorSignalPin, HIGH);
-    int direction = 0;
-    int speed = 0;
+void roughlyControlWithRC(Servo servo, int signalPin) {
+    int duration = pulseIn(signalPin, HIGH);
+    int direction;
+    int speed;
 
     // Adjusts the direction as appropriate
-    if (duration > MID_SIGNAL) {
+    if (duration < MID_SIGNAL) {
         direction = 1;
     } else {
         direction = -1;
     }
 
-    // Brakes the robot when in the deadband
+    // Brakes the collector when in the deadband
     if (within(duration, MID_SIGNAL, IN_DEADBAND)) {
-        direction = 0;
         speed = 0;
     } else if (within(duration, MID_SIGNAL, 2*IN_DEADBAND)) {
-        speed = COLLECTOR_LOW_SPEED;
+        speed = SERVO_OUTPUT_SMALL_DELTA;
     } else if (duration < MAX_SIGNAL && duration > MIN_SIGNAL) {
-        speed = COLLECTOR_HIGH_SPEED;
+        speed = SERVO_OUTPUT_LARGE_DELTA;
     }
 
-    commandCollector(direction, speed);
+    commandCollector(servo, direction*speed);
 }
 
 

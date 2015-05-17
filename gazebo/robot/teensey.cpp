@@ -36,20 +36,21 @@ void KratosTeensy2::receiveSerialData()
 	{
 		char buf[1024]; 
 		qint64 lineLength = mSerial->readLine(buf, sizeof(buf));
+
 		if (lineLength != -1) {
 			QString line(buf);
 			QStringList parts = line.trimmed().split("\t");
 
-			if(parts.size() != 6)
+			if(parts.size() != 3)
 			{
 				std::cerr << "Unable to parse Teensy2 string: '" << buf << "'\n";
 				return;
 			}
 
 			Teensy2Status status;
-			status.servoAngle = parts[1].toDouble() / 180.0 * M_PI;
-			status.current = parts[3].toDouble();
-			status.isPaused = parts[5].toInt();
+			status.servoAngle = parts[0].toDouble() / 180.0 * M_PI;
+			status.current = parts[1].toDouble();
+			status.isPaused = parts[2].toInt();
 
 			lastStatus = status;
 			emit statusUpdate(status);
@@ -121,25 +122,27 @@ void KratosTeensy::receiveSerialData()
 	{
 		char buf[1024]; 
 		qint64 lineLength = mSerial->readLine(buf, sizeof(buf));
+
 		if (lineLength != -1) {
 			QString line(buf);
 			QStringList parts = line.trimmed().split("\t");
 
-			if(parts.size() != 16)
+			if(parts.size() != 9)
 			{
 				std::cerr << "Unable to parse Teensy string: '" << buf << "'\n";
 				return;
 			}
 
 			TeenseyStatus status;
-			status.leftPosition = parts[1].toDouble();
-			status.rightPosition = parts[3].toDouble(); 
-			status.leftVelocity = parts[5].toDouble();
-			status.rightVelocity = parts[7].toDouble();
-			status.acceleration.x() = parts[9].toDouble() - 512.0;
-			status.acceleration.y() = parts[11].toDouble() - 512.0;
-			status.acceleration.z() = parts[13].toDouble() - 512.0;
-			status.autoFlag = parts[15] == "1";
+			status.leftPosition = parts[0].toDouble();
+			status.rightPosition = parts[1].toDouble(); 
+			status.leftVelocity = parts[2].toDouble();
+			status.rightVelocity = parts[3].toDouble();
+			//Slot = 4
+			status.acceleration.x() = parts[5].toDouble() - 512.0;
+			status.acceleration.y() = parts[6].toDouble() - 512.0;
+			status.acceleration.z() = parts[7].toDouble() - 512.0;
+			status.autoFlag = parts[8] == "1";
 	        status.acceleration = status.acceleration / 200.0; //Convert from voltage to m/s^2
 
 			emit statusUpdate(status);
@@ -176,8 +179,9 @@ void KratosDecawave::messageReceived(const QList<QByteArray>& messages)
 			QString doubleVal = readString.replace("LAST: ", "");
 
 			double val = doubleVal.toDouble();
+			lastDistance = val;
 
-			std::cout << "Read decawave value: " << val << "\n";
+			//std::cout << "Read decawave value: " << val << "\n";
 
 			emit statusUpdate(val);
 		}

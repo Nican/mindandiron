@@ -31,6 +31,8 @@ class Decawave : public QObject
 	Q_OBJECT
 	
 public:
+	double lastDistance;
+
 	Decawave(QObject* parent) : QObject(parent)
 	{
 	}
@@ -96,6 +98,21 @@ signals:
 };
 
 
+class SampleDetection : public QObject
+{
+	Q_OBJECT
+
+public:
+	SampleDetection(QObject* parent) : QObject(parent)
+	{
+	}
+
+signals:
+	//Returns x / y relative to camera position, in meters
+	void SampleDetected(double x, double y);
+};
+
+
 class SensorLog : public QObject
 {
 	Q_OBJECT
@@ -106,7 +123,7 @@ public:
 
 	SensorLog(Kratos2* parent, nzmqt::ZMQContext* context);
 
-	void receiveSegmentedPointcloud(SegmentedPointCloud pointCloud);
+	void ReceiveSegmentedPointcloud(SegmentedPointCloud pointCloud);
 	void forceUpdated(double leftForce, double rightForce);
 	void ReceivePath(const std::vector<Eigen::Vector2d> &points);
 
@@ -127,6 +144,27 @@ public slots:
 	void ReceiveAprilTags(QList<AprilTagDetectionItem> tags);
 };
 
+class LocationEstimation : public QObject
+{
+	Q_OBJECT
+
+	Odometry odometry;
+	TeenseyStatus lastTeensyStatus;
+	Eigen::Affine2d lastAprilStatus;
+
+public:
+	QDateTime lastAprilUpdate;
+
+	LocationEstimation(QObject* parent);
+
+	Eigen::Affine2d GetEstimate();
+
+public slots:
+	void teensyStatus(TeenseyStatus status);
+	void AprilLocationUpdate(Eigen::Affine2d newLocation);
+
+};
+
 class Kratos2 : public QObject
 {
 	Q_OBJECT
@@ -136,6 +174,7 @@ class Kratos2 : public QObject
 
 public:
 	nzmqt::ZMQContext* mContext;
+	LocationEstimation mLocation;
 
 	SensorLog* mSensorLog;
 	QFutureWatcher<SegmentedPointCloud> mFutureWatcher;
@@ -160,6 +199,7 @@ public:
 	virtual Teensy2* GetTeensy2() = 0;
 	virtual Decawave* GetDecawave() = 0;
 	virtual AprilTagCamera* GetApril() = 0;
+	virtual SampleDetection* GetSampleDetection() = 0;
 	virtual QString Name() = 0;
 
 	//Set the velocities in m/s
@@ -174,6 +214,7 @@ public slots:
 	void ProccessPointCloud(Robot::DepthImgData mat);
 	void TeensyStatus(TeenseyStatus status);
 	void FinishedPointCloud();
+	void ReceiveAprilTagImage(QImage image);
 
 	void AprilTagDetected(QList<AprilTagDetectionItem> detections);
 	void AprilScanTimer();

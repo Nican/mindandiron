@@ -53,7 +53,6 @@ public:
 	b2Fixture* mRobotFixture;
 	QVector<b2Body*> mObstacles;
 
-	TrajectoryPlanner2* mPlanner;
 	Eigen::Vector2d mGoal;
 	std::unique_ptr<TrajectoryTreeNode2> rootNode;
 

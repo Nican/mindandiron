@@ -9,6 +9,8 @@ namespace Robot
 {
 
 class TrajectorySearch;
+class MoveForwardState;
+class MoveTowardsGoalState;
 
 class BaseState : public QObject
 {
@@ -66,6 +68,140 @@ signals:
 };
 
 
+class ReturnToStationState : public ProgressState
+{
+	Q_OBJECT
+public:
+
+	QDateTime mStartTime;
+	ProgressState *mState;
+
+	ReturnToStationState(Kratos2 *parent) : ProgressState(parent), mState(nullptr)
+	{
+	}
+
+	virtual void Start() override;
+	void SetState(ProgressState* nextState);
+
+public slots:
+	void MoveToNextState();
+};
+
+
+class BackIntoBaseStationState : public ProgressState
+{
+	Q_OBJECT
+public:
+
+	QDateTime mStartTime;
+
+	BackIntoBaseStationState(Kratos2 *parent) : ProgressState(parent)
+	{
+	}
+
+	virtual void Start() override;
+
+public slots:
+	void TeensyStatus(TeenseyStatus status);
+	void FoundAprilTag(Eigen::Affine2d newLocation);
+
+};
+
+
+class ReturnLocateAprilState : public ProgressState
+{
+	Q_OBJECT
+public:
+
+	QDateTime mStartTime;
+	QDateTime mFinishedRotatingTime;
+
+	MoveTowardsGoalState* mMoveInfront;
+
+	ReturnLocateAprilState(Kratos2 *parent) : ProgressState(parent)
+	{
+	}
+
+	virtual void Start() override;
+
+public slots:
+	void TeensyStatus(TeenseyStatus status);
+	void FoundAprilTag(Eigen::Affine2d newLocation);
+	void FinishRotate();
+	void RealignInFront();
+};
+
+enum class ReturnMoveEnum 
+{
+	FORWARD,
+	LEFT,
+	RIGHT
+};
+
+class ReturnMoveBackState : public ProgressState
+{
+	Q_OBJECT
+public:
+
+	ReturnMoveEnum returnType;
+	QDateTime mStartTime;
+	double startDecawaveValue;
+	double mLastPerformance;
+
+	ReturnMoveBackState(Kratos2 *parent) : ProgressState(parent)
+	{
+	}
+
+	virtual void Start() override;
+	void Reset();
+
+public slots:
+	void TeensyStatus(TeenseyStatus status);
+};
+
+
+
+class ReturnRealignState : public ProgressState
+{
+	Q_OBJECT
+public:
+
+	QFutureWatcher<std::shared_ptr<TrajectorySearch>> mPathFutureWatcher;
+	QDateTime mStartTime;
+	MoveForwardState* mMoveForward;
+	double startDecawaveValue;
+
+	ReturnRealignState(Kratos2 *parent) : ProgressState(parent)
+	{
+	}
+
+	virtual void Start() override;
+
+public slots:
+	void ReceiveObstcles(ObstacleMap obstacleMap);
+	void FinishedTrajectory();
+	void Realign();
+	void FinishRotate();
+};
+
+
+class ExploreState : public ProgressState
+{
+	Q_OBJECT
+public:
+
+	MoveTowardsGoalState* mGoalMove;
+	QDateTime mStartTime;
+
+	ExploreState(Kratos2 *parent) : ProgressState(parent)
+	{
+	}
+
+	virtual void Start() override;
+};
+
+
+
 class ObstacleHistory
 {
 public:
@@ -87,11 +223,16 @@ public:
 
 	Eigen::Vector2d mGoal;
 	QDateTime mStartTime;
+	Eigen::Vector2d mStartPos;
+	double mStartAngle;
+	bool mReverse;
 
 	MoveTowardsGoalState(Kratos2 *parent);
 
 	virtual void Start() override;
 	void DriveTowards(Odometry odometry, Eigen::Vector2d goal);
+
+	
 
 public slots:
 	void UpdateTrajectory(ObstacleMap);

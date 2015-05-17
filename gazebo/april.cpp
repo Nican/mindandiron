@@ -29,15 +29,15 @@ QDataStream &operator>>(QDataStream &in, AprilTagDetectionItem &item)
 //////////////////////////
 /// AprilTagCamera
 //////////////////////////
-/*
-static void DebugImage(cv::Mat &input)
+
+void DebugImage(cv::Mat &input)
 {
 	cv::Mat output;
 	cv::resize(input, output, {960, 540});
 
 	cv::imshow("AA", output);
 }
-*/
+
 inline double standardRad(double t) {
 	if (t >= 0.) {
 		t = fmod(t+M_PI, M_PI * 2) - M_PI;
@@ -81,20 +81,22 @@ void AprilTagCamera::ReadFrame(QImage image)
 		return;
 	}
 
-	auto future = QtConcurrent::run([image, this]()
+	if(image.format() != QImage::Format_RGB888)
 	{
-		if(image.format() != QImage::Format_RGB888)
-		{
-			std::cout << "Warning! Image is not of Format_RGB888 format.\n";
-			std::cout << "Double check that April Tag Detection is working.\n";
-		}
+		std::cout << "Warning! Image is not of Format_RGB888 format.\n";
+		std::cout << "Double check that April Tag Detection is working.\n";
+	}
 
-		cv::Mat cvImage(image.height(), image.width(), CV_8UC3, (uchar*)image.bits(), image.bytesPerLine());
+	cv::Mat cvImage(image.height(), image.width(), CV_8UC3, (uchar*)image.bits(), image.bytesPerLine());
+
+	cvImage = cvImage.clone();
+	
+	auto future = QtConcurrent::run([cvImage, this]()
+	{
 		cv::Mat image_gray;
 		std::vector<AprilTags::TagDetection> detections;
 
 		cv::cvtColor(cvImage, image_gray, CV_BGR2GRAY);
-		//DebugImage(image_gray);
 
 		detections = m_tagDetector->extractTags(image_gray);
 

@@ -25,7 +25,7 @@ mDb(QSqlDatabase::addDatabase("QSQLITE"))
 	QString dataFile = date.toString("yyyy_MM_dd_hh_mm_ss");
 
 	mDb.setHostName("localhost");
-	mDb.setDatabaseName(dataFolder.absolutePath() + "/" + dataFile + ".db");
+	mDb.setDatabaseName(dataFolder.absolutePath() + "/" + parent->Name() + "_" + dataFile + ".db");
 
 	if (!mDb.open())
 	{
@@ -82,6 +82,14 @@ mDb(QSqlDatabase::addDatabase("QSQLITE"))
 		"timestamp INTEGER,"\
 		"leftForce REAL, rightForce REAL"\
 		")");
+
+/*
+	mDb.exec("CREATE TABLE IF NOT EXISTS frontCameraImageLog(" \
+		"id INTEGER PRIMARY KEY ASC,"\
+		"timestamp INTEGER,"\
+		"data COLLATE BINARY"\
+		")");
+		*/
 
 	mDb.exec("CREATE TABLE IF NOT EXISTS aprilTagImageLog(" \
 		"id INTEGER PRIMARY KEY ASC,"\
@@ -155,8 +163,6 @@ void SensorLog::receiveDepthImage(DepthImgData mat)
 
 void SensorLog::receiveKinectImage(Robot::ImgData mat)
 {
-	std::cout << "Received kinect kinectImageLog\n";
-
 	msgpack::sbuffer sbuf;
 	msgpack::pack(sbuf, mat);
 
@@ -214,7 +220,7 @@ void SensorLog::teensy2Status(Teensy2Status status)
 }
 
 
-void SensorLog::receiveSegmentedPointcloud(SegmentedPointCloud pointCloud)
+void SensorLog::ReceiveSegmentedPointcloud(SegmentedPointCloud pointCloud)
 {
 	QByteArray data(
 		reinterpret_cast<char*>(pointCloud.mPointCloud->points.data()), 
@@ -313,10 +319,11 @@ void SensorLog::ReceiveAprilTagImage(QImage image)
 		return;
 
 	auto future = QtConcurrent::run([image](){
+		//std::cout << "Start compressing april tag\n";
 		QByteArray buffer;
 		QDataStream stream(&buffer, QIODevice::WriteOnly);
 		stream.setVersion(QDataStream::Qt_4_8);
-		stream << image;
+		stream << image; //.scaledToWidth(1920/3);
 
 		return buffer;
 	});

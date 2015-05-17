@@ -41,5 +41,8 @@ target_link_libraries(kratos ${Boost_LIBRARIES} ${GAZEBO_LIBRARIES} kratos_base)
 add_executable(park_viewer park_viewer.cpp)
 target_link_libraries(park_viewer ${Boost_LIBRARIES} kratos_base)
 
+add_executable(pcl_test pcl_test.cpp)
+target_link_libraries(pcl_test ${Boost_LIBRARIES} kratos_base)
+
 add_subdirectory(telemetry)
 add_subdirectory(robot)

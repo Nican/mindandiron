@@ -97,8 +97,8 @@
     </sensor>
 
 
-    <visual name='depth_visual'>
-      <pose>0.24 0.0 0.6 0 0 0</pose>
+    <visual name='april_visual'>
+      <pose>0.0 0.0 0.6 0 0 0</pose>
       <geometry>
         <box>
           <size>0.2 0.1 0.1</size>
@@ -108,7 +108,7 @@
 
 
     <sensor type="camera" name="camera1">
-      <pose>0.24 0.0 0.6 0 0 0</pose>
+      <pose>0.0 0.0 0.6 0 0 0</pose>
       <always_on>true</always_on>
       <update_rate>2.0</update_rate>
       <camera name="head">

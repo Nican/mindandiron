@@ -14,6 +14,8 @@ class AprilTagLabel : public QWidget
 	QGraphicsRectItem* mImage;
 	QGraphicsItemGroup* mMatches;
 
+	QLabel* lastUpdateLabel;
+
 public:
 	AprilTagLabel(QWidget *parent = 0);
 

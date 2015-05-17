@@ -22,12 +22,18 @@ void KratosCamera::openCamera()
 
     mCapture.set(CV_CAP_PROP_FRAME_WIDTH, mWidth);
     mCapture.set(CV_CAP_PROP_FRAME_HEIGHT, mHeight);
-
 }
 
 bool KratosCamera::read(cv::Mat &cv_image)
 {
-	for(int i = 0; i < 4; i++ )
+	auto newId = getCameraByName(mDeviceName);
+
+	if(newId != mDeviceId)
+	{
+		openCamera();
+	}
+
+	for(int i = 0; i < 8; i++ )
 	{
 		mCapture.grab();
 		//std::cout << "Grabing frame\n";

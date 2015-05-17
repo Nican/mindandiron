@@ -8,6 +8,8 @@
 #include <memory>
 #include <QDateTime>
 
+void DebugImage(cv::Mat &input);
+
 namespace Robot {
 
 struct AprilTagDetectionItem

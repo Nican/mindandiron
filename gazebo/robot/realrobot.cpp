@@ -25,12 +25,19 @@ static void DebugImage(cv::Mat &input)
 KratosAprilTag::KratosAprilTag(QObject* parent) : 
 	AprilTagCamera(parent)
 {
-	mCamera = new KratosCamera("usb-046d_HD_Pro_Webcam_C920_2245793F-video-index0", 1920, 1080, this);
+	mCamera = new KratosCamera("usb-046d_HD_Pro_Webcam_C920_F19B696F-video-index0", 1920, 1080, this);
+	//usb-046d_HD_Pro_Webcam_C920_F19B696F-video-index0
+	//usb-046d_HD_Pro_Webcam_C920_2245793F-video-index0 -- April camera
 }
 
 void KratosAprilTag::RequestFrame()
 {
-	QtConcurrent::run([this]()
+	if(runningRequestFuture.isRunning())
+		return;
+
+	///std::cout << "Thead count: " << QThreadPool::globalInstance()->activeThreadCount() << "/" << QThreadPool::globalInstance()->maxThreadCount() << "\n";
+
+	runningRequestFuture = QtConcurrent::run([this]()
 	{
 		cv::Mat image;
 
@@ -48,7 +55,8 @@ void KratosAprilTag::RequestFrame()
 		dest.bits(); // enforce deep copy, see documentation of QImage::QImage ( const uchar * data, int width, int height, Format format )
 
 		emit this->ReceiveFrame(dest);
-	});
+	}
+	);
 
 
 }
@@ -81,6 +89,8 @@ void KratosKinect::requestDepthFrame()
 
 	if(mDev != nullptr)
 		mDev->setIrAndDepthFrameListener(this);
+
+	//std::cout << "Depth frame requested\n";
 }
 
 void KratosKinect::requestColorFrame()
@@ -141,6 +151,8 @@ bool KratosKinect::onNewFrame(libfreenect2::Frame::Type type, libfreenect2::Fram
 
 		mDev->setIrAndDepthFrameListener(nullptr);
 
+		//std::cout << "Got depth frame\n";
+
 		emit receiveDepthImage(imgData);
 	}
 
@@ -177,6 +189,43 @@ RealRobot::RealRobot(QObject* parent) :
 	auto timer = new QTimer(this);
 	timer->start(100); //time specified in ms
 	connect(timer, &QTimer::timeout, this, &RealRobot::updateForces);
+
+
+	//mFrontCamera = new KratosCamera("usb-046d_HD_Pro_Webcam_C920_F19B696F-video-index0", 1920, 1080, this);
+	/*
+	connect(mFrontCamera, &KratosCamera::CameraFrame, this, [this](QImage image)
+	{
+		QImage image2 = image;
+		image2.bits();
+
+		QtConcurrent::run([this, image2](){
+			static int counter = 0;
+			std::cout << "Saving front image\n";
+			image2.save("front/" + QString::fromStdString(std::to_string(counter)) + ".png");
+			counter++;
+			this->RequestFrontImage();
+		});
+	});
+	*/
+
+	//RequestFrontImage();
+}
+
+void RealRobot::RequestFrontImage()
+{
+	QtConcurrent::run([this](){
+		std::cout << "Reading image\n";
+		static int counter = 0;
+		//std::cout << "Requesting front image\n";
+		cv::Mat image;
+		this->mFrontCamera->read(image);
+
+		//DebugImage(image);
+
+		//imwrite("front/" + std::to_string(counter) + ".png", image );
+		counter++;
+		this->RequestFrontImage();
+	});
 }
 
 void RealRobot::updateForces()

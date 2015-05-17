@@ -299,6 +299,20 @@ void MainWindow::messageReceived(const QList<QByteArray>& messages)
 		memcpy(&tf, messages[1].data(), messages[1].size());
 		mGridView->RobotTagLocation(tf);	
 	}
+
+	if(id == '\x13')
+	{
+		QDataStream stream(messages[1]);
+		Vector2d from;
+		Vector2d to;
+
+		stream >> from.x();
+		stream >> from.y();
+		stream >> to.x();
+		stream >> to.y();
+
+		mGridView->mMovingLine->setLine(from.x(), from.y(), to.x(), to.y());
+	}
 }
 
 
