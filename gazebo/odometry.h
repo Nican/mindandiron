@@ -27,6 +27,7 @@ public:
 	{
 	}
 
+	void SetTheta(double angle);
 	void Update(double leftWheel, double rightWheel);
 };
 

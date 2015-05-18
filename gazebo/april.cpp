@@ -77,7 +77,7 @@ void AprilTagCamera::ReadFrame(QImage image)
 {
 	if(IsProcessing())
 	{
-		std::cout << "April tags is still processing. not starting a new one\n";
+		//std::cout << "April tags is still processing. not starting a new one\n";
 		return;
 	}
 

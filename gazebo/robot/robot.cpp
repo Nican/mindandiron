@@ -28,7 +28,7 @@ void LocationEstimation::teensyStatus(TeenseyStatus status)
 	lastTeensyStatus = status;
 
 	if(std::abs(diffLeft) > 0.1 || std::abs(diffRight) > 0.1){
-		std::cout << "\t Skipping large jump: " << diffLeft << "\t" << diffRight << "\n";
+		//std::cout << "\t Skipping large jump: " << diffLeft << "\t" << diffRight << "\n";
 		return;
 	}
 
@@ -132,7 +132,7 @@ void Kratos2::AprilScanTimer()
 	auto currentTime = QDateTime::currentDateTime();
 	if(std::abs(this->mLastAprilDetection.msecsTo(currentTime)) > 4000)
 	{
-		std::cout << "Setting it to SCAN MODE ("<< scanModeValues[lastScanValue] <<")\n";	
+		//std::cout << "Setting april camera to SCAN MODE ("<< scanModeValues[lastScanValue] <<")\n";	
 
 		GetTeensy2()->sendRaw(scanModeValues[lastScanValue]);
 		lastScanValue = (lastScanValue + 1) % scanModeValues.size();	
@@ -170,7 +170,7 @@ void Kratos2::AprilTagDetected(QList<AprilTagDetectionItem> detections)
 		mLastAprilDetection = QDateTime::currentDateTime();
 
 		//Update the robot location estimation
-		double euler = tag.euler.y() + (6.4 / 180 * M_PI);
+		double euler = tag.euler.y() + (0.0 / 180 * M_PI); //6.4
 		Vector2d translation = tag.translation.head<2>();
 
 		translation = Rotation2Dd(euler) * translation;
@@ -188,7 +188,7 @@ void Kratos2::AprilTagDetected(QList<AprilTagDetectionItem> detections)
 
 		//Update the teensy to update to the new angle
 		double rot2 = std::atan2(tag.translation.y(), tag.translation.x());
-		if(std::abs(rot2) < (5.0 * M_PI / 180.0))
+		if(std::abs(rot2) < (1.0 * M_PI / 180.0))
 			continue;
 
 		GetTeensy2()->setAprilAngle(clamp(rot2 + servoAngle, -M_PI/2, M_PI/2));
@@ -207,7 +207,7 @@ void Kratos2::TeensyStatus(TeenseyStatus status)
 
 	if(status.autoFlag == 0)
 	{
-		SetWheelVelocity(0.0, 0.0);
+		//SetWheelVelocity(0.0, 0.0);
 	}
 }
 

@@ -2,6 +2,7 @@
 #include <QDebug>
 #include <iostream>
 #include <QTimer>
+#include <QProcess>
 
 using namespace Robot;
 using namespace Eigen;
@@ -166,7 +167,7 @@ void GazeboTeensey::fireUpdate()
 	status.leftVelocity = mLastTick.leftWheelVelocity;
 	status.rightVelocity = mLastTick.rightWheelVelocity;
 	status.acceleration = mLastTick.linearAcceleration;
-	status.autoFlag = false;
+	status.autoFlag = true;
 
 	emit statusUpdate(status);
 }
@@ -235,6 +236,13 @@ GazeboKratos::GazeboKratos(QObject* parent)
 
 	connect(mSendControlTimer, SIGNAL(timeout()), this, SLOT(fireControlUpdate()));
 	connect(mSubSocket, SIGNAL(messageReceived(const QList<QByteArray>&)), SLOT(messageReceived(const QList<QByteArray>&)));
+
+	QString program = "gazebo";
+    QStringList arguments;
+    arguments << "/home/kratos/projects/mindandiron/models/kratos_flat.world";
+
+    QProcess *myProcess = new QProcess();
+    myProcess->start(program, arguments);
 }
 
 void GazeboKratos::fireControlUpdate()

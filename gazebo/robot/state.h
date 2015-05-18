@@ -17,15 +17,15 @@ class BaseState : public QObject
 	Q_OBJECT
 public:
 
-	Kratos2* mRobot;
-
-	BaseState(Kratos2 *parent) : QObject(parent), mRobot(parent)
+	BaseState(QObject *parent) : QObject(parent)
 	{
 	}
 
 	virtual bool IsValid();
 	virtual void Start(){};
 	virtual void End(){};
+
+	virtual Kratos2* Robot();
 };
 
 class ProgressState;
@@ -37,7 +37,7 @@ class RootState : public BaseState
 	ProgressState *mState;
 
 public:
-	RootState(Kratos2 *parent);
+	RootState(QObject *parent);
 
 	void SetState(ProgressState* nextState);
 
@@ -55,7 +55,7 @@ private:
 	bool mIsFinished;
 
 public:
-	ProgressState(Kratos2 *parent) : BaseState(parent), mIsFinished(false)
+	ProgressState(QObject *parent) : BaseState(parent), mIsFinished(false)
 	{
 	}
 
@@ -76,7 +76,7 @@ public:
 	QDateTime mStartTime;
 	ProgressState *mState;
 
-	ReturnToStationState(Kratos2 *parent) : ProgressState(parent), mState(nullptr)
+	ReturnToStationState(QObject *parent) : ProgressState(parent), mState(nullptr)
 	{
 	}
 
@@ -94,8 +94,9 @@ class BackIntoBaseStationState : public ProgressState
 public:
 
 	QDateTime mStartTime;
+	MoveTowardsGoalState* mMoveInfront;
 
-	BackIntoBaseStationState(Kratos2 *parent) : ProgressState(parent)
+	BackIntoBaseStationState(QObject *parent) : ProgressState(parent), mMoveInfront(nullptr)
 	{
 	}
 
@@ -104,7 +105,7 @@ public:
 public slots:
 	void TeensyStatus(TeenseyStatus status);
 	void FoundAprilTag(Eigen::Affine2d newLocation);
-
+	void DriveInto();
 };
 
 
@@ -118,7 +119,7 @@ public:
 
 	MoveTowardsGoalState* mMoveInfront;
 
-	ReturnLocateAprilState(Kratos2 *parent) : ProgressState(parent)
+	ReturnLocateAprilState(QObject *parent) : ProgressState(parent), mMoveInfront(nullptr)
 	{
 	}
 
@@ -129,6 +130,7 @@ public slots:
 	void FoundAprilTag(Eigen::Affine2d newLocation);
 	void FinishRotate();
 	void RealignInFront();
+	void FinishedFinalRotation();
 };
 
 enum class ReturnMoveEnum 
@@ -148,15 +150,20 @@ public:
 	double startDecawaveValue;
 	double mLastPerformance;
 
-	ReturnMoveBackState(Kratos2 *parent) : ProgressState(parent)
+	std::array<double, 5> mLastReadings;
+	std::size_t lastReadingId;
+
+	ReturnMoveBackState(QObject *parent) : ProgressState(parent), lastReadingId(0)
 	{
 	}
 
 	virtual void Start() override;
 	void Reset();
+	void UpdateDirection();
 
 public slots:
 	void TeensyStatus(TeenseyStatus status);
+	void DecawaveUpdate(double value);
 };
 
 
@@ -171,7 +178,7 @@ public:
 	MoveForwardState* mMoveForward;
 	double startDecawaveValue;
 
-	ReturnRealignState(Kratos2 *parent) : ProgressState(parent)
+	ReturnRealignState(QObject *parent) : ProgressState(parent)
 	{
 	}
 
@@ -193,7 +200,7 @@ public:
 	MoveTowardsGoalState* mGoalMove;
 	QDateTime mStartTime;
 
-	ExploreState(Kratos2 *parent) : ProgressState(parent)
+	ExploreState(QObject *parent) : ProgressState(parent)
 	{
 	}
 
@@ -226,17 +233,22 @@ public:
 	Eigen::Vector2d mStartPos;
 	double mStartAngle;
 	bool mReverse;
+	bool mAprilUpdates;
 
-	MoveTowardsGoalState(Kratos2 *parent);
+	QDateTime mLastAprilUpdate;
+	Eigen::Affine2d mLastApril;
+
+	MoveTowardsGoalState(QObject *parent);
 
 	virtual void Start() override;
 	void DriveTowards(Odometry odometry, Eigen::Vector2d goal);
 
-	
+
 
 public slots:
 	void UpdateTrajectory(ObstacleMap);
 	void TeensyStatus(TeenseyStatus status);
+	void FoundAprilTag(Eigen::Affine2d newLocation);
 	void FinishedTrajectory();
 };
 
@@ -250,7 +262,7 @@ public:
 	QDateTime mStartTime;
 	double mDistance;
 
-	MoveForwardState(Kratos2 *parent, double distance) : ProgressState(parent), mDistance(distance)
+	MoveForwardState(QObject *parent, double distance) : ProgressState(parent), mDistance(distance)
 	{
 	}
 
@@ -268,8 +280,14 @@ public:
 
 	QDateTime mStartTime;
 	double mRotation;
+	double mTotalRotation;
+	double mLastRotation;
 
-	RotateState(Kratos2 *parent, double rotation) : ProgressState(parent), mRotation(rotation)
+	RotateState(QObject *parent, double rotation) : 
+		ProgressState(parent), 
+		mRotation(rotation), 
+		mTotalRotation(0.0),
+		mLastRotation(0.0)
 	{
 	}
 

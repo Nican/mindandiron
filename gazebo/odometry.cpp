@@ -53,6 +53,13 @@ void Odometry::Update(double rightWheel, double leftWheel)
     mPosition += Dpos;     // current position
 }
 
+void Odometry::SetTheta(double angle)
+{
+	mTheta = angle;
+	cosPrev = std::cos(mTheta);
+	sinPrev = std::sin(mTheta);
+}
+
 std::ostream& operator<<(std::ostream &strm, const Odometry &a) {
  	return strm << "Odometry({" << a.mPosition.transpose() << "}, " << (a.mTheta * 180.0 / M_PI) << "°)";
 }

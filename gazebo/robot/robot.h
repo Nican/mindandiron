@@ -33,7 +33,7 @@ class Decawave : public QObject
 public:
 	double lastDistance;
 
-	Decawave(QObject* parent) : QObject(parent)
+	Decawave(QObject* parent) : QObject(parent), lastDistance(10000)
 	{
 	}
 
