@@ -1,6 +1,6 @@
 #include "trajectory2.h"
 #include "robot.h"
-#include "state.h"
+#include "state/state.h"
 #include <QDateTime>
 #include <QtConcurrent>
 #include <QVariant>
@@ -90,7 +90,6 @@ void Kratos2::Initialize()
 	connect(GetTeensy2(), &Teensy2::statusUpdate, mSensorLog, &SensorLog::teensy2Status);
 
 	connect(GetApril(), &AprilTagCamera::ReceiveFrame, mSensorLog, &SensorLog::ReceiveAprilTagImage);
-	connect(GetApril(), &AprilTagCamera::ReceiveFrame, this, &Kratos2::ReceiveAprilTagImage);
 	connect(GetApril(), &AprilTagCamera::tagsDetected, mSensorLog, &SensorLog::ReceiveAprilTags);
 	connect(GetApril(), &AprilTagCamera::tagsDetected, this, &Kratos2::AprilTagDetected);
 	
@@ -100,28 +99,12 @@ void Kratos2::Initialize()
 	connect(this, &Kratos2::AprilLocationUpdate, &mLocation, &LocationEstimation::AprilLocationUpdate);
 	connect(GetTeensy(), &Teensy::statusUpdate, &mLocation, &LocationEstimation::teensyStatus);
 
-	/*
-	auto timer2 = new QTimer(this);
-	timer2->start(300); //time specified in ms
-	QObject::connect(timer2, &QTimer::timeout, this, [this](){
-		this->GetApril()->RequestFrame();
-	});
-	*/
-
-	this->GetApril()->RequestFrame();
-
 	auto aprilTimer = new QTimer(this);
 	aprilTimer->start(3000);
 	QObject::connect(aprilTimer, &QTimer::timeout, this, &Kratos2::AprilScanTimer);
 
 	mState = new RootState(this);
 	mState->Start();
-}
-
-
-void Kratos2::ReceiveAprilTagImage(QImage image)
-{
-	this->GetApril()->RequestFrame();
 }
 
 void Kratos2::AprilScanTimer()

@@ -23,12 +23,10 @@ class GazeboAprilTag : public AprilTagCamera
 {
 	Q_OBJECT
 public:
-	bool mFrameRequested;
 	GazeboKratos* robot;
 
 	GazeboAprilTag(GazeboKratos* parent = 0);
 
-	virtual void RequestFrame() override;
 	virtual void finishedProcessing() override;
 };
 

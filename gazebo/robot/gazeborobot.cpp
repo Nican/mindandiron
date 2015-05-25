@@ -31,13 +31,8 @@ void GazeboSampleDetection::receiveUpdate(const RobotGazeboTickData &data)
 }
 
 GazeboAprilTag::GazeboAprilTag(GazeboKratos* parent) 
-	: AprilTagCamera(parent), mFrameRequested(false), robot(parent)
+	: AprilTagCamera(parent), robot(parent)
 {
-}
-
-void GazeboAprilTag::RequestFrame()
-{
-	mFrameRequested = true;
 }
 
 void GazeboAprilTag::finishedProcessing()
@@ -312,15 +307,8 @@ void GazeboKratos::messageReceived(const QList<QByteArray>& messages)
 			Robot::ImgData data;
 			stream >> data;
 
-			//std::cout << "Robot data image april size: ("<< data.data.size() <<")\n";
-
-			if(mAprilTag->mFrameRequested)
-			{
-				QImage image(data.data.data(), data.width, data.height, QImage::Format_RGB888);
-				mAprilTag->mFrameRequested = false;
-
-				emit mAprilTag->ReceiveFrame(image);
-			}
+			QImage image(data.data.data(), data.width, data.height, QImage::Format_RGB888);
+			emit mAprilTag->ReceiveFrame(image);
 		}
 		else
 		{

@@ -43,8 +43,6 @@ public:
 
 	AprilTagCamera(QObject* parent);
 
-	virtual void RequestFrame() = 0;
-
 	bool IsProcessing();
 
 public slots:

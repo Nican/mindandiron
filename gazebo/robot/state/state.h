@@ -1,7 +1,7 @@
 #pragma once
 
-#include "robot.h"
-#include "trajectory2.h"
+#include "../robot.h"
+#include "../trajectory2.h"
 #include <QDateTime>
 #include <QQueue>
 

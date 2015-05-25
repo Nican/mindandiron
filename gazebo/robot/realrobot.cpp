@@ -12,55 +12,18 @@ using namespace Robot;
 //////////////////////////
 ////	KratosAprilTag
 //////////////////////////
-/*
-static void DebugImage(cv::Mat &input)
-{
-	cv::Mat output;
-	cv::resize(input, output, {960, 540});
-
-	cv::imshow("AA", output);
-}
-*/
 
 KratosAprilTag::KratosAprilTag(QObject* parent) : 
 	AprilTagCamera(parent)
 {
-	mCamera = new KratosCamera("usb-046d_HD_Pro_Webcam_C920_2245793F-video-index0", 1920, 1080, this);
+	mCamera = new KratosThreadCamera("usb-046d_HD_Pro_Webcam_C920_2245793F-video-index0", 1920, 1080, this);
 	//usb-046d_HD_Pro_Webcam_C920_F19B696F-video-index0
 	//usb-046d_HD_Pro_Webcam_C920_2245793F-video-index0 -- April camera
+
+	mCamera->start();
+
+	connect(mCamera, &KratosThreadCamera::CameraFrame, this, &KratosAprilTag::ReceiveFrame);
 }
-
-void KratosAprilTag::RequestFrame()
-{
-	if(runningRequestFuture.isRunning())
-		return;
-
-	///std::cout << "Thead count: " << QThreadPool::globalInstance()->activeThreadCount() << "/" << QThreadPool::globalInstance()->maxThreadCount() << "\n";
-
-	runningRequestFuture = QtConcurrent::run([this]()
-	{
-		cv::Mat image;
-
-		if(!this->mCamera->read(image))
-		{
-			std::cout << "Unable to read april tag camera.\n";
-			return;
-		}
-
-		//DebugImage(image);
-		
-		cv::Mat temp; // make the same cv::Mat
-		cvtColor(image, temp, CV_BGR2RGB); // cvtColor Makes a copt, that what i need
-		QImage dest(reinterpret_cast<const uchar*>(temp.data), temp.cols, temp.rows, temp.step, QImage::Format_RGB888);
-		dest.bits(); // enforce deep copy, see documentation of QImage::QImage ( const uchar * data, int width, int height, Format format )
-
-		emit this->ReceiveFrame(dest);
-	}
-	);
-
-
-}
-
 
 //////////////////////////
 ////	KratosKinect

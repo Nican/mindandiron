@@ -26,12 +26,8 @@ class KratosAprilTag : public AprilTagCamera
 {
 	Q_OBJECT
 public:
-	KratosCamera* mCamera;
-	QFuture<void> runningRequestFuture;
-
+	KratosThreadCamera* mCamera;
 	KratosAprilTag(QObject* parent = 0);
-
-	virtual void RequestFrame() override;
 };
 
 

@@ -214,7 +214,6 @@ public slots:
 	void ProccessPointCloud(Robot::DepthImgData mat);
 	void TeensyStatus(TeenseyStatus status);
 	void FinishedPointCloud();
-	void ReceiveAprilTagImage(QImage image);
 
 	void AprilTagDetected(QList<AprilTagDetectionItem> detections);
 	void AprilScanTimer();

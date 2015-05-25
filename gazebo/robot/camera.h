@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QObject>
+#include <QThread>
 #include <QImage>
 #include "opencv2/opencv.hpp"
 
@@ -26,10 +27,33 @@ public:
 	void openCamera();
 	bool read(cv::Mat &image);
 
-	bool isValid();
+	//bool isValid();
 	int getCameraByName(QString name);
 
 signals:
 	void CameraFrame(QImage image);
 
+};
+
+class KratosThreadCamera : public QThread
+{
+	Q_OBJECT
+
+public:
+	int mDeviceId;
+	int mWidth;
+	int mHeight;
+
+	QString mDeviceName; 
+	cv::VideoCapture mCapture;
+
+	KratosThreadCamera(QString name, int width, int height, QObject* parent = 0);
+
+	void openCamera();
+	void run() override;
+
+	int getCameraByName(QString name);
+
+signals:
+	void CameraFrame(QImage image);
 };
