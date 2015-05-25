@@ -22,7 +22,13 @@ KratosAprilTag::KratosAprilTag(QObject* parent) :
 
 	mCamera->start();
 
-	connect(mCamera, &KratosThreadCamera::CameraFrame, this, &KratosAprilTag::ReceiveFrame);
+	connect(mCamera, &KratosThreadCamera::CameraFrame, this, &KratosAprilTag::ReceiveCameraFrame);
+}
+
+void KratosAprilTag::ReceiveCameraFrame(QImage frame)
+{
+	std::cout << "Receive camera frame\n";
+	emit this->ReceiveFrame(frame);
 }
 
 //////////////////////////

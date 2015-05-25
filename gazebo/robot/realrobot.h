@@ -28,6 +28,9 @@ class KratosAprilTag : public AprilTagCamera
 public:
 	KratosThreadCamera* mCamera;
 	KratosAprilTag(QObject* parent = 0);
+
+public slots:
+	void ReceiveCameraFrame(QImage frame);
 };
 
 
