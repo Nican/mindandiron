@@ -26,11 +26,15 @@ class KratosAprilTag : public AprilTagCamera
 {
 	Q_OBJECT
 public:
-	KratosThreadCamera* mCamera;
+	QFutureWatcher<QImage> mImageWatcher;
+
+	KratosCamera* mCamera;
 	KratosAprilTag(QObject* parent = 0);
 
+	void RequestFrame();
+
 public slots:
-	void ReceiveCameraFrame(QImage frame);
+	void ReceiveCameraFrame();
 };
 
 

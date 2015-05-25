@@ -25,8 +25,9 @@ void KratosCamera::openCamera()
 	mCapture.set(CV_CAP_PROP_FRAME_HEIGHT, mHeight);
 }
 
-bool KratosCamera::read(cv::Mat &cv_image)
+QImage KratosCamera::read()
 {
+	static QDateTime lastFrame = QDateTime::currentDateTime();
 	auto newId = getCameraByName(mDeviceName);
 
 	if(newId != mDeviceId)
@@ -34,31 +35,23 @@ bool KratosCamera::read(cv::Mat &cv_image)
 		openCamera();
 	}
 
-	//for(int i = 0; i < 8; i++ )
-	//{
 	mCapture.grab();
-		//std::cout << "Grabing frame\n";
-	//}
 
+	cv::Mat cv_image;
 	bool result = mCapture.read(cv_image);
 
 	if(!result)
-		return result;	
-
-	//cv::imwrite ("april.png", cv_image);
-
-	//std::cout << "Finished\n";
+		return QImage();	
 
 	cv::Mat dest;
 	cvtColor(cv_image, dest, CV_BGR2RGB);
 	QImage image((uchar*)dest.data, dest.cols, dest.rows, QImage::Format_RGB888);
 	image.bits();
 
-	//image.save("qt.png");
+	std::cout << "Time diff: " << QDateTime::currentDateTime().msecsTo(lastFrame) << "\n";
+	lastFrame = QDateTime::currentDateTime();
 
-	emit CameraFrame(image);
-
-	return result;
+	return image;
 }
 
 int KratosCamera::getCameraByName(QString name)

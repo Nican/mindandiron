@@ -16,20 +16,38 @@ using namespace Robot;
 KratosAprilTag::KratosAprilTag(QObject* parent) : 
 	AprilTagCamera(parent)
 {
-	mCamera = new KratosThreadCamera("usb-046d_HD_Pro_Webcam_C920_2245793F-video-index0", 1920, 1080, this);
+	mCamera = new KratosCamera("usb-046d_HD_Pro_Webcam_C920_2245793F-video-index0", 1920, 1080, this);
 	//usb-046d_HD_Pro_Webcam_C920_F19B696F-video-index0
 	//usb-046d_HD_Pro_Webcam_C920_2245793F-video-index0 -- April camera
 
-	mCamera->start();
+	//mCamera->start();
 
-	connect(mCamera, &KratosThreadCamera::CameraFrame, this, &KratosAprilTag::ReceiveCameraFrame);
+	connect(&mImageWatcher, SIGNAL(finished()), this, SLOT(ReceiveCameraFrame()));
+	//connect(mCamera, &KratosCamera::CameraFrame, this, &KratosAprilTag::ReceiveCameraFrame);
+
+	RequestFrame();
 }
 
-void KratosAprilTag::ReceiveCameraFrame(QImage frame)
+void KratosAprilTag::ReceiveCameraFrame()
 {
+	QImage frame = mImageWatcher.future().result();
+
 	std::cout << "Receive camera frame\n";
 	emit this->ReceiveFrame(frame);
+
+	RequestFrame();
 }
+
+void KratosAprilTag::RequestFrame()
+{
+	QFuture<QImage> future = QtConcurrent::run([this](){
+		return this->mCamera->read();
+	});
+
+	mImageWatcher.setFuture(future);
+}
+
+
 
 //////////////////////////
 ////	KratosKinect
@@ -182,6 +200,7 @@ RealRobot::RealRobot(QObject* parent) :
 
 void RealRobot::RequestFrontImage()
 {
+	/*
 	QtConcurrent::run([this](){
 		std::cout << "Reading image\n";
 		static int counter = 0;
@@ -195,6 +214,7 @@ void RealRobot::RequestFrontImage()
 		counter++;
 		this->RequestFrontImage();
 	});
+	*/
 }
 
 void RealRobot::updateForces()

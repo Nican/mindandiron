@@ -25,14 +25,9 @@ public:
 	KratosCamera(QString name, int width, int height, QObject* parent = 0);
 
 	void openCamera();
-	bool read(cv::Mat &image);
+	QImage read();
 
-	//bool isValid();
 	int getCameraByName(QString name);
-
-signals:
-	void CameraFrame(QImage image);
-
 };
 
 class KratosThreadCamera : public QThread
