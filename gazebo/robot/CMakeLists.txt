@@ -23,6 +23,13 @@ add_executable(kratos_robot
 	camera.cpp
 	../april.cpp
 	log.cpp
+	../pointcloud.cpp
+	../msgpack.cpp
 )
 
 target_link_libraries(kratos_robot Qt5::Widgets Qt5::SerialPort Qt5::Sql Qt5::Concurrent freenect2 kratos_base)
+
+
+
+add_library(kratos2 SHARED ../gazebo2.cpp ../msgpack.cpp)
+target_link_libraries(kratos2 ${Boost_LIBRARIES} ${GAZEBO_LIBRARIES} kratos_base Qt5::Core)

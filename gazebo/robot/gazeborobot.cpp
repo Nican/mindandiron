@@ -1,4 +1,5 @@
 #include "gazeborobot.h"
+#include "../msgpack.h"
 #include <QDebug>
 #include <iostream>
 #include <QTimer>
@@ -252,14 +253,12 @@ void GazeboKratos::fireControlUpdate()
 	control.rightVelocity = GetRightVelocity();
 	control.aprilAngle = mTeensy2->GetAprilGazeboAngle();
 
-	char id = 0;
-
-	msgpack::sbuffer sbuf;
-	sbuf.write(&id, sizeof(id));
-	msgpack::pack(sbuf, control);
+	QByteArray buffer;
+	QDataStream stream(&buffer, QIODevice::WriteOnly);
+	stream << control;
 
 	QList<QByteArray> msg;
-	msg += QByteArray(sbuf.data(), sbuf.size());
+	msg += buffer; //QByteArray(sbuf.data(), sbuf.size());
 	mPubSocket->sendMessage(msg);
 }
 
@@ -270,8 +269,65 @@ void GazeboKratos::messageReceived(const QList<QByteArray>& messages)
 	//Why is this a list of arrays?
 	for(auto& byteArray : messages)
 	{
-		auto id = byteArray[0];
+		QDataStream stream(byteArray);
 
+		qint8 id;
+		stream >> id;
+
+		if(id == 0)
+		{
+			RobotGazeboTickData tickData;
+			stream >> tickData;
+
+			mTeensey->receiveUpdate(tickData);
+			mTeensy2->receiveUpdate(tickData);
+			mDecaWave->receiveUpdate(tickData);
+			mSampleDetection->receiveUpdate(tickData);
+		}
+		else if(id == 1)
+		{
+			Robot::ImgData data;
+			stream >> data;
+
+			if(mKinect->depthFrameRequested)
+			{
+				emit mKinect->receiveColorImage(data);
+				mKinect->depthFrameRequested = false;
+			}
+		}
+		else if(id == 2)
+		{
+			Robot::DepthImgData data;
+			stream >> data;
+
+			if(mKinect->depthFrameRequested)
+			{
+				emit mKinect->receiveDepthImage(data);
+				mKinect->depthFrameRequested = false;
+			}
+			
+		}
+		else if(id == 3)
+		{
+			Robot::ImgData data;
+			stream >> data;
+
+			//std::cout << "Robot data image april size: ("<< data.data.size() <<")\n";
+
+			if(mAprilTag->mFrameRequested)
+			{
+				QImage image(data.data.data(), data.width, data.height, QImage::Format_RGB888);
+				mAprilTag->mFrameRequested = false;
+
+				emit mAprilTag->ReceiveFrame(image);
+			}
+		}
+		else
+		{
+			std::cout << "Received unkown message from gazebo with id " << id << "\n";
+		}
+
+		/*
 		//Read result from the network
 		msgpack::unpacked result;
 		try { 
@@ -336,5 +392,6 @@ void GazeboKratos::messageReceived(const QList<QByteArray>& messages)
 		{
 			std::cout << "Received unkown message from gazebo with id " << id << "\n";
 		}
+		*/
 	}
 }

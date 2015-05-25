@@ -1,5 +1,5 @@
 #include "telemetry.h"
-#include "../trajectory.h"
+//#include "../trajectory.h"
 #include "../april.h"
 
 #include <iostream>
@@ -173,27 +173,23 @@ void MainWindow::messageReceived(const QList<QByteArray>& messages)
 {
 	char id = messages[0][0];
 
-	//std::cout << "Received message with id: " << ((int) id) << "\n";
-
 	if(id == '\x01')
 	{
-		msgpack::unpacked result;
-		msgpack::unpack(result, messages[1].data(), messages[1].size());
-
+		QDataStream stream(messages[1]);
 		DepthImgData imgData;
 
-		result.get().convert(&imgData);
+		stream >> imgData;
+
 		mDepthViewer->ReceiveData(imgData);
 	}
 
 	 if(id == '\x02')
 	{
-		msgpack::unpacked result;
-		msgpack::unpack(result, messages[1].data(), messages[1].size());
-
+		QDataStream stream(messages[1]);
 		TeenseyStatus teensy;
 
-		result.get().convert(&teensy);
+		stream >> teensy;
+
 		mWheelOdometry->ReceiveData(teensy);
 		mGridView->mValueGrid->ReceiveTeensyData(teensy);
 	}
@@ -217,54 +213,60 @@ void MainWindow::messageReceived(const QList<QByteArray>& messages)
 
 	if(id == '\x05')
 	{
-		std::vector<Vector2d> points;
+		QDataStream stream(messages[1]);
+		QVector<Eigen::Vector2d> points;
 
-		msgpack::unpacked result;
-		msgpack::unpack(result, messages[1].data(), messages[1].size());
-		result.get().convert(&points);
-		mGridView->ReceiveObstacleMap(points);
+		stream >> points;
+
+		mGridView->ReceiveObstacleMap(points.toStdVector());
 	}
 
 	if(id == '\x06')
 	{
-		std::vector<double> vels;
+		double left, right;
+		QDataStream stream(messages[1]);
 
-		msgpack::unpacked result;
-		msgpack::unpack(result, messages[1].data(), messages[1].size());
-		result.get().convert(&vels);
+		stream >> left;
+		stream >> right;
+
+		std::vector<double> vels;
+		vels.push_back(left);
+		vels.push_back(right);
+
 		mWheelOdometry->ReceiveWheelVelocities(vels);
 		mGridView->ReceiveControlStatus(vels);
 	}
 
 	if(id == '\x07')
 	{
-		std::vector<Vector2d> points;
+		QVector<Eigen::Vector2d> points;
+		QDataStream stream(messages[1]);
 
-		msgpack::unpacked result;
-		msgpack::unpack(result, messages[1].data(), messages[1].size());
-		result.get().convert(&points);
-		mGridView->ReceivePath(points);
+		stream >> points;
+
+		mGridView->ReceivePath(points.toStdVector());
 	}
 
 	if(id == '\x08')
 	{
-		msgpack::unpacked result;
-		msgpack::unpack(result, messages[1].data(), messages[1].size());
-
+		QDataStream stream(messages[1]);
 		Teensy2Status teensy;
 
-		result.get().convert(&teensy);
+		stream >> teensy;
+
 		mGridView->mValueGrid->ReceiveTeensy2Data(teensy);
 	}
 
 	if(id == '\x09')
 	{
-		std::vector<double> posVals;
-		msgpack::unpacked result2;
-		msgpack::unpack(result2, messages[1].data(), messages[1].size());
-		result2.get().convert(&posVals);
+		QDataStream stream(messages[1]);
+		Vector2d pt;
+		double ang;
 
-		mGridView->SetRobot(Vector2d(posVals[0], posVals[1]), posVals[2]);
+		stream >> pt;
+		stream >> ang;
+
+		mGridView->SetRobot(pt, ang);
 	}
 
 	if(id == '\x10')

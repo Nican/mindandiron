@@ -28,21 +28,21 @@ link_directories(${Boost_LIBRARY_DIRS})
 link_directories(lib)
 
 
-add_library(kratos_base SHARED trajectory.cpp pointcloud.cpp odometry.cpp)
-target_link_libraries(kratos_base apriltags ${Boost_LIBRARIES} ${OpenCV_LIBS}  ${PCL_LIBRARIES} zmq msgpack Box2D)
+add_library(kratos_base SHARED odometry.cpp)
+target_link_libraries(kratos_base apriltags ${Boost_LIBRARIES} ${OpenCV_LIBS}  ${PCL_LIBRARIES} zmq Box2D)
 
 find_package(gazebo REQUIRED)
 include_directories(${GAZEBO_INCLUDE_DIRS})
 link_directories(${GAZEBO_LIBRARY_DIRS})
 
-add_library(kratos SHARED gazebo2.cpp)
-target_link_libraries(kratos ${Boost_LIBRARIES} ${GAZEBO_LIBRARIES} kratos_base)
+#add_library(kratos SHARED gazebo2.cpp)
+#target_link_libraries(kratos ${Boost_LIBRARIES} ${GAZEBO_LIBRARIES} kratos_base)
 
-add_executable(park_viewer park_viewer.cpp)
-target_link_libraries(park_viewer ${Boost_LIBRARIES} kratos_base)
+#add_executable(park_viewer park_viewer.cpp)
+#target_link_libraries(park_viewer ${Boost_LIBRARIES} kratos_base)
 
-add_executable(pcl_test pcl_test.cpp)
-target_link_libraries(pcl_test ${Boost_LIBRARIES} kratos_base)
+#add_executable(pcl_test pcl_test.cpp)
+#target_link_libraries(pcl_test ${Boost_LIBRARIES} kratos_base)
 
 add_subdirectory(telemetry)
 add_subdirectory(robot)

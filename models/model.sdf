@@ -231,6 +231,6 @@
 
 
 
-  <plugin name="kratos" filename="libkratos.so"/>
+  <plugin name="kratos" filename="robot/libkratos2.so"/>
 </model>
 </sdf>

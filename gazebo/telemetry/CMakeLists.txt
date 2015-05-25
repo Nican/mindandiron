@@ -20,6 +20,8 @@ ADD_EXECUTABLE(kratos_telemetry
 	../nzmqt/nzmqt.cpp 
 	../april.cpp
 	qr.cpp
+	../pointcloud.cpp
+	../msgpack.cpp
 	)
 #osg osgQt osgWidget osgViewer osgUtil osgGA osgDB
 TARGET_LINK_LIBRARIES(kratos_telemetry ${QT_LIBRARIES}  kratos_base ${VTK_LIBRARIES}) #Qt5::Widgets Qt5::OpenGL

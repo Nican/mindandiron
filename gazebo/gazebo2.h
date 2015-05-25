@@ -8,7 +8,7 @@ struct RobotGazeboControl
 
 	double aprilAngle;
 
-	MSGPACK_DEFINE(leftVelocity, rightVelocity, aprilAngle)
+	//MSGPACK_DEFINE(leftVelocity, rightVelocity, aprilAngle)
 };
 
 struct RobotGazeboTickData
@@ -26,7 +26,11 @@ struct RobotGazeboTickData
 
 	double aprilAngle;
 
-	MSGPACK_DEFINE(leftWheelTicks, rightWheelTicks, leftWheelVelocity, rightWheelVelocity, linearAcceleration, robotPosition, robotOrientation, aprilAngle);
+	//MSGPACK_DEFINE(leftWheelTicks, rightWheelTicks, leftWheelVelocity, rightWheelVelocity, linearAcceleration, robotPosition, robotOrientation, aprilAngle);
 };
 
+QDataStream &operator<<(QDataStream &out, const RobotGazeboControl &item);
+QDataStream &operator>>(QDataStream &in, RobotGazeboControl &item);
 
+QDataStream &operator<<(QDataStream &out, const RobotGazeboTickData &item);
+QDataStream &operator>>(QDataStream &in, RobotGazeboTickData &item);

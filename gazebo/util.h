@@ -9,6 +9,7 @@ inline double clamp(double x, double a, double b)
 	return x < a ? a : (x > b ? b : x);
 }
 
+
 template <typename T, typename U>
 struct BaseGroundProcessor 
 {
@@ -53,6 +54,7 @@ struct BaseGroundProcessor
 
 	virtual U AsyncronousUpdate(T input) = 0;
 };
+
 
 inline std::complex<double> rotationToCompex(double theta)
 {

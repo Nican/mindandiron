@@ -33,11 +33,11 @@ bool KratosCamera::read(cv::Mat &cv_image)
 		openCamera();
 	}
 
-	for(int i = 0; i < 8; i++ )
-	{
-		mCapture.grab();
+	//for(int i = 0; i < 8; i++ )
+	//{
+	mCapture.grab();
 		//std::cout << "Grabing frame\n";
-	}
+	//}
 
 	bool result = mCapture.read(cv_image);
 

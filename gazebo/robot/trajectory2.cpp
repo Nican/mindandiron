@@ -1,5 +1,5 @@
 #include "trajectory2.h"
-#include "../trajectory.h"
+//#include "../trajectory.h"
 #include "robot.h"
 #include <QtConcurrent>
 

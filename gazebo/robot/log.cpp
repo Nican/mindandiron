@@ -144,34 +144,32 @@ void SensorLog::AprilLocationUpdate(QDateTime time, Eigen::Affine2d location)
 
 void SensorLog::receiveDepthImage(DepthImgData mat)
 {
-	msgpack::sbuffer sbuf;
-	msgpack::pack(sbuf, mat);
-
-	QByteArray data(sbuf.data(), sbuf.size());
+	QByteArray buffer;
+	QDataStream stream(&buffer, QIODevice::WriteOnly);
+	stream << mat; //.scaledToWidth(1920/3);
 
 	QSqlQuery query(mDb);
 	query.prepare("INSERT INTO depthLog(timestamp, data) VALUES(:timestamp, :data)");
 	query.bindValue(":timestamp", QDateTime::currentDateTime().toMSecsSinceEpoch() , QSql::In);
-	query.bindValue(":data", data, QSql::In | QSql::Binary);
+	query.bindValue(":data", buffer, QSql::In | QSql::Binary);
 	query.exec();
 
 	QList<QByteArray> msg;
 	msg += QByteArray("\x01");
-	msg += data;
+	msg += buffer;
 	mSocket->sendMessage(msg);
 }
 
 void SensorLog::receiveKinectImage(Robot::ImgData mat)
 {
-	msgpack::sbuffer sbuf;
-	msgpack::pack(sbuf, mat);
-
-	QByteArray data = QByteArray(sbuf.data(), sbuf.size());
+	QByteArray buffer;
+	QDataStream stream(&buffer, QIODevice::WriteOnly);
+	stream << mat;
 
 	QSqlQuery query(mDb);
 	query.prepare("INSERT INTO kinectImageLog(timestamp, data) VALUES(:timestamp, :data)");
 	query.bindValue(":timestamp", QDateTime::currentDateTime().toMSecsSinceEpoch() , QSql::In);
-	query.bindValue(":data", data, QSql::In | QSql::Binary);
+	query.bindValue(":data", buffer, QSql::In | QSql::Binary);
 	query.exec();
 }
 
@@ -189,12 +187,14 @@ void SensorLog::teensyStatus(TeenseyStatus status)
 	query.bindValue(":auto", status.autoFlag, QSql::In);
 	query.exec();
 
-	msgpack::sbuffer sbuf;
-	msgpack::pack(sbuf, status);
+	QByteArray buffer;
+	QDataStream stream(&buffer, QIODevice::WriteOnly);
+	stream << status;
+
 
 	QList<QByteArray> msg;
 	msg += QByteArray("\x02");
-	msg += QByteArray(sbuf.data(), sbuf.size());
+	msg += buffer;
 	mSocket->sendMessage(msg);
 }
 
@@ -210,12 +210,13 @@ void SensorLog::teensy2Status(Teensy2Status status)
 	query.bindValue(":paused", status.isPaused, QSql::In);
 	query.exec();
 
-	msgpack::sbuffer sbuf;
-	msgpack::pack(sbuf, status);
+	QByteArray buffer;
+	QDataStream stream(&buffer, QIODevice::WriteOnly);
+	stream << status;
 
 	QList<QByteArray> msg;
 	msg += QByteArray("\x08");
-	msg += QByteArray(sbuf.data(), sbuf.size());
+	msg += buffer;
 	mSocket->sendMessage(msg);
 }
 
@@ -256,25 +257,28 @@ void SensorLog::decawaveUpdate(double distance)
 
 void SensorLog::SendObstacles(std::vector<Eigen::Vector2d> points)
 {
-	msgpack::sbuffer sbuf;
-	msgpack::pack(sbuf, points);
+	QByteArray buffer;
+	QDataStream stream(&buffer, QIODevice::WriteOnly);
+	stream << QVector<Eigen::Vector2d>::fromStdVector(points);
 
 	QList<QByteArray> msg;
 	msg += QByteArray("\x05");
-	msg += QByteArray(sbuf.data(), sbuf.size());
+	msg += buffer; //QByteArray(sbuf.data(), sbuf.size());
 	mSocket->sendMessage(msg);
 }
 
 void SensorLog::SetRobot(Eigen::Vector2d pos, double ang)
 {
-	std::vector<double> arrVals = {pos.x(), pos.y(), ang};
 
-	msgpack::sbuffer sbuf2;
-	msgpack::pack(sbuf2, arrVals);
+	QByteArray buffer;
+	QDataStream stream(&buffer, QIODevice::WriteOnly);
+
+	stream << pos;
+	stream << ang;
 
 	QList<QByteArray> msg;
 	msg += QByteArray("\x09");
-	msg += QByteArray(sbuf2.data(), sbuf2.size());
+	msg += buffer; //QByteArray(sbuf2.data(), sbuf2.size());
 	mSocket->sendMessage(msg);
 }
 
@@ -288,28 +292,28 @@ void SensorLog::WheelVelocityUpdate(double left, double right)
 	query.bindValue(":right", right, QSql::In);
 	query.exec();
 
-	std::vector<double> velocities = {
-		left,
-		right
-	};
+	QByteArray buffer;
+	QDataStream stream(&buffer, QIODevice::WriteOnly);
+	stream << left;
+	stream << right;
 
-	msgpack::sbuffer sbuf;
-	msgpack::pack(sbuf, velocities);
 
 	QList<QByteArray> msg;
 	msg += QByteArray("\x06");
-	msg += QByteArray(sbuf.data(), sbuf.size());
+	msg += buffer; //QByteArray(sbuf.data(), sbuf.size());
 	mSocket->sendMessage(msg);
 }
 
 void SensorLog::ReceivePath(const std::vector<Eigen::Vector2d> &points)
 {
-	msgpack::sbuffer sbuf;
-	msgpack::pack(sbuf, points);
+
+	QByteArray buffer;
+	QDataStream stream(&buffer, QIODevice::WriteOnly);
+	stream << QVector<Eigen::Vector2d>::fromStdVector(points);
 
 	QList<QByteArray> msg;
 	msg += QByteArray("\x07");
-	msg += QByteArray(sbuf.data(), sbuf.size());
+	msg += buffer; //QByteArray(sbuf.data(), sbuf.size());
 	mSocket->sendMessage(msg);
 }
 
