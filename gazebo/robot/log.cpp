@@ -317,20 +317,22 @@ void SensorLog::ReceivePath(const std::vector<Eigen::Vector2d> &points)
 	mSocket->sendMessage(msg);
 }
 
+static QByteArray CompressImage(QImage image)
+{
+	QByteArray buffer;
+	QDataStream stream(&buffer, QIODevice::WriteOnly);
+	stream.setVersion(QDataStream::Qt_4_8);
+	stream << image;
+
+	return buffer;
+}
+
 void SensorLog::ReceiveAprilTagImage(QImage image)
 {
 	if(mAprilTagWatcher.future().isRunning())
 		return;
 
-	auto future = QtConcurrent::run([image](){
-		//std::cout << "Start compressing april tag\n";
-		QByteArray buffer;
-		QDataStream stream(&buffer, QIODevice::WriteOnly);
-		stream.setVersion(QDataStream::Qt_4_8);
-		stream << image; //.scaledToWidth(1920/3);
-
-		return buffer;
-	});
+	auto future = QtConcurrent::run(&CompressImage, image);
 
 	mAprilTagWatcher.setFuture(future);
 }

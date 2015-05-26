@@ -20,11 +20,7 @@ KratosAprilTag::KratosAprilTag(QObject* parent) :
 	//usb-046d_HD_Pro_Webcam_C920_F19B696F-video-index0
 	//usb-046d_HD_Pro_Webcam_C920_2245793F-video-index0 -- April camera
 
-	//mCamera->start();
-
 	connect(&mImageWatcher, SIGNAL(finished()), this, SLOT(ReceiveCameraFrame()));
-	//connect(mCamera, &KratosCamera::CameraFrame, this, &KratosAprilTag::ReceiveCameraFrame);
-
 	RequestFrame();
 }
 
