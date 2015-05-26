@@ -13,7 +13,7 @@ void ReturnToStationState::Start()
 	mStartTime = QDateTime::currentDateTime();
 
 	//Get the -30 seconds of odometry
-	auto odometry = Robot()->GetOdometryTraveledSince(mStartTime.addSecs(-30));
+	auto odometry = Robot()->GetOdometryTraveledSince(mStartTime.addSecs(-10));
 
 	if(Robot()->GetDecawave()->lastDistance < 10.0 || true)
 	{
@@ -27,6 +27,7 @@ void ReturnToStationState::Start()
 	else
 	{
 		//TODO: Rotate to the desired orientation
+		SetState(new ReturnRealignState(this));
 	}
 }
 
@@ -179,7 +180,7 @@ void ReturnLocateAprilState::FoundAprilTag(Eigen::Affine2d newLocation)
 	mMoveInfront->mStartPos = newLocation.translation();
 	mMoveInfront->mStartAngle = rotation2D.angle();
 	mMoveInfront->mReverse = true;
-	//mMoveInfront->mAprilUpdates = true;
+	mMoveInfront->mAprilUpdates = true;
 	mMoveInfront->Start();
 
 	connect(mMoveInfront, &ProgressState::Finished, this, &ReturnLocateAprilState::RealignInFront);

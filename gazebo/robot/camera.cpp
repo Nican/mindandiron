@@ -32,23 +32,19 @@ QImage KratosCamera::read()
 
 	if(newId != mDeviceId)
 	{
+		std::cout << "OPENING CAMERA\n";
 		openCamera();
 	}
 
-	mCapture.grab();
-
 	cv::Mat cv_image;
-	bool result = mCapture.read(cv_image);
-
-	if(!result)
-		return QImage();	
+	mCapture >> cv_image;	
 
 	cv::Mat dest;
 	cvtColor(cv_image, dest, CV_BGR2RGB);
-	QImage image((uchar*)dest.data, dest.cols, dest.rows, QImage::Format_RGB888);
+	QImage image((const uchar*)dest.data, dest.cols, dest.rows, QImage::Format_RGB888);
 	image.bits();
 
-	std::cout << "Time diff: " << QDateTime::currentDateTime().msecsTo(lastFrame) << "\n";
+	//std::cout << "Time diff: " << QDateTime::currentDateTime().msecsTo(lastFrame) << "\n";
 	lastFrame = QDateTime::currentDateTime();
 
 	return image;

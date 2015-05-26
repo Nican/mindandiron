@@ -68,7 +68,7 @@ void handleLights(void) {
     if (ledCounter++ >= 2) {
         if (ledState == LOW) {
             ledState = HIGH;
-        } else if (getPaused()) {
+        } else if (!getPaused()) {
             ledState = LOW;
         }
         digitalWrite(LIGHT_OUT_PIN, ledState);

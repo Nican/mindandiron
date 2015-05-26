@@ -36,7 +36,12 @@ void KratosAprilTag::ReceiveCameraFrame()
 void KratosAprilTag::RequestFrame()
 {
 	QFuture<QImage> future = QtConcurrent::run([this](){
-		return this->mCamera->read();
+		QImage frame = this->mCamera->read();
+
+		//static int counter = 0;
+		//frame.save("a" + QString::number(counter++) + ".png");
+
+		return frame;
 	});
 
 	mImageWatcher.setFuture(future);
