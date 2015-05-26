@@ -91,7 +91,7 @@ sudo apt-get install -y openjdk-7-jre
 
 # To get libfreenect - see installation instruction here, might go wrong in bash script
 # https://github.com/OpenKinect/libfreenect2#ubuntu-1404-perhaps-earlier
-sudo apt-get install -y libturbojpeg libudev-dev cmake mesa-common-dev freeglut3-dev libxrandr-dev doxygen libxi-dev libopencv-dev
+sudo apt-get install -y libturbojpeg libudev-dev cmake mesa-common-dev freeglut3-dev libxrandr-dev doxygen libxi-dev libopencv-dev libusb-dev
 cd ~/Downloads
 if [ ! -d "libfreenect2" ]; then
 	git clone https://github.com/OpenKinect/libfreenect2.git
