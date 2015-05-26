@@ -21,6 +21,7 @@ add_executable(kratos_robot
 	trajectory2.cpp
 	state/state.cpp
 	state/return.cpp
+	state/sample.cpp
 	camera.cpp
 	../april.cpp
 	log.cpp

@@ -324,6 +324,8 @@ static QByteArray CompressImage(QImage image)
 	stream.setVersion(QDataStream::Qt_4_8);
 	stream << image;
 
+
+
 	return buffer;
 }
 

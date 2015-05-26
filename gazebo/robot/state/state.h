@@ -89,6 +89,28 @@ public slots:
 };
 
 
+class LeaveBaseStation : public ProgressState
+{
+	Q_OBJECT
+public:
+
+	QDateTime mStartTime;
+	MoveTowardsGoalState* mMoveInfront;
+
+	LeaveBaseStation(QObject *parent) : ProgressState(parent), mMoveInfront(nullptr)
+	{
+	}
+
+	virtual void Start() override;
+
+public slots:
+	void MoveToRotate();
+	void MoveToNextState();
+	void FoundAprilTag(Eigen::Affine2d newLocation);
+};
+
+
+
 class BackIntoBaseStationState : public ProgressState
 {
 	Q_OBJECT
