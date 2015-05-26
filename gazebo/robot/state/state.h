@@ -11,6 +11,7 @@ namespace Robot
 class TrajectorySearch;
 class MoveForwardState;
 class MoveTowardsGoalState;
+class RotateState;
 
 class BaseState : public QObject
 {
@@ -118,6 +119,7 @@ public:
 	QDateTime mFinishedRotatingTime;
 
 	MoveTowardsGoalState* mMoveInfront;
+	RotateState* mRotate;
 
 	ReturnLocateAprilState(QObject *parent) : ProgressState(parent), mMoveInfront(nullptr)
 	{

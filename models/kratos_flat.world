@@ -21,7 +21,7 @@
       <include>
         <uri>model://models</uri>
         <name>kratos</name>
-        <pose>15 -12 0.29 0 0 0</pose>
+        <pose>7 -7 0.29 0 0 3.14</pose>
       </include>
 
       <model name='kratos_plataform'>

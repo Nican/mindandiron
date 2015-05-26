@@ -217,6 +217,8 @@ public slots:
 
 	void AprilTagDetected(QList<AprilTagDetectionItem> detections);
 	void AprilScanTimer();
+
+	void StartStateMachine();
 	
 signals:
 	void pauseUpdate(bool); //True when paused

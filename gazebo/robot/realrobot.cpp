@@ -32,7 +32,6 @@ void KratosAprilTag::ReceiveCameraFrame()
 {
 	QImage frame = mImageWatcher.future().result();
 
-	std::cout << "Receive camera frame\n";
 	emit this->ReceiveFrame(frame);
 
 	RequestFrame();

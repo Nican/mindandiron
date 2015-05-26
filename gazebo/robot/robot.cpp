@@ -104,7 +104,12 @@ void Kratos2::Initialize()
 	QObject::connect(aprilTimer, &QTimer::timeout, this, &Kratos2::AprilScanTimer);
 
 	mState = new RootState(this);
-	mState->Start();
+	QTimer::singleShot(2000, this, SLOT(StartStateMachine()));
+}
+
+void Kratos2::StartStateMachine()
+{
+	this->mState->Start();
 }
 
 void Kratos2::AprilScanTimer()
@@ -298,7 +303,7 @@ Odometry Kratos2::GetOdometryTraveledSince(QDateTime startTime, QDateTime endTim
 		lastRight = right;
 
 		if(std::abs(diffLeft) > 0.1 || std::abs(diffRight) > 0.1){
-			//std::cout << "\t Skipping large jump: " << diffLeft << "\t" << diffRight << "\n";
+			std::cout << "\t Skipping large jump: " << diffLeft << "\t" << diffRight << "\n";
 			continue;
 		}
 
