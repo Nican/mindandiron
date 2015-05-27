@@ -124,15 +124,10 @@ void loop() {
             isSystemAuto = 0;
             digitalWrite(AUTO_SWITCH_OUT, isSystemAuto);
         }
-        // lastLeftCmd = passThroughRC(servoLeft, LEFT_CMD_IN, lastLeftCmd);
+        lastLeftCmd = passThroughRC(servoLeft, LEFT_CMD_IN, lastLeftCmd);
         lastRightCmd = passThroughRC(servoRight, RIGHT_CMD_IN, lastRightCmd);
-        lastSorterCmd = passThroughRC(servoSorter, SORTER_CMD_IN, lastSorterCmd);
-        
-        // controlCollectorWithRC(COLLECTOR_CMD_IN);
-        onOffRCControl(servoLeft, LEFT_CMD_IN);
-
-        //ERIC: This is an unmerged line. I took HEAD
-        //roughlyControlWithRC(servoCollector, COLLECTOR_CMD_IN);
+        // lastSorterCmd = passThroughRC(servoSorter, SORTER_CMD_IN, lastSorterCmd);
+        roughlyControlWithRC(servoCollector, COLLECTOR_CMD_IN);
     }
 
     printDataToComputer(getLeftPosition(), getRightPosition(),
