@@ -131,7 +131,7 @@ void Kratos2::AprilTagDetected(QList<AprilTagDetectionItem> detections)
 {
 	for(auto& tag : detections)
 	{
-		if(tag.detection.id != 0)
+		if(tag.detection.id != 6)
 			continue;
 
 		QSqlQuery query(mSensorLog->mDb);

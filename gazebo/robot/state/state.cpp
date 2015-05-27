@@ -219,6 +219,9 @@ void MoveTowardsGoalState::TeensyStatus(TeenseyStatus status)
 
 void MoveTowardsGoalState::DriveTowards(Odometry odometry, Eigen::Vector2d goal)
 {
+	const double SIDE_VELOCITY_OFFSET = 0.02;
+	const double FORWARD_VELOCITY = 0.1;
+
 	if(mReverse)
 		odometry.mTheta += M_PI;
 
@@ -242,23 +245,27 @@ void MoveTowardsGoalState::DriveTowards(Odometry odometry, Eigen::Vector2d goal)
 	if(angleDiff < -0.05)
 	{
 		if(mReverse)
-			Robot()->SetWheelVelocity(-0.2, -0.4);
+			Robot()->SetWheelVelocity(-(FORWARD_VELOCITY - SIDE_VELOCITY_OFFSET),
+									  -(FORWARD_VELOCITY + SIDE_VELOCITY_OFFSET));
 		else
-			Robot()->SetWheelVelocity(0.4, 0.2);
+			Robot()->SetWheelVelocity((FORWARD_VELOCITY + SIDE_VELOCITY_OFFSET),
+									  (FORWARD_VELOCITY - SIDE_VELOCITY_OFFSET));
 	}
 	else if(angleDiff > 0.05)
 	{
 		if(mReverse)
-			Robot()->SetWheelVelocity(-0.4, -0.2);
+			Robot()->SetWheelVelocity(-(FORWARD_VELOCITY + SIDE_VELOCITY_OFFSET),
+									  -(FORWARD_VELOCITY - SIDE_VELOCITY_OFFSET));
 		else
-			Robot()->SetWheelVelocity(0.2, 0.4);
+			Robot()->SetWheelVelocity(-(FORWARD_VELOCITY - SIDE_VELOCITY_OFFSET),
+									  -(FORWARD_VELOCITY + SIDE_VELOCITY_OFFSET));
 	} 
 	else 
 	{
 		if(mReverse)
-			Robot()->SetWheelVelocity(-0.3, -0.3);
+			Robot()->SetWheelVelocity(-FORWARD_VELOCITY, -FORWARD_VELOCITY);
 		else
-			Robot()->SetWheelVelocity(0.3, 0.3);
+			Robot()->SetWheelVelocity(FORWARD_VELOCITY, FORWARD_VELOCITY);
 	}
 }
 

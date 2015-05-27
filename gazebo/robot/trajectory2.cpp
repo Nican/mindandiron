@@ -272,7 +272,7 @@ void TrajectoryPlanner2::UpdateObstacles(SegmentedPointCloud pointCloud)
 			if(pt.r == 255)
 			{
 				Vector2d newPt(imagePt.y() * 5.0f / 512.0f + 0.6f, imagePt.x() * 5.0f / 512.0f - 2.5f);
-				obstacleMap.mObstacleList.push_back(newPt);
+				//obstacleMap.mObstacleList.push_back(newPt);
 			}
 	    }	    
 

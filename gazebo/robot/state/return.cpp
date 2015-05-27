@@ -129,7 +129,7 @@ void ReturnLocateAprilState::Start()
 	
 	mRotate = new RotateState(this, M_PI);
 	connect(mRotate, &ProgressState::Finished, this, &ReturnLocateAprilState::FinishRotate);
-	mRotate->Start();
+	// mRotate->Start();
 
 	mFinishedRotatingTime = QDateTime::currentDateTime();
 
