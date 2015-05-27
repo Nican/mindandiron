@@ -17,10 +17,10 @@ def checkForJumps(msg, LPOS, RPOS):
 def main():
     ser = serial.Serial('/dev/kratos_teensy', 9600)
     counter = 0
-    cycleCounts = 50
-    lVel = 0.55
+    cycleCounts = 5
+    lVel = 0.6
     lAdd = 0.05
-    rVel = -0.55
+    rVel = -0.6
     rAdd = -0.05
     lPos = 8000
     rPos = 8000
@@ -40,12 +40,12 @@ def main():
             message = '\t%.2f\t%.2f\t%d\t%d\t%d\t%d\t%d\tEND' % (lVel, rVel, lPos, rPos, useVelocity, Collector, Sorter)
             ser.write(message)
             print(message)
-            lVel += lAdd
-            if abs(lVel) > 0.65:
-                lAdd *= -1
-            rVel += rAdd
-            if abs(rVel) > 0.65:
-                rAdd *= -1
+            # lVel += lAdd
+            # if abs(lVel) > 0.65:
+            #     lAdd *= -1
+            # rVel += rAdd
+            # if abs(rVel) > 0.65:
+            #     rAdd *= -1
         counter += 1
 
 
