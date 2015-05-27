@@ -3,6 +3,8 @@
 
 
 const float maxWheelSpeed = 0.65;  // meters/second
+long timeOfLastComputerCommand = millis();  // milliseconds
+const int allowableComputerCommandLag = 2000;  // miliseconds
 
 
 // Reads the serial port for a computer command and sets the given int values
@@ -55,6 +57,7 @@ void readComputerCommands(float *leftVelocitySetpoint,
         *velocityPID = velocityPIDCmd;
         *collectorAutoCmd = boundCollectorSignal(collectorCmd);
         *sorterAutoSlot = boundSorterSignal(sorterCmd);
+        timeOfLastComputerCommand = millis();
     }
 }
 

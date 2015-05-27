@@ -116,10 +116,22 @@ int mPerSVelocityToTicks(float velocity) {
     return (int) (velocity * mPerSToTicks);
 }
 
+// Returns the current commanded velocity. Returns 0 if there are no recent commands
 int getLeftAutoWheelCmd() {
-    return leftAutoWheelCmd;
+    long currentTime = millis();
+    if (currentTime < (timeOfLastComputerCommand + allowableComputerCommandLag)) {
+        return leftAutoWheelCmd;
+    } else {
+        return 0;
+    }
 }
 
+// Returns the current commanded velocity. Returns 0 if there are no recent commands
 int getRightAutoWheelCmd() {
-    return rightAutoWheelCmd;
+    long currentTime = millis();
+    if (currentTime < (timeOfLastComputerCommand + allowableComputerCommandLag)) {
+        return rightAutoWheelCmd;
+    } else {
+        return 0;
+    }
 }
