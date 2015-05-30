@@ -17,8 +17,8 @@ def checkForJumps(msg, LPOS, RPOS):
 def main():
     ser = serial.Serial('/dev/kratos_teensy', 9600)
     counter = 0
-    cycleCounts = 50
-    lVel = 0.3
+    cycleCounts = 10
+    lVel = -0.3
     lAdd = 0.05
     rVel = 0.3
     rAdd = -0.05

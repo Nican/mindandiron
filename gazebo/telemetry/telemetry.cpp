@@ -41,29 +41,29 @@ DepthViewerTab::DepthViewerTab(QWidget *parent)
 
 void DepthViewerTab::ReceiveData(const Robot::DepthImgData &imgData)
 {
-	auto size = imgData.data.size();
-	std::vector<unsigned char> blobData(imgData.width * imgData.height * 3);
-	double maxValue = *std::max_element( imgData.data.begin(), imgData.data.end() );
+	// auto size = imgData.data.size();
+	// std::vector<unsigned char> blobData(imgData.width * imgData.height * 3);
+	// double maxValue = *std::max_element( imgData.data.begin(), imgData.data.end() );
 
-	for(std::size_t i = 0; i < size; i++)
-	{
-		float dist = imgData.data[i];
+	// for(std::size_t i = 0; i < size; i++)
+	// {
+	// 	float dist = imgData.data[i];
 
-		if(dist <= 0.0001)
-			dist = 5.0;
+	// 	if(dist <= 0.0001)
+	// 		dist = 5.0;
 
-		blobData[i*3] = blobData[i*3+1] = blobData[i*3+2] = (unsigned char)(dist / maxValue * 255);
-	}
+	// 	blobData[i*3] = blobData[i*3+1] = blobData[i*3+2] = (unsigned char)(dist / maxValue * 255);
+	// }
 
-	QImage qImage(blobData.data(), imgData.width, imgData.height, QImage::Format_RGB888 );
-	mDepthCamera->setPixmap(QPixmap::fromImage(qImage));
+	// QImage qImage(blobData.data(), imgData.width, imgData.height, QImage::Format_RGB888 );
+	// mDepthCamera->setPixmap(QPixmap::fromImage(qImage));
 }
 
 void DepthViewerTab::ReceivePointCloud(const PclPointCloud::Ptr pointCloud)
 {
-	viewer->updatePointCloud (pointCloud, "cloud");
-	viewer->resetCamera ();
-	qvtkWidget->update ();
+	// viewer->updatePointCloud (pointCloud, "cloud");
+	// viewer->resetCamera ();
+	// qvtkWidget->update ();
 }
 
 
