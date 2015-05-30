@@ -48,6 +48,10 @@ int collectorAutoCmd = 0;
 // TURN ON LIGHT WHEN ON
 int ledPin = 13;
 
+// TRACK LATEST COMPUTER COMMAND
+int timeOfLastComputerCommand = millis();
+int allowableComputerCommandLag = 2000;
+
 
 void setup() {
     Serial.begin(9600);
