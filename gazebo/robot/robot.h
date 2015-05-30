@@ -109,7 +109,7 @@ public:
 
 signals:
 	//Returns x / y relative to camera position, in meters
-	void SampleDetected(double x, double y);
+	void SampleDetected(QList<DetectedSample> samples);
 };
 
 
@@ -142,6 +142,7 @@ public slots:
 	void ReceiveAprilTagImage(QImage image);
 	void SendAprilTagInfo();
 	void ReceiveAprilTags(QList<AprilTagDetectionItem> tags);
+	void SampleDetected(QList<DetectedSample> samples);
 };
 
 class LocationEstimation : public QObject

@@ -315,6 +315,17 @@ void MainWindow::messageReceived(const QList<QByteArray>& messages)
 
 		mGridView->mMovingLine->setLine(from.x(), from.y(), to.x(), to.y());
 	}
+
+	if(id == '\x14')
+	{
+		QDataStream stream(messages[1]);
+		QList<DetectedSample> samples;
+
+		stream >> samples;
+
+		mGridView->ShowSamples(samples);
+
+	}
 }
 
 

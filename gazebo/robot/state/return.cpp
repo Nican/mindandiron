@@ -169,6 +169,8 @@ void ReturnLocateAprilState::FoundAprilTag(Eigen::Affine2d newLocation)
 		mRotate->SetFinished();
 	}
 
+	//std::cout << "ReturnLocateAprilState::FoundAprilTag";
+
 	if(mMoveInfront != nullptr)
 		return;
 

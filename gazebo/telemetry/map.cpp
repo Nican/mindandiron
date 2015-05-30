@@ -140,6 +140,8 @@ MapOverview::MapOverview(QWidget *parent)
 
 	mMovingLine = scene.addLine(0, 0, 0, 0, QPen(Qt::black, 0));
 
+	mSampleDetections = new QGraphicsItemGroup(mRobotInstance);
+
 	mValueGrid = new ValuesGrid(this);
 
 	mTagDetections = new QGraphicsItemGroup();
@@ -265,9 +267,35 @@ void MapOverview::RobotTagLocation(Eigen::Affine2d location)
 	mTagDetections->addToGroup(robot);
 }
 
+void MapOverview::ShowSamples(const QList<Robot::DetectedSample> &samples)
+{
+	static const QFont font("Times", 3, QFont::Bold);
+
+	qDeleteAll(mSampleDetections->childItems());
+
+	for(auto& sample : samples)
+	{
+		Vector2d loc = sample.location;
+		auto circle = new QGraphicsEllipseItem(loc.x()-0.2, loc.y()-0.2, 0.4, 0.4);
+		circle->setPen(QPen(Qt::red, 0));
+
+		mTagDetections->addToGroup(circle);
+
+		/*
+		auto text = new QGraphicsTextItem(sample.name);
+		text->setPos(loc.x(), loc.y());
+		text->setFont(font);
+		text->setDefaultTextColor(Qt::red);
+
+		mTagDetections->addToGroup(text);
+		*/
+	}
+
+}
+
 void MapOverview::ReadTags(const QList<Robot::AprilTagDetectionItem> &tags)
 {
-	qDeleteAll(mTagDetections->childItems());
+	//qDeleteAll(mTagDetections->childItems());
 
 	/*
 	for(auto& tag : tags)

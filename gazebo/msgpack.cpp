@@ -151,3 +151,20 @@ QDataStream &operator>>(QDataStream &in, Robot::Teensy2Status &item)
 
 	return in;
 }
+
+
+QDataStream &operator<<(QDataStream &out, const Robot::DetectedSample &item)
+{
+	out << item.name;
+	out << item.location;
+
+	return out;
+}
+
+QDataStream &operator>>(QDataStream &in, Robot::DetectedSample &item)
+{
+	in >> item.name;
+	in >> item.location;
+
+	return in;
+}
