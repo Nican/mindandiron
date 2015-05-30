@@ -22,6 +22,16 @@
 namespace Robot 
 {
 
+class KratosSampleDetection : public SampleDetection
+{
+public:
+	KratosSampleDetection(QObject* parent) : SampleDetection(parent)
+	{
+	}
+
+	//void receiveUpdate(const RobotGazeboTickData &data);
+};
+
 class KratosAprilTag : public AprilTagCamera
 {
 	Q_OBJECT

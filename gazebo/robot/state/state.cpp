@@ -164,6 +164,7 @@ void MoveTowardsGoalState::TeensyStatus(TeenseyStatus status)
 
 	if(mAprilUpdates && mLastAprilUpdate.isValid())
 	{
+		/*
 		Rotation2Dd rotation2D(0);
 		rotation2D.fromRotationMatrix(mLastApril.linear());
 
@@ -171,6 +172,8 @@ void MoveTowardsGoalState::TeensyStatus(TeenseyStatus status)
 		odometry.mPosition = Rotation2Dd(mStartAngle) * odometry.mPosition;
 		odometry.mPosition += mLastApril.translation();
 		odometry.mTheta += rotation2D.angle();
+		*/
+		odometry = Robot()->GetOdometryTraveledSince(mLastResult->mCreatedTime, QDateTime::currentDateTime(), true);
 	}
 	else
 	{	

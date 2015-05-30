@@ -153,9 +153,6 @@ void Kratos2::AprilTagDetected(QList<AprilTagDetectionItem> detections)
 		{
 			servoAngle = query.value(0).toDouble();
 		}
-		
-
-		mLastAprilDetection = QDateTime::currentDateTime();
 
 		//Update the robot location estimation
 		double euler = tag.euler.y() + (0.0 / 180 * M_PI); //6.4
@@ -170,7 +167,10 @@ void Kratos2::AprilTagDetected(QList<AprilTagDetectionItem> detections)
 		aprilLocation.linear() = Rotation2Dd(euler).toRotationMatrix();
 		aprilLocation.translation() = translation;
 
-		mSensorLog->AprilLocationUpdate(QDateTime::fromMSecsSinceEpoch(tag.time), aprilLocation);
+		mLastAprilDetection = QDateTime::fromMSecsSinceEpoch(tag.time);
+		mLastAprilLocation = aprilLocation;
+
+		mSensorLog->AprilLocationUpdate(mLastAprilDetection, aprilLocation);
 
 		emit AprilLocationUpdate(aprilLocation);
 
@@ -270,8 +270,24 @@ void Kratos2::FinishedPointCloud()
 	}
 }
 
-Odometry Kratos2::GetOdometryTraveledSince(QDateTime startTime, QDateTime endTime)
+Odometry Kratos2::GetOdometryTraveledSince(QDateTime startTime, QDateTime endTime, bool useApril)
 {
+	Odometry odometry(0.69);
+	std::size_t count = 0;
+	double lastLeft = 0.0;
+	double lastRight = 0.0;
+
+	if(startTime <= mLastAprilDetection && mLastAprilDetection <= endTime)
+	{
+		startTime = mLastAprilDetection;
+		Rotation2Dd rotation2D(0);
+		rotation2D.fromRotationMatrix(mLastAprilLocation.linear());
+
+		odometry.mPosition += mLastAprilLocation.translation();
+		odometry.SetTheta(rotation2D.angle());
+	}
+
+
 	QSqlQuery query(mSensorLog->mDb);
 	query.prepare("SELECT leftWheel, rightWheel FROM teensyLog WHERE timestamp > :startTime AND timestamp < :endTime");
 	query.bindValue(":startTime", startTime.toMSecsSinceEpoch());
@@ -280,17 +296,11 @@ Odometry Kratos2::GetOdometryTraveledSince(QDateTime startTime, QDateTime endTim
 	if(!query.exec())
 		std::cout << "error SQL= " <<  query.lastError().text().toStdString() << std::endl;
 
-	double lastLeft = 0.0;
-	double lastRight = 0.0;
-
 	if(query.next())
 	{
 		lastLeft = query.value(0).toDouble();
 		lastRight = query.value(1).toDouble();
 	}
-
-	Odometry odometry(0.69);
-	std::size_t count = 0;
 
 	while (query.next()) {
 		double left = query.value(0).toDouble();

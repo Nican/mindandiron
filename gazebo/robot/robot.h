@@ -186,6 +186,7 @@ public:
 	bool mIsPaused;
 
 	QDateTime mLastAprilDetection;
+	Eigen::Affine2d mLastAprilLocation;
 
 	Kratos2(QObject* parent);
 
@@ -208,7 +209,7 @@ public:
 	double GetLeftVelocity();
 	double GetRightVelocity();
 
-	Odometry GetOdometryTraveledSince(QDateTime startTime, QDateTime endTime = QDateTime::currentDateTime());
+	Odometry GetOdometryTraveledSince(QDateTime startTime, QDateTime endTime = QDateTime::currentDateTime(), bool useApril = false);
 
 public slots:
 	void ProccessPointCloud(Robot::DepthImgData mat);
