@@ -277,7 +277,7 @@ Odometry Kratos2::GetOdometryTraveledSince(QDateTime startTime, QDateTime endTim
 	double lastLeft = 0.0;
 	double lastRight = 0.0;
 
-	if(startTime <= mLastAprilDetection && mLastAprilDetection <= endTime)
+	if(useApril && startTime <= mLastAprilDetection && mLastAprilDetection <= endTime)
 	{
 		startTime = mLastAprilDetection;
 		Rotation2Dd rotation2D(0);
