@@ -155,7 +155,7 @@ void Kratos2::AprilTagDetected(QList<AprilTagDetectionItem> detections)
 		}
 
 		//Update the robot location estimation
-		double euler = tag.euler.y() + (0.0 / 180 * M_PI); //6.4
+		double euler = tag.euler.y() + (8.3 / 180 * M_PI); //6.4 for gazebo, 8.3 for real life
 		Vector2d translation = tag.translation.head<2>();
 
 		translation = Rotation2Dd(euler) * translation;

@@ -188,9 +188,7 @@ void ReturnLocateAprilState::FoundAprilTag(Eigen::Affine2d newLocation)
 
 void ReturnLocateAprilState::RealignInFront()
 {
-	auto odometry = Robot()->GetOdometryTraveledSince(mMoveInfront->mStartTime);
-	odometry.mPosition += mMoveInfront->mStartPos;
-	odometry.mTheta += mMoveInfront->mStartAngle;
+	auto odometry = Robot()->GetOdometryTraveledSince(QDateTime::currentDateTime().addSecs(-2), QDateTime::currentDateTime(), true);
 
 	cout << "Rotating angle: " << -odometry.mTheta << " rad\n";
 

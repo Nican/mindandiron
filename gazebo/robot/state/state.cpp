@@ -222,7 +222,7 @@ void MoveTowardsGoalState::TeensyStatus(TeenseyStatus status)
 
 void MoveTowardsGoalState::DriveTowards(Odometry odometry, Eigen::Vector2d goal)
 {
-	const double ARRIVAL_RADIUS = 0.5;  // meters
+	const double ARRIVAL_RADIUS = 0.4 + 0.04 * goal.norm();  // meters, gets bigger as goal goes away from base
 	const double SIDE_VELOCITY_OFFSET = 0.02;  // meters/second
 	const double FORWARD_VELOCITY = 0.12;  // meters/second
 
@@ -436,28 +436,38 @@ void RotateState::Start()
 
 void RotateState::TeensyStatus(TeenseyStatus status)
 {
+	// static int callbackCounter = 0;
+	const double TURN_STRENGTH = 0.075;  // meters/second. Too fast of a turn creates error
+
 	if(IsFinished())
 		return;
 
 	auto odometry = Robot()->GetOdometryTraveledSince(mStartTime);
 
-	if(mLastRotation != 0.0)
-	{
-		mTotalRotation += std::abs(odometry.mTheta - mLastRotation);
-	}
+	// if(mLastRotation != 0.0)
+	// {
+	// 	mTotalRotation += std::abs(odometry.mTheta - mLastRotation);
+	// }
 
-	mLastRotation = odometry.mTheta;
+	// mLastRotation = odometry.mTheta;
+
+	// if (callbackCounter++ % 5 == 0)
+	// {
+	// 	cout << "Odometry.mTheta: " << odometry.mTheta << "\n";
+	// }
 
 	if(mRotation < 0.0)
-		Robot()->SetWheelVelocity(0.1, -0.1);
+		Robot()->SetWheelVelocity(TURN_STRENGTH, -TURN_STRENGTH);
 	else
-		Robot()->SetWheelVelocity(-0.1, 0.1);
+		Robot()->SetWheelVelocity(-TURN_STRENGTH, TURN_STRENGTH);
 
-	if(mTotalRotation >= std::abs(mRotation))
+	// if(mTotalRotation >= std::abs(mRotation))
+	if (std::abs(odometry.mTheta) >= std::abs(mRotation) - 0.4)  // NOTE THIS SUBSTRACTION, IT'S SKETCHY (It's to deal by hand with slippage issues)
 	{
 		Robot()->SetWheelVelocity(0.0, 0.0);
 
 		SetFinished();
-		std::cout << "Rotate state finished with " << odometry << " ("<< (mRotation*180.0/M_PI) << ")\n";
+		std::cout << "Rotate state finished with " << odometry << " ("<< odometry.mTheta << " rad change)\n";
 	}
+
 }
