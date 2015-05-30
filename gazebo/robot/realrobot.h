@@ -24,11 +24,15 @@ namespace Robot
 
 class KratosSampleDetection : public SampleDetection
 {
+	Q_OBJECT
 public:
-	KratosSampleDetection(QObject* parent) : SampleDetection(parent)
-	{
-	}
+	nzmqt::ZMQSocket* mSubSocket;
 
+
+	KratosSampleDetection(nzmqt::ZMQContext* context, QObject* parent);
+
+public slots:
+	void messageReceived(const QList<QByteArray>& messages);
 	//void receiveUpdate(const RobotGazeboTickData &data);
 };
 
@@ -86,6 +90,7 @@ class RealRobot : public Robot::Kratos2
 	Robot::TeenseyStatus lastStatus;
 	Robot::KratosDecawave* mDecawave;
 	Robot::KratosAprilTag* mAprilTag;
+	Robot::KratosSampleDetection* mSampleDetection;
 	bool bFirstTeenseyMessage;
 
 	KratosCamera* mFrontCamera;
@@ -120,7 +125,7 @@ public:
 
 	virtual SampleDetection* GetSampleDetection() override
 	{
-		return nullptr;
+		return mSampleDetection;
 	}
 
 	virtual QString Name() override

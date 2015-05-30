@@ -11,7 +11,7 @@ using namespace Eigen;
 
 void GazeboSampleDetection::receiveUpdate(const RobotGazeboTickData &data)
 {
-	static const Vector2d sampleLocation(12, 12);
+	static const Vector2d sampleLocation(3, 3);
 
 	Vector2d relative = sampleLocation - data.robotPosition.head<2>();
 	//double angle = std::atan2(relative.y(), relative.x());
@@ -27,7 +27,13 @@ void GazeboSampleDetection::receiveUpdate(const RobotGazeboTickData &data)
 	if(relative2.norm() > 10.0)
 		return;
 
-	emit SampleDetected(relative2.x(), relative2.y());
+	DetectedSample sample;
+ 	sample.location = relative2;
+	sample.name = "test";
+
+	QList<DetectedSample> detections({sample});
+
+	emit SampleDetected(detections);
 }
 
 GazeboAprilTag::GazeboAprilTag(GazeboKratos* parent) 
@@ -244,8 +250,8 @@ GazeboKratos::GazeboKratos(QObject* parent)
 void GazeboKratos::fireControlUpdate()
 {
 	RobotGazeboControl control;
-	control.leftVelocity = GetLeftVelocity();
-	control.rightVelocity = GetRightVelocity();
+	control.leftVelocity = GetLeftVelocity() * 5;
+	control.rightVelocity = GetRightVelocity() * 5;
 	control.aprilAngle = mTeensy2->GetAprilGazeboAngle();
 
 	QByteArray buffer;

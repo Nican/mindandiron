@@ -134,6 +134,7 @@ public:
 	QGraphicsScene scene;
 	QGraphicsView view;
 
+	QGraphicsItemGroup* mSampleDetections;
 	QGraphicsItemGroup* mCore;
 	QGraphicsPathItem* trajectoryPath;
 	QGraphicsPathItem* mPlannedTrajectory;
@@ -159,6 +160,8 @@ public:
 
 	void ReadTags(const QList<Robot::AprilTagDetectionItem> &tags);
 	void RobotTagLocation(Eigen::Affine2d location);
+
+	void ShowSamples(const QList<Robot::DetectedSample> &samples);
 };
 
 

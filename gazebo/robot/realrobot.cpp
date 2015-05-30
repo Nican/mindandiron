@@ -3,16 +3,61 @@
 #include <QMetaType>
 #include <QThread>
 #include <QtConcurrent>
+#include <QJsonArray>
+#include <QJsonDocument>
 
 #include "../AprilTags/Tag25h9.h"
 
 using namespace Robot;
-
+using namespace Eigen;
 
 //////////////////////////
 ////	KratosSampleDetection
 //////////////////////////
 
+KratosSampleDetection::KratosSampleDetection(nzmqt::ZMQContext* context, QObject* parent) : SampleDetection(parent)
+{
+	mSubSocket = context->createSocket(nzmqt::ZMQSocket::TYP_SUB, this);
+	mSubSocket->setObjectName("Subscriber.Socket.socket(SUB)");
+	mSubSocket->connectTo("tcp://127.0.0.1:5561");
+	mSubSocket->setOption(nzmqt::ZMQSocket::OPT_SUBSCRIBE, "", 0);
+
+	connect(mSubSocket, SIGNAL(messageReceived(const QList<QByteArray>&)), SLOT(messageReceived(const QList<QByteArray>&)));
+
+}
+
+void KratosSampleDetection::messageReceived(const QList<QByteArray>& messages)
+{
+	if(messages.size() == 0)
+		return;
+
+	QJsonParseError error;
+	QList<DetectedSample> samples;
+	QJsonDocument json(QJsonDocument::fromJson(messages[0], &error));
+
+	if(error.error != 0)
+	{
+		std::cout << "Failed to parse JSON from sample detection: " << error.errorString().toStdString() << "\n";
+		return;
+	}
+
+	QJsonArray locations = json.array();	
+
+	for (int id = 0; id < locations.size(); ++id) {
+		QJsonObject locationObject = locations[id].toObject();
+
+	 	DetectedSample sample;
+	 	sample.location = {
+			locationObject["x"].toDouble(),
+			locationObject["y"].toDouble()
+		};
+		sample.name = locationObject["name"].toString();
+
+		samples.append(sample);
+	}
+
+	emit SampleDetected(samples);
+}
 
 //////////////////////////
 ////	KratosAprilTag
@@ -169,6 +214,7 @@ RealRobot::RealRobot(QObject* parent) :
 	mTeensy = new Robot::KratosTeensy(this);
 	mTeensy2 = new Robot::KratosTeensy2(this);
 	mAprilTag = new Robot::KratosAprilTag(this);
+	mSampleDetection = new Robot::KratosSampleDetection(mContext, this);
 
 	QObject::connect(mTeensy, &Robot::KratosTeensy::statusUpdate, [this](Robot::TeenseyStatus status){
 		bFirstTeenseyMessage = false;

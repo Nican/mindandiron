@@ -99,6 +99,10 @@ void Kratos2::Initialize()
 	connect(this, &Kratos2::AprilLocationUpdate, &mLocation, &LocationEstimation::AprilLocationUpdate);
 	connect(GetTeensy(), &Teensy::statusUpdate, &mLocation, &LocationEstimation::teensyStatus);
 
+	connect(GetSampleDetection(), &SampleDetection::SampleDetected, mSensorLog, &SensorLog::SampleDetected);
+
+	
+
 	auto aprilTimer = new QTimer(this);
 	aprilTimer->start(1750);
 	QObject::connect(aprilTimer, &QTimer::timeout, this, &Kratos2::AprilScanTimer);
@@ -131,7 +135,7 @@ void Kratos2::AprilTagDetected(QList<AprilTagDetectionItem> detections)
 {
 	for(auto& tag : detections)
 	{
-		if(tag.detection.id != 6)
+		if(tag.detection.id != 6 && tag.detection.id != 0)
 			continue;
 
 		QSqlQuery query(mSensorLog->mDb);
@@ -203,6 +207,8 @@ void Kratos2::SetWheelVelocity(double left, double right)
 {
 	mLeftWheelVelocity = left;
 	mRightWheelVelocity = right;
+
+	//std::cout << "Wheel velocity: " << left << "\t" << right << "\n";
 
 	emit WheelVelocityUpdate(left, right);
 }

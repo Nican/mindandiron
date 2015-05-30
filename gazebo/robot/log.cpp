@@ -393,3 +393,16 @@ void SensorLog::ReceiveAprilTags(QList<AprilTagDetectionItem> tags)
 	msg += buffer;
 	mSocket->sendMessage(msg);	
 }
+
+void SensorLog::SampleDetected(QList<DetectedSample> samples)
+{
+	QByteArray buffer;
+	QDataStream stream(&buffer, QIODevice::WriteOnly);
+
+	stream << samples;
+
+	QList<QByteArray> msg;
+	msg += QByteArray("\x14");
+	msg += buffer;
+	mSocket->sendMessage(msg);	
+}

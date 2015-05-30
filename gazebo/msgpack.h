@@ -3,6 +3,7 @@
 #include <iostream>
 #include <QDataStream>
 #include <eigen3/Eigen/Dense>
+#include <QString>
 
 typedef std::complex<double> Complex;
 
@@ -33,6 +34,12 @@ std::vector<T> GetRobotPoints()
 namespace Robot
 {
 
+struct DetectedSample
+{
+	QString name;
+	Eigen::Vector2d location;
+};
+
 struct ImgData
 {
 	std::vector<unsigned char> data;
@@ -56,6 +63,9 @@ QDataStream &operator>>(QDataStream &in, Robot::ImgData &item);
 
 QDataStream &operator<<(QDataStream &out, const Robot::DepthImgData &item);
 QDataStream &operator>>(QDataStream &in, Robot::DepthImgData &item);
+
+QDataStream &operator<<(QDataStream &out, const Robot::DetectedSample &item);
+QDataStream &operator>>(QDataStream &in, Robot::DetectedSample &item);
 
 
 template <typename T, int _Rows>
