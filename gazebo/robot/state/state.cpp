@@ -258,8 +258,8 @@ void MoveTowardsGoalState::DriveTowards(Odometry odometry, Eigen::Vector2d goal)
 			Robot()->SetWheelVelocity(-(FORWARD_VELOCITY + SIDE_VELOCITY_OFFSET),
 									  -(FORWARD_VELOCITY - SIDE_VELOCITY_OFFSET));
 		else
-			Robot()->SetWheelVelocity(-(FORWARD_VELOCITY - SIDE_VELOCITY_OFFSET),
-									  -(FORWARD_VELOCITY + SIDE_VELOCITY_OFFSET));
+			Robot()->SetWheelVelocity((FORWARD_VELOCITY - SIDE_VELOCITY_OFFSET),
+									  (FORWARD_VELOCITY + SIDE_VELOCITY_OFFSET));
 	} 
 	else 
 	{
