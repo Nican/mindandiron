@@ -34,7 +34,7 @@ void ReturnToStationState::Start()
 
 void ReturnToStationState::MoveToNextState()
 {
-	std::cout << "Finsihed state: " << mState->metaObject()->className() << "\n";
+	std::cout << "Finished state: " << mState->metaObject()->className() << "\n";
 
 	if(qobject_cast<ReturnRealignState*>(mState) != nullptr)
 	{
@@ -129,7 +129,7 @@ void ReturnLocateAprilState::Start()
 	
 	mRotate = new RotateState(this, M_PI);
 	connect(mRotate, &ProgressState::Finished, this, &ReturnLocateAprilState::FinishRotate);
-	mRotate->Start();
+	// mRotate->Start();
 
 	mFinishedRotatingTime = QDateTime::currentDateTime();
 
@@ -165,7 +165,7 @@ void ReturnLocateAprilState::FoundAprilTag(Eigen::Affine2d newLocation)
 
 	if(mRotate->IsValid())
 	{
-		std::cout << "Rotating is still valid. Kiling it!\n";
+		std::cout << "Rotating is still valid. Killing it!\n";
 		mRotate->SetFinished();
 	}
 
@@ -191,6 +191,8 @@ void ReturnLocateAprilState::RealignInFront()
 	auto odometry = Robot()->GetOdometryTraveledSince(mMoveInfront->mStartTime);
 	odometry.mPosition += mMoveInfront->mStartPos;
 	odometry.mTheta += mMoveInfront->mStartAngle;
+
+	cout << "Rotating angle: " << -odometry.mTheta << " rad\n";
 
 	//Rotate to align itself with the base station
 	RotateState* rotate = new RotateState(this, -odometry.mTheta);

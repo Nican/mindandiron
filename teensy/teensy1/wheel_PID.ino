@@ -42,6 +42,7 @@ void calculateVelocityPIDControl() {
         }
         leftAutoWheelCmd = calcServoCmdFromDesiredVelocity(velocityKp * leftError +
                                                            velocityKi * leftVelocityIntegralError);
+
         rightError = rightVelocityGoal - getRightVelocity();
         if (!(abs(rightVelocityIntegralError + rightError) > velocityIntegralBounds)) {
             rightVelocityIntegralError += rightError;
@@ -53,8 +54,8 @@ void calculateVelocityPIDControl() {
         // PI position control is not currently working. Ideas for future
         // Create a one pole tranfer function with c2d
         // Implement a railed proportional control with a rampup and rampdown.
-        leftAutoWheelCmd = 0;
-        rightAutoWheelCmd = 0;
+        leftAutoWheelCmd = calcServoCmdFromDesiredVelocity(0);
+        rightAutoWheelCmd = calcServoCmdFromDesiredVelocity(0);
 
         // leftError = leftPositionGoal - getLeftPosition();  // In units of ticks
         // if (!(abs(leftPositionIntegralError + leftError) > positionIntegralBounds)) {
@@ -116,10 +117,22 @@ int mPerSVelocityToTicks(float velocity) {
     return (int) (velocity * mPerSToTicks);
 }
 
+// Returns the current commanded velocity. Returns 0 if there are no recent commands
 int getLeftAutoWheelCmd() {
-    return leftAutoWheelCmd;
+    long currentTime = millis();
+    if (currentTime < (timeOfLastComputerCommand + allowableComputerCommandLag)) {
+        return leftAutoWheelCmd;
+    } else {
+        return calcServoCmdFromDesiredVelocity(0);
+    }
 }
 
+// Returns the current commanded velocity. Returns 0 if there are no recent commands
 int getRightAutoWheelCmd() {
-    return rightAutoWheelCmd;
+    long currentTime = millis();
+    if (currentTime < (timeOfLastComputerCommand + allowableComputerCommandLag)) {
+        return rightAutoWheelCmd;
+    } else {
+        return calcServoCmdFromDesiredVelocity(0);
+    }
 }

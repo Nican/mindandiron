@@ -222,6 +222,10 @@ void MoveTowardsGoalState::TeensyStatus(TeenseyStatus status)
 
 void MoveTowardsGoalState::DriveTowards(Odometry odometry, Eigen::Vector2d goal)
 {
+	const double ARRIVAL_RADIUS = 0.5;  // meters
+	const double SIDE_VELOCITY_OFFSET = 0.02;  // meters/second
+	const double FORWARD_VELOCITY = 0.12;  // meters/second
+
 	if(mReverse)
 		odometry.mTheta += M_PI;
 
@@ -235,8 +239,8 @@ void MoveTowardsGoalState::DriveTowards(Odometry odometry, Eigen::Vector2d goal)
 	//std::cout << "\tOdometry: " << odometry << "\n";
 	//std::cout << "\tDriving towards: " << (desiredAngle*180.0/M_PI) << "\t" <<  diff.transpose() << "("<< (angleDiff*180.0/M_PI) << ")\n";
 
-	if(diff.norm() < 0.1){
-		std::cout << "Stopping robot. Diff norm is too small\n";
+	if(diff.norm() < ARRIVAL_RADIUS){
+		std::cout << "Stopping waypoint travel. Diff norm is too small. DONE\n";
 		Robot()->SetWheelVelocity(0.0, 0.0);
 		SetFinished();
 		return;
@@ -245,23 +249,27 @@ void MoveTowardsGoalState::DriveTowards(Odometry odometry, Eigen::Vector2d goal)
 	if(angleDiff < -0.05)
 	{
 		if(mReverse)
-			Robot()->SetWheelVelocity(-0.2, -0.4);
+			Robot()->SetWheelVelocity(-(FORWARD_VELOCITY - SIDE_VELOCITY_OFFSET),
+									  -(FORWARD_VELOCITY + SIDE_VELOCITY_OFFSET));
 		else
-			Robot()->SetWheelVelocity(0.4, 0.2);
+			Robot()->SetWheelVelocity((FORWARD_VELOCITY + SIDE_VELOCITY_OFFSET),
+									  (FORWARD_VELOCITY - SIDE_VELOCITY_OFFSET));
 	}
 	else if(angleDiff > 0.05)
 	{
 		if(mReverse)
-			Robot()->SetWheelVelocity(-0.4, -0.2);
+			Robot()->SetWheelVelocity(-(FORWARD_VELOCITY + SIDE_VELOCITY_OFFSET),
+									  -(FORWARD_VELOCITY - SIDE_VELOCITY_OFFSET));
 		else
-			Robot()->SetWheelVelocity(0.2, 0.4);
+			Robot()->SetWheelVelocity((FORWARD_VELOCITY - SIDE_VELOCITY_OFFSET),
+									  (FORWARD_VELOCITY + SIDE_VELOCITY_OFFSET));
 	} 
 	else 
 	{
 		if(mReverse)
-			Robot()->SetWheelVelocity(-0.3, -0.3);
+			Robot()->SetWheelVelocity(-FORWARD_VELOCITY, -FORWARD_VELOCITY);
 		else
-			Robot()->SetWheelVelocity(0.3, 0.3);
+			Robot()->SetWheelVelocity(FORWARD_VELOCITY, FORWARD_VELOCITY);
 	}
 }
 

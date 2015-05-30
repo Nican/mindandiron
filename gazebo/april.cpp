@@ -57,7 +57,7 @@ static void wRo_to_euler(const Eigen::Matrix3d& wRo, double& yaw, double& pitch,
 
 AprilTagCamera::AprilTagCamera(QObject* parent) : 
 	QObject(parent),
-	mTagSize(0.829), //0.829 -- 0.159
+	mTagSize(0.733), //0.829 -- 0.159
 	mFx(1315), mFy(1315),
 	mPx(1920/2), mPy(1080/2)
 {

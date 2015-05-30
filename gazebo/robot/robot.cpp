@@ -100,7 +100,7 @@ void Kratos2::Initialize()
 	connect(GetTeensy(), &Teensy::statusUpdate, &mLocation, &LocationEstimation::teensyStatus);
 
 	auto aprilTimer = new QTimer(this);
-	aprilTimer->start(3000);
+	aprilTimer->start(1750);
 	QObject::connect(aprilTimer, &QTimer::timeout, this, &Kratos2::AprilScanTimer);
 
 	mState = new RootState(this);
@@ -114,7 +114,7 @@ void Kratos2::StartStateMachine()
 
 void Kratos2::AprilScanTimer()
 {
-	static QList<int> scanModeValues = {-88, 0, 88};
+	static QList<int> scanModeValues = {-90, -45, 0, 45, 90};  // Horizontal FOV is 70 degrees, this gives 25 degree overlap between shots
 	static int lastScanValue = 0;
 
 	auto currentTime = QDateTime::currentDateTime();
@@ -131,7 +131,7 @@ void Kratos2::AprilTagDetected(QList<AprilTagDetectionItem> detections)
 {
 	for(auto& tag : detections)
 	{
-		if(tag.detection.id != 0)
+		if(tag.detection.id != 6)
 			continue;
 
 		QSqlQuery query(mSensorLog->mDb);

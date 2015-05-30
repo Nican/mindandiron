@@ -52,8 +52,13 @@ void commandCollectorSimple(Servo servo, int speed) {
 // Speed is a servo, speed goes from -85 to 85, recentered around servo 0 (95)
 void commandCollectorFromWheelV(Servo servo, float left, float right) {
     int speed = (int) ((left + right) * COLLECTOR_MPERS_TO_SPEED);
-    if (abs(speed) <= SERVO_OUTPUT_LARGE_DELTA) {
-        servo.write(COLLECTOR_MIN_SERVO_SPEED + speed);
+    long currentTime = millis();
+    if (currentTime < (timeOfLastComputerCommand + allowableComputerCommandLag)) {
+        if (abs(speed) <= SERVO_OUTPUT_LARGE_DELTA) {
+            servo.write(COLLECTOR_MIN_SERVO_SPEED + speed);
+        } else {
+            servo.write(COLLECTOR_MIN_SERVO_SPEED);
+        }
     } else {
         servo.write(COLLECTOR_MIN_SERVO_SPEED);
     }
