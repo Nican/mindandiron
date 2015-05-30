@@ -48,8 +48,8 @@ void KratosSampleDetection::messageReceived(const QList<QByteArray>& messages)
 
 	 	DetectedSample sample;
 	 	sample.location = {
-			locationObject["x"].toDouble(),
-			locationObject["y"].toDouble()
+			locationObject["x"].toDouble() / 100.0,  // Convert cm to m
+			locationObject["y"].toDouble() / 100.0   // Convert cm to m
 		};
 		sample.name = locationObject["name"].toString();
 
