@@ -13,8 +13,17 @@ struct TeenseyStatus
 
 	Eigen::Vector3d acceleration;
 	bool autoFlag;
+};
 
-	//MSGPACK_DEFINE(leftPosition, rightPosition, leftVelocity, rightVelocity, acceleration, autoFlag);
+struct TeensyCommand
+{
+	double leftVel;
+	double rightVel;
+	int leftPos;
+	int rightPos;
+	int useVelocity;
+	int collector;
+	int sorter;
 };
 
 struct Teensy2Status
@@ -23,8 +32,6 @@ struct Teensy2Status
 	double current;
 	double voltage;
 	int isPaused;
-
-	//MSGPACK_DEFINE(servoAngle, current, voltage, isPaused);
 };
 
 }

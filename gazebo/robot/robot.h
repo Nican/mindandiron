@@ -71,6 +71,9 @@ public:
 	{
 	}
 
+	virtual void SetSorter(int slot) = 0;
+	virtual void SetCollector(int col) = 0;
+
 signals:
     void statusUpdate(TeenseyStatus);
 };

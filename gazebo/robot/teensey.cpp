@@ -84,6 +84,14 @@ KratosTeensy::KratosTeensy(QObject* parent) : Teensy(parent)
 	}
 
 	mSerial->clear();
+
+	mCommand.leftVel = 0.0;
+	mCommand.rightVel = 0.0;
+	mCommand.leftPos = 0;
+	mCommand.rightPos = 0;
+	mCommand.useVelocity = 1;
+	mCommand.collector = 0;
+	mCommand.sorter = 0;
 }
 
 KratosTeensy::~KratosTeensy()
@@ -98,20 +106,41 @@ void KratosTeensy::receiveError(QSerialPort::SerialPortError error)
 	std::cout << "Teensy received error. " << mSerial->error() << "\n";
 }
 
+void KratosTeensy::SetSorter(int slot)
+{
+	mCommand.sorter = slot;
+	//SetVelocities gets called at 10Hz, let it send the command
+}
+
+void KratosTeensy::SetCollector(int col)
+{
+	mCommand.collector = col;
+}
+
 void KratosTeensy::SetVelocities(double left, double right)
 {
 	if(!mSerial->isOpen())
 		return;
 
-	int leftPos = 0;
-	int rightPos = 0;
-	int useVelocity = 1;
-	int collector = 0;
-	int sorter = 0;
+	mCommand.leftVel = left;
+	mCommand.rightVel = right;
+	mCommand.useVelocity = 1;	
 
+	SendCommand();
+}
+
+void KratosTeensy::SendCommand()
+{
 	QString sendString;
 	//sendString.sprintf("LVEL\t%d\tRVEL\t%d\tCOLL\t%s\tSORT\t%s\tEND", leftInt, rightInt, "0", "0");
-	sendString.sprintf("\t%.2f\t%.2f\t%d\t%d\t%d\t%d\t%d\tEND", left, right, leftPos, rightPos, useVelocity, collector, sorter);
+	sendString.sprintf("\t%.2f\t%.2f\t%d\t%d\t%d\t%d\t%d\tEND", 
+		mCommand.leftVel,
+		mCommand.rightVel,
+		mCommand.leftPos,
+		mCommand.rightPos,
+		mCommand.useVelocity,
+		mCommand.collector,
+		mCommand.sorter);
 	//std::cout << "Sending value: " << sendString.toStdString() << "\n";
 	mSerial->write(sendString.toLocal8Bit());
 }

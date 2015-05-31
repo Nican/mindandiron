@@ -81,6 +81,10 @@ public:
 
 	void receiveUpdate(const RobotGazeboTickData &data);
 
+	virtual void SetSorter(int slot) override {}
+
+	virtual void SetCollector(int col) override	{}
+
 protected slots:
 	void fireUpdate();
 };
