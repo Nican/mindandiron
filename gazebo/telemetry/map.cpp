@@ -125,6 +125,7 @@ MapOverview::MapOverview(QWidget *parent)
 	//make the robot shape
 	mRobotInstance = new RobotRect();
 	scene.addItem(mRobotInstance);  
+	mRobotInstance->SetRobot({0.0, 0.0}, 0.0);
 
 	//Make the whole world visible
 	view.setSceneRect(-5, -5, 10, 10);
