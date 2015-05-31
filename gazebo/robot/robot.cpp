@@ -126,7 +126,7 @@ void Kratos2::Initialize()
 	
 
 	auto aprilTimer = new QTimer(this);
-	aprilTimer->start(1750);
+	aprilTimer->start(2250);
 	QObject::connect(aprilTimer, &QTimer::timeout, this, &Kratos2::AprilScanTimer);
 
 	mState = new RootState(this);
@@ -155,6 +155,8 @@ void Kratos2::AprilScanTimer()
 
 void Kratos2::AprilTagDetected(QList<AprilTagDetectionItem> detections)
 {
+
+	// cout << "Last detection " << mLastAprilDetection.msecsTo(QDateTime::currentDateTime()) << "\n";
 	AprilTagDetectionItem tag;
 	bool foundSameAsLast = false;
 
