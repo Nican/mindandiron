@@ -9,7 +9,7 @@ using namespace Eigen;
 
 void LeaveBaseStation::Start()
 {
-	auto move = new MoveForwardState(this, 1.5);
+	auto move = new MoveForwardState(this, 2.0);
 	move->Start();
 
 	connect(move, &ProgressState::Finished, this, &LeaveBaseStation::MoveToRotate);
