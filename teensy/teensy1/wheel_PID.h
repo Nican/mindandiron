@@ -7,3 +7,4 @@
 #define WHEEL_TICKS_PER_REV   	23330  // Determined experimentally for encoder
 #define WHEEL_RADIUS    		0.155  // meters
 #define PI              		3.1416
+#define PID_CUTOFF_VELOCITY		0.001  // meters/second command at which robot will brake abruptly
