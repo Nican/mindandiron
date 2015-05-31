@@ -96,6 +96,7 @@ public:
 
 	QDateTime mStartTime;
 	MoveTowardsGoalState* mMoveInfront;
+	int finalApproach;
 
 	LeaveBaseStation(QObject *parent) : ProgressState(parent), mMoveInfront(nullptr)
 	{
@@ -107,7 +108,9 @@ public slots:
 	void MoveToRotate();
 	void MoveToNextState();
 	void FoundAprilTag(Eigen::Affine2d newLocation);
-	void SampleDetected(QList<DetectedSample> samples);
+	void NavigateToSample(QList<DetectedSample> samples);
+	void ProportionalSteerOverSample(QList<DetectedSample> samples);
+	void FinishSampleCollection();
 };
 
 
