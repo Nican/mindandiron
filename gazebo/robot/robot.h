@@ -149,21 +149,21 @@ class LocationEstimation : public QObject
 {
 	Q_OBJECT
 
+	Kratos2* robot;
 	Odometry odometry;
 	TeenseyStatus lastTeensyStatus;
-	Eigen::Affine2d lastAprilStatus;
+
+	QVector<Eigen::Affine2d> mHistory;
 
 public:
-	QDateTime lastAprilUpdate;
-
-	LocationEstimation(QObject* parent);
-
+	LocationEstimation(Kratos2* parent);
 	Eigen::Affine2d GetEstimate();
 
 public slots:
 	void teensyStatus(TeenseyStatus status);
 	void AprilLocationUpdate(Eigen::Affine2d newLocation);
 
+	void SendUpdate();
 };
 
 class Kratos2 : public QObject
@@ -186,6 +186,7 @@ public:
 
 	bool mIsPaused;
 
+	int mLastAprilId;
 	QDateTime mLastAprilDetection;
 	Eigen::Affine2d mLastAprilLocation;
 

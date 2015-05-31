@@ -11,9 +11,18 @@ using namespace Eigen;
 
 void GazeboSampleDetection::receiveUpdate(const RobotGazeboTickData &data)
 {
-	static const Vector2d sampleLocation(3, 3);
+	gazeboData = data;
+}
 
-	Vector2d relative = sampleLocation - data.robotPosition.head<2>();
+void GazeboSampleDetection::TeensyStatus(TeenseyStatus status)
+{
+	static const Vector2d sampleLocation(6, 3);
+
+	Vector2d relative = sampleLocation - gazeboData.robotPosition.head<2>();
+
+	// std::cout << relative.transpose() << 
+	// 	"\n\t" << sampleLocation.transpose() << 
+	// 	"\n\t" << data.robotPosition.transpose() << "\n";
 	//double angle = std::atan2(relative.y(), relative.x());
 
 	//std::cout << "Robot angle: " << data.robotOrientation << "\n";
@@ -21,7 +30,7 @@ void GazeboSampleDetection::receiveUpdate(const RobotGazeboTickData &data)
 
 	//double relativeAngle = angle - data.robotOrientation;
 
-	Vector2d relative2 = Rotation2Dd(data.robotOrientation) * relative;
+	Vector2d relative2 = Rotation2Dd(-gazeboData.robotOrientation) * relative;
 
 	//Assume that the detector can see objects at most 10m away
 	if(relative2.norm() > 10.0)
@@ -238,6 +247,8 @@ GazeboKratos::GazeboKratos(QObject* parent)
 
 	connect(mSendControlTimer, SIGNAL(timeout()), this, SLOT(fireControlUpdate()));
 	connect(mSubSocket, SIGNAL(messageReceived(const QList<QByteArray>&)), SLOT(messageReceived(const QList<QByteArray>&)));
+
+	connect(mTeensey, &Teensy::statusUpdate, mSampleDetection, &GazeboSampleDetection::TeensyStatus);
 
 	QString program = "gazebo";
     QStringList arguments;

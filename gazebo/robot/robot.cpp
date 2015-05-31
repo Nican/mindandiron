@@ -15,9 +15,11 @@ using namespace Eigen;
 /// Kratos2
 //////////////////////////
 
-LocationEstimation::LocationEstimation(QObject* parent) : QObject(parent)
+LocationEstimation::LocationEstimation(Kratos2* parent) : QObject(parent), robot(parent)
 {
-
+	auto updateTimer = new QTimer(this);
+	updateTimer->start(200);
+	QObject::connect(updateTimer, &QTimer::timeout, this, &LocationEstimation::SendUpdate);
 }
 
 void LocationEstimation::teensyStatus(TeenseyStatus status)
@@ -37,20 +39,39 @@ void LocationEstimation::teensyStatus(TeenseyStatus status)
 
 Eigen::Affine2d LocationEstimation::GetEstimate()
 {
-	Affine2d april = lastAprilStatus;
+	Affine2d location;
+	location.translation() = odometry.mPosition;
+	location.linear() = Rotation2Dd(odometry.mTheta).toRotationMatrix();
 
-	Affine2d odometryTf;
-	odometryTf.linear() = Rotation2Dd(odometry.mTheta).toRotationMatrix();
-	odometryTf.translation() = odometry.mPosition;
-
-	return april * odometryTf;
+	return location;
 }
 
 void LocationEstimation::AprilLocationUpdate(Affine2d newLocation)
 {
-	lastAprilUpdate = QDateTime::currentDateTime();
-	lastAprilStatus = newLocation;
 	odometry = Odometry();
+
+	Rotation2Dd rotation2D(0);
+	rotation2D.fromRotationMatrix(robot->mLastAprilLocation.linear());
+
+	odometry.mPosition = robot->mLastAprilLocation.translation();
+	odometry.SetTheta(rotation2D.angle());
+
+	mHistory.clear();
+}
+
+void LocationEstimation::SendUpdate()
+{
+	mHistory.append(GetEstimate());
+
+	QByteArray buffer;
+	QDataStream stream(&buffer, QIODevice::WriteOnly);
+
+	stream << mHistory;
+
+	QList<QByteArray> msg;
+	msg += QByteArray("\x15");
+	msg += buffer;
+	robot->mSensorLog->mSocket->sendMessage(msg);	
 }
 
 //////////////////////////
@@ -64,6 +85,7 @@ Kratos2::Kratos2(QObject* parent) :
 	mLocation(this),
 	mState(nullptr), 
 	mIsPaused(false),
+	mLastAprilId(-1),
 	mLastAprilDetection(QDateTime::currentDateTime())
 {
 	mContext = nzmqt::createDefaultContext(this);
@@ -133,58 +155,80 @@ void Kratos2::AprilScanTimer()
 
 void Kratos2::AprilTagDetected(QList<AprilTagDetectionItem> detections)
 {
-	for(auto& tag : detections)
+	AprilTagDetectionItem tag;
+	bool foundSameAsLast = false;
+
+	for(auto& detection : detections)
 	{
-		if(tag.detection.id != 6 && tag.detection.id != 0)
-			continue;
-
-		QSqlQuery query(mSensorLog->mDb);
-		query.prepare("SELECT servoAngle FROM teensy2Log WHERE timestamp > :startTime ORDER BY timestamp ASC LIMIT 1");
-		query.bindValue(":startTime", tag.time);
-
-		if(!query.exec()){
-			std::cout << "error SQL= " <<  query.lastError().text().toStdString() << std::endl;
-			return;
-		}
-
-		double servoAngle = 0.0;
-
-		if(!query.next())
-		{	
-			std::cout << "Got no data in teensy2Log" << std::endl;
-		}
-		else
+		if(detection.detection.id == mLastAprilId)
 		{
-			servoAngle = query.value(0).toDouble();
+			tag = detection;
+			foundSameAsLast = true;
+			break;
 		}
+	}
 
-		//Update the robot location estimation
-		double euler = tag.euler.y() + (8.3 / 180 * M_PI); //6.4 for gazebo, 8.3 for real life
-		Vector2d translation = tag.translation.head<2>();
+	if(foundSameAsLast == false)
+	{
+		if(detections.isEmpty())
+			return;
 
-		translation = Rotation2Dd(euler) * translation;
-		translation -= Vector2d(1.1, -0.5);
+		tag = detections[0];
+	}
 
-		euler -= servoAngle;
+	const auto tagInfo = GetTagById(tag.detection.id);
 
-		Affine2d aprilLocation;
-		aprilLocation.linear() = Rotation2Dd(euler).toRotationMatrix();
-		aprilLocation.translation() = translation;
-
-		mLastAprilDetection = QDateTime::fromMSecsSinceEpoch(tag.time);
-		mLastAprilLocation = aprilLocation;
-
-		mSensorLog->AprilLocationUpdate(mLastAprilDetection, aprilLocation);
-
-		emit AprilLocationUpdate(aprilLocation);
-
-		//Update the teensy to update to the new angle
-		double rot2 = std::atan2(tag.translation.y(), tag.translation.x());
-		if(std::abs(rot2) < (1.0 * M_PI / 180.0))
-			continue;
-
-		GetTeensy2()->setAprilAngle(clamp(rot2 + servoAngle, -M_PI/2, M_PI/2));
+	if(tagInfo == nullptr)
+	{
+		std::cerr << "Unkown tag of id: " << tag.detection.id << "\n";
 		return;
+	}
+
+	QSqlQuery query(mSensorLog->mDb);
+	query.prepare("SELECT servoAngle FROM teensy2Log WHERE timestamp > :startTime ORDER BY timestamp ASC LIMIT 1");
+	query.bindValue(":startTime", tag.time);
+
+	if(!query.exec()){
+		std::cout << "error SQL= " <<  query.lastError().text().toStdString() << std::endl;
+		return;
+	}
+
+	double servoAngle = 0.0;
+
+	if(!query.next())
+	{
+		std::cout << "Got no data in teensy2Log" << std::endl;
+	}
+	else
+	{
+		servoAngle = query.value(0).toDouble();
+	}
+
+	//Update the robot location estimation
+	double euler = tag.euler.y() + tagInfo->mOrientation; //(6.4 / 180 * M_PI); //6.4 for gazebo, 8.3 for real life
+	Vector2d translation = tag.translation.head<2>();
+
+	translation = Rotation2Dd(euler) * translation;
+	translation -= tagInfo->mOffset; //Vector2d(1.1, -0.5);
+
+	euler -= servoAngle;
+
+	Affine2d aprilLocation;
+	aprilLocation.linear() = Rotation2Dd(euler).toRotationMatrix();
+	aprilLocation.translation() = translation;
+
+	mLastAprilDetection = QDateTime::fromMSecsSinceEpoch(tag.time);
+	mLastAprilLocation = aprilLocation;
+
+	mSensorLog->AprilLocationUpdate(mLastAprilDetection, aprilLocation);
+
+	emit AprilLocationUpdate(aprilLocation);
+
+	//Update the teensy to update to the new angle
+	double rot2 = std::atan2(tag.translation.y(), tag.translation.x());
+	if(std::abs(rot2) > (1.0 * M_PI / 180.0))
+	{
+		GetTeensy2()->setAprilAngle(clamp(rot2 + servoAngle, -M_PI/2, M_PI/2));
 	}
 }
 

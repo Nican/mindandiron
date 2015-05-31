@@ -12,6 +12,23 @@ void DebugImage(cv::Mat &input);
 
 namespace Robot {
 
+class AprilOffset
+{
+public:
+	int mId;
+	double mSize; //Size of the tag in meters
+	Eigen::Vector2d mOffset;
+	double mOrientation; 
+
+	AprilOffset(int id, double size, Eigen::Vector2d offset, double orientation)
+		: mId(id), mSize(size), mOffset(offset), mOrientation(orientation)
+	{
+	}
+};
+
+const QVector<AprilOffset> &GetOffsets();
+const AprilOffset* GetTagById(int id);
+
 struct AprilTagDetectionItem
 {
 	Eigen::Vector3d translation;

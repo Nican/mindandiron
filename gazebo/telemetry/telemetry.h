@@ -150,6 +150,8 @@ public:
 
 	QGraphicsLineItem* mMovingLine;
 
+
+
 	void ReceiveControlStatus(const std::vector<double> &velocities);
 
 	void ReceiveDecawaveReading(double distance);
@@ -162,6 +164,8 @@ public:
 	void RobotTagLocation(Eigen::Affine2d location);
 
 	void ShowSamples(const QList<Robot::DetectedSample> &samples);
+
+	void ShowPositionHistory(QVector<Eigen::Affine2d>);
 };
 
 

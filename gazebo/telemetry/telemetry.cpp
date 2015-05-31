@@ -324,7 +324,16 @@ void MainWindow::messageReceived(const QList<QByteArray>& messages)
 		stream >> samples;
 
 		mGridView->ShowSamples(samples);
+	}
 
+	if(id == '\x15')
+	{
+		QDataStream stream(messages[1]);
+		QVector<Affine2d> positions;
+
+		stream >> positions;
+
+		mGridView->ShowPositionHistory(positions);
 	}
 }
 

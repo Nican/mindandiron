@@ -9,27 +9,30 @@ using namespace Eigen;
 
 void LeaveBaseStation::Start()
 {
-	auto move = new MoveForwardState(this, 2.0);
-	move->Start();
+	connect(Robot()->GetSampleDetection(), &SampleDetection::SampleDetected, this, &LeaveBaseStation::SampleDetected);
 
-	connect(move, &ProgressState::Finished, this, &LeaveBaseStation::MoveToRotate);
+	//auto move = new MoveForwardState(this, 2.0);
+	//move->Start();
+
+	//connect(move, &ProgressState::Finished, this, &LeaveBaseStation::MoveToRotate);
 }
 
 void LeaveBaseStation::MoveToRotate()
 {
-	auto rotate = new RotateState(this, M_PI/2);
-	rotate->Start();
+	//auto rotate = new RotateState(this, M_PI/2);
+	//rotate->Start();
 
-	connect(rotate, &ProgressState::Finished, this, &LeaveBaseStation::MoveToNextState);
+	//connect(rotate, &ProgressState::Finished, this, &LeaveBaseStation::MoveToNextState);
 }
 
 void LeaveBaseStation::MoveToNextState()
 {
-	connect(Robot(), &Kratos2::AprilLocationUpdate, this, &LeaveBaseStation::FoundAprilTag);
+	//connect(Robot(), &Kratos2::AprilLocationUpdate, this, &LeaveBaseStation::FoundAprilTag);
 }
 
 void LeaveBaseStation::FoundAprilTag(Eigen::Affine2d newLocation)
 {
+	/*
 	Robot()->SetWheelVelocity(0.0, 0.0);
 
 	if(mMoveInfront != nullptr)
@@ -45,4 +48,29 @@ void LeaveBaseStation::FoundAprilTag(Eigen::Affine2d newLocation)
 	mMoveInfront->mReverse = true;
 	mMoveInfront->mAprilUpdates = true;
 	mMoveInfront->Start();
+	*/
+}
+
+void LeaveBaseStation::SampleDetected(QList<DetectedSample> samples)
+{
+	if(samples.isEmpty())
+		return;
+
+	if(mMoveInfront != nullptr)
+	{
+		if(mMoveInfront->mStartTime.msecsTo(QDateTime::currentDateTime()) < 5000)
+			return;
+
+		//Replan!
+		mMoveInfront->SetFinished();
+		mMoveInfront->deleteLater();
+		mMoveInfront = nullptr;
+	}
+
+	auto sample = samples[0];
+
+	mMoveInfront = new MoveTowardsGoalState(this);
+	mMoveInfront->mGoal = samples[0].location;
+	mMoveInfront->Start();
+
 }
