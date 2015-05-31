@@ -280,7 +280,7 @@ void MapOverview::ShowSamples(const QList<Robot::DetectedSample> &samples)
 		auto circle = new QGraphicsEllipseItem(loc.x()-0.2, loc.y()-0.2, 0.4, 0.4);
 		circle->setPen(QPen(Qt::red, 0));
 
-		mTagDetections->addToGroup(circle);
+		mSampleDetections->addToGroup(circle);
 
 		/*
 		auto text = new QGraphicsTextItem(sample.name);

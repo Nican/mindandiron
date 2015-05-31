@@ -42,8 +42,8 @@ RootState::RootState(QObject *parent) : BaseState(parent), mState(nullptr)
 
 	//QTimer::singleShot(1000, this, SLOT(MoveToNextState));
 
-	//SetState(new ReturnToStationState(this));
-	SetState(new LeaveBaseStation(this));
+	SetState(new ReturnToStationState(this));
+	//SetState(new LeaveBaseStation(this));
 }
 
 void RootState::SetState(ProgressState* nextState)
