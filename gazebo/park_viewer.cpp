@@ -43,6 +43,10 @@ int main(int argc, char *argv[])
 
 	const int rgb_width = 1920;
 	const int rgb_height = 1080;
+	// const int rgb_width = 1280;
+	// const int rgb_height = 720;
+	// const int rgb_width = 960;
+	// const int rgb_height = 540;
 
 	boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
 	//viewer->setBackgroundColor (0, 0, 0);

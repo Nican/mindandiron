@@ -85,6 +85,8 @@ AprilTagCamera::AprilTagCamera(QObject* parent) :
 	mTagSize(0.733), //0.829 -- 0.159
 	mFx(1315), mFy(1315),
 	mPx(1920/2), mPy(1080/2)
+	// mPx(1280/2), mPy(720/2)
+	//mPx(960/2), mPy(540/2)
 {
 	m_tagDetector.reset(new AprilTags::TagDetector(AprilTags::tagCodes25h9));
 
