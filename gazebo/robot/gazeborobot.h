@@ -11,12 +11,17 @@ class GazeboKratos;
 
 class GazeboSampleDetection : public SampleDetection
 {
+	Q_OBJECT
 public:
+	RobotGazeboTickData gazeboData;
+
 	GazeboSampleDetection(QObject* parent) : SampleDetection(parent)
 	{
 	}
 
+public slots:
 	void receiveUpdate(const RobotGazeboTickData &data);
+	void TeensyStatus(TeenseyStatus status);
 };
 
 class GazeboAprilTag : public AprilTagCamera

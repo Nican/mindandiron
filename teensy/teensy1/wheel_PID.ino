@@ -36,20 +36,30 @@ void calculateVelocityPIDControl() {
     int rightError;
 
     if (useVelocityPID) {
-        leftError = leftVelocityGoal - getLeftVelocity();
-        if (!(abs(leftVelocityIntegralError + leftError) > velocityIntegralBounds)) {
-            leftVelocityIntegralError += leftError;
+        if (abs(leftVelocityGoal) < mPerSVelocityToTicks(PID_CUTOFF_VELOCITY)) {
+            leftAutoWheelCmd = calcServoCmdFromDesiredVelocity(0.0);
+            leftVelocityIntegralError = 0;
+        } else {
+            leftError = leftVelocityGoal - getLeftVelocity();
+            if (!(abs(leftVelocityIntegralError + leftError) > velocityIntegralBounds)) {
+                leftVelocityIntegralError += leftError;
+            }
+            leftAutoWheelCmd = calcServoCmdFromDesiredVelocity(velocityKp * leftError +
+                                                               velocityKi * leftVelocityIntegralError);
         }
-        leftAutoWheelCmd = calcServoCmdFromDesiredVelocity(velocityKp * leftError +
-                                                           velocityKi * leftVelocityIntegralError);
 
-        rightError = rightVelocityGoal - getRightVelocity();
-        if (!(abs(rightVelocityIntegralError + rightError) > velocityIntegralBounds)) {
-            rightVelocityIntegralError += rightError;
+        if (abs(rightVelocityGoal) < mPerSVelocityToTicks(PID_CUTOFF_VELOCITY)) {
+            rightAutoWheelCmd = calcServoCmdFromDesiredVelocity(0.0);
+            leftVelocityIntegralError = 0;
+        } else {
+            rightError = rightVelocityGoal - getRightVelocity();
+            if (!(abs(rightVelocityIntegralError + rightError) > velocityIntegralBounds)) {
+                rightVelocityIntegralError += rightError;
+            }
+            rightAutoWheelCmd = calcServoCmdFromDesiredVelocity(velocityKp * rightError +
+                                                                velocityKi * rightVelocityIntegralError);
+            // resetPositionIntegralError();
         }
-        rightAutoWheelCmd = calcServoCmdFromDesiredVelocity(velocityKp * rightError +
-                                                            velocityKi * rightVelocityIntegralError);
-        // resetPositionIntegralError();
     } else {
         // PI position control is not currently working. Ideas for future
         // Create a one pole tranfer function with c2d

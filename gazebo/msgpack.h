@@ -86,6 +86,23 @@ QDataStream &operator>>(QDataStream &in, Eigen::Matrix<T, _Rows, 1> &item)
 	return in;
 }
 
+
+template <typename T, int _Rows>
+QDataStream &operator<<(QDataStream &out, const Eigen::Transform<T, _Rows, Eigen::Affine> &item)
+{
+	out.writeRawData(reinterpret_cast<const char*>(item.data()), sizeof(item));
+
+	return out;
+}
+
+template <typename T, int _Rows>
+QDataStream &operator>>(QDataStream &in, Eigen::Transform<T, _Rows, Eigen::Affine> &item)
+{
+	in.readRawData(reinterpret_cast<char*>(item.data()), sizeof(item));
+
+	return in;
+}
+
 /*
 #include <msgpack_fwd.hpp>
 namespace msgpack {

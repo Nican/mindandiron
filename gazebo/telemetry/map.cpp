@@ -142,6 +142,7 @@ MapOverview::MapOverview(QWidget *parent)
 	mMovingLine = scene.addLine(0, 0, 0, 0, QPen(Qt::black, 0));
 
 	mSampleDetections = new QGraphicsItemGroup(mRobotInstance);
+	//scene.addItem(mSampleDetections);  
 
 	mValueGrid = new ValuesGrid(this);
 
@@ -182,8 +183,8 @@ void MapOverview::SetRobot(Eigen::Vector2d pos, double angle)
 {
 	//std::cout << "Set pos" << pos.tran << "("<< angle << ")\n";
  
-	mRobotInstance->setPos(pos.x(), pos.y());
-	mRobotInstance->setRotation(angle * 180 / M_PI);
+	//mRobotInstance->setPos(pos.x(), pos.y());
+	//mRobotInstance->setRotation(angle * 180 / M_PI);
 }
 
 void MapOverview::ReceiveDecawaveReading(double distance)
@@ -249,13 +250,14 @@ void MapOverview::ReceivePath(std::vector<Eigen::Vector2d> points)
 	}
 
 	mPlannedTrajectory->setPath(path);
-	//mPlannedTrajectory->setPos(mRobotInstance->pos());
-	//mPlannedTrajectory->setRotation(mRobotInstance->rotation());
+	mPlannedTrajectory->setPos(mRobotInstance->pos());
+	mPlannedTrajectory->setRotation(mRobotInstance->rotation());
 
 }
 
 void MapOverview::RobotTagLocation(Eigen::Affine2d location)
 {
+	/*
 	qDeleteAll(mTagDetections->childItems());
 
 	Eigen::Rotation2Dd rotation(0);
@@ -266,6 +268,7 @@ void MapOverview::RobotTagLocation(Eigen::Affine2d location)
 	robot->setRotation(rotation.angle() * 180 / M_PI);
 
 	mTagDetections->addToGroup(robot);
+	*/
 }
 
 void MapOverview::ShowSamples(const QList<Robot::DetectedSample> &samples)
@@ -277,10 +280,13 @@ void MapOverview::ShowSamples(const QList<Robot::DetectedSample> &samples)
 	for(auto& sample : samples)
 	{
 		Vector2d loc = sample.location;
-		auto circle = new QGraphicsEllipseItem(loc.x()-0.2, loc.y()-0.2, 0.4, 0.4);
+		auto circle = new QGraphicsEllipseItem(loc.x()-0.2, loc.y()-0.2, 0.4, 0.4, mSampleDetections);
+		//circle->setPos(circle->pos() + mRobotInstance->pos());
 		circle->setPen(QPen(Qt::red, 0));
 
-		mSampleDetections->addToGroup(circle);
+		//mSampleDetections->addToGroup(circle);
+
+		//std::cout << "Sample at " << loc.transpose() << "\n";
 
 		/*
 		auto text = new QGraphicsTextItem(sample.name);
@@ -291,6 +297,36 @@ void MapOverview::ShowSamples(const QList<Robot::DetectedSample> &samples)
 		mTagDetections->addToGroup(text);
 		*/
 	}
+
+}
+
+void MapOverview::ShowPositionHistory(QVector<Eigen::Affine2d> positions)
+{
+	if(positions.isEmpty()){
+		mPlannedTrajectory->setPath(QPainterPath());
+		return;
+	}
+
+	QPainterPath path({positions[0].translation().x(), positions[0].translation().y()});
+
+	for(int i = 1; i < positions.size(); i++)
+	{
+		auto pt = positions[i];
+
+		path.lineTo(pt.translation().x(), pt.translation().y());
+	}
+
+	trajectoryPath->setPath(path);
+
+	auto& last = positions.last();
+	Rotation2Dd rotation2D(0);
+	rotation2D.fromRotationMatrix(last.linear());
+
+	mRobotInstance->setPos(last.translation().x(), last.translation().y());
+	mRobotInstance->setRotation(rotation2D.angle() * 180 / M_PI);
+
+	//mSampleDetections->setPos(mRobotInstance->pos());
+	//mSampleDetections->setRotation(mRobotInstance->rotation());
 
 }
 

@@ -24,6 +24,31 @@ QDataStream &operator>>(QDataStream &in, AprilTagDetectionItem &item)
 
 	return in;
 }
+
+const QVector<AprilOffset> &GetOffsets()
+{
+	static QVector<AprilOffset> offsets({
+		//For simulation
+		AprilOffset(0, 0.733, {1.1, -0.5}, 8.3 / 180 * M_PI),
+		AprilOffset(1, 0.733, {1.1, 0.5}, -8.3 / 180 * M_PI),
+
+		//For actual robot
+		AprilOffset(6, 0.733, {1.1, -0.5}, 8.3 / 180 * M_PI)
+	});
+
+	return offsets;
+}
+
+const AprilOffset* GetTagById(int id)
+{
+	for(auto& tag : GetOffsets())
+	{
+		if(tag.mId == id)
+			return &tag;
+	}
+
+	return nullptr;
+}
 }
 
 //////////////////////////
@@ -115,11 +140,19 @@ void AprilTagCamera::finishedProcessing()
 
 	for(auto &tag : detections)
 	{
+		auto tagInfo = GetTagById(tag.id);
+
+		if(tagInfo == nullptr)
+		{
+			std::cerr << "Unkown tag of id: " << tag.id << "\n";
+			continue;
+		}
+
 		AprilTagDetectionItem item;
 		item.detection = tag;
 		item.time = lastFrameTime.toMSecsSinceEpoch();
 
-		tag.getRelativeTranslationRotation(mTagSize, mFx, mFy, mPx, mPy, item.translation, item.rotation);
+		tag.getRelativeTranslationRotation(tagInfo->mSize, mFx, mFy, mPx, mPy, item.translation, item.rotation);
 
 		Eigen::Matrix3d F;
 		F <<

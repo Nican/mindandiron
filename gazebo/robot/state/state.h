@@ -107,6 +107,7 @@ public slots:
 	void MoveToRotate();
 	void MoveToNextState();
 	void FoundAprilTag(Eigen::Affine2d newLocation);
+	void SampleDetected(QList<DetectedSample> samples);
 };
 
 
