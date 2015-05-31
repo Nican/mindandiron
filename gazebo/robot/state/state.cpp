@@ -441,17 +441,12 @@ void RotateState::TeensyStatus(TeenseyStatus status)
 
 	auto odometry = Robot()->GetOdometryTraveledSince(mStartTime);
 
-	// if(mLastRotation != 0.0)
-	// {
-	// 	mTotalRotation += std::abs(odometry.mTheta - mLastRotation);
-	// }
+	if(mLastRotation != 0.0)
+	{
+		mTotalRotation += std::abs(odometry.mTheta - mLastRotation);
+	}
 
-	// mLastRotation = odometry.mTheta;
-
-	// if (callbackCounter++ % 5 == 0)
-	// {
-	// 	cout << "Odometry.mTheta: " << odometry.mTheta << "\n";
-	// }
+	mLastRotation = odometry.mTheta;
 
 	if(mRotation < 0.0)
 		Robot()->SetWheelVelocity(TURN_STRENGTH, -TURN_STRENGTH);
@@ -459,7 +454,7 @@ void RotateState::TeensyStatus(TeenseyStatus status)
 		Robot()->SetWheelVelocity(-TURN_STRENGTH, TURN_STRENGTH);
 
 	// if(mTotalRotation >= std::abs(mRotation))
-	if (std::abs(odometry.mTheta) >= std::abs(mRotation) - 0.4)  // NOTE THIS SUBSTRACTION, IT'S SKETCHY (It's to deal by hand with slippage issues)
+	if (std::abs(mTotalRotation) >= std::abs(mRotation) - 0.4)  // NOTE THIS SUBSTRACTION, IT'S SKETCHY (It's to deal by hand with slippage issues)
 	{
 		Robot()->SetWheelVelocity(0.0, 0.0);
 
