@@ -11,10 +11,16 @@ class KratosTeensy : public Teensy
 	Q_OBJECT
 	QSerialPort* mSerial;
 
+	TeensyCommand mCommand;
+
 public:
 	KratosTeensy(QObject* parent);
 	virtual ~KratosTeensy();
 	void SetVelocities(double left, double right);
+	virtual void SetSorter(int slot) override;
+	virtual void SetCollector(int col) override;
+
+	void SendCommand();
 
 protected slots:
 	void receiveSerialData();
