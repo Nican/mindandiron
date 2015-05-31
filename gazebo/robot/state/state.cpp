@@ -434,7 +434,6 @@ void RotateState::Start()
 
 void RotateState::TeensyStatus(TeenseyStatus status)
 {
-	// static int callbackCounter = 0;
 	const double TURN_STRENGTH = 0.075;  // meters/second. Too fast of a turn creates error
 
 	if(IsFinished())

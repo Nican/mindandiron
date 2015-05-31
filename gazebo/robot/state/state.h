@@ -154,7 +154,9 @@ public slots:
 	void FoundAprilTag(Eigen::Affine2d newLocation);
 	void FinishRotate();
 	void RealignInFront();
-	void FinishedFinalRotation();
+	void StartRealignInFrontRotation();
+	void FinishedRealignRotation();
+	// void SendFinishedRealignRotationSignal();
 };
 
 enum class ReturnMoveEnum 

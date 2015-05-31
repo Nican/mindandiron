@@ -190,27 +190,33 @@ void ReturnLocateAprilState::FoundAprilTag(Eigen::Affine2d newLocation)
 
 void ReturnLocateAprilState::RealignInFront()
 {
-	auto odometry = Robot()->GetOdometryTraveledSince(QDateTime::currentDateTime().addSecs(-2), QDateTime::currentDateTime(), true);
+	QTimer::singleShot(2000, this, SLOT(StartRealignInFrontRotation()));
+}
 
+void ReturnLocateAprilState::StartRealignInFrontRotation()
+{
+	auto odometry = Robot()->GetOdometryTraveledSince(QDateTime::currentDateTime().addSecs(-2), QDateTime::currentDateTime(), true);
 	cout << "Rotating angle: " << -odometry.mTheta << " rad\n";
 
 	//Rotate to align itself with the base station
 	RotateState* rotate = new RotateState(this, -odometry.mTheta);
-	QTimer::singleShot(2000, this, SLOT(StartRelalignInFrontRotation(rotate)));
-
-	connect(rotate, &ProgressState::Finished, this, &ReturnLocateAprilState::FinishedFinalRotation);
-}
-
-void ReturnLocateAprilState::StartRelalignInFrontRotation(RotateState* rotate)
-{
 	rotate->Start();
+
+	connect(rotate, &ProgressState::Finished, this, &ReturnLocateAprilState::FinishedRealignRotation);
 }
 
-void ReturnLocateAprilState::FinishedFinalRotation()
-{	
-	std::cout << "Finished second rotation\n";
+void ReturnLocateAprilState::FinishedRealignRotation()
+{
+	std::cout << "Finished 'realign in front' rotation\n";
 	SetFinished();	
+	// QTimer::singleShot(2000, this, SLOT(SendFinishedRealignRotationSignal()));
 }
+
+// void ReturnLocateAprilState::SendFinishedRealignRotationSignal()
+// {
+// 	std::cout << "Finished 'realign in front' rotation\n";
+// 	SetFinished();
+// }
 
 ////////////////////
 ////	ReturnMoveBackState
