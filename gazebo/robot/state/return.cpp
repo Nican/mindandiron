@@ -198,9 +198,14 @@ void ReturnLocateAprilState::RealignInFront()
 
 	//Rotate to align itself with the base station
 	RotateState* rotate = new RotateState(this, -odometry.mTheta);
-	rotate->Start();
+	QTimer::singleShot(2000, this, SLOT(StartRelalignInFrontRotation(rotate)));
 
 	connect(rotate, &ProgressState::Finished, this, &ReturnLocateAprilState::FinishedFinalRotation);
+}
+
+void ReturnLocateAprilState::StartRelalignInFrontRotation(RotateState* rotate)
+{
+	rotate->Start();
 }
 
 void ReturnLocateAprilState::FinishedFinalRotation()

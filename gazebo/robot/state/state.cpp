@@ -110,8 +110,6 @@ void ExploreState::Start()
 {
 	mGoalMove = new MoveTowardsGoalState(this);
 	mGoalMove->mGoal = Vector2d(10.0, 10.0);
-
-	
 }
 
 
