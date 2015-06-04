@@ -46,6 +46,7 @@ RootState::RootState(QObject *parent) : BaseState(parent), mState(nullptr)
 	// SetState(new LeaveBaseStation(this));
 	SetState(new ReturnRealignState(this));
 
+	//SetState(new ReturnMoveBackState(this));
 	//SetState(new MoveForwardState(this, 10));
 }
 
@@ -407,6 +408,7 @@ void MoveForwardState::TeensyStatus(TeenseyStatus status)
 
 	auto odometry = Robot()->GetOdometryTraveledSince(mStartTime);
 
+	// To test: Should these be set asymmetrically? Left wheel sometimes accelerates slower
 	Robot()->SetWheelVelocity(0.15, 0.15);
 
 	//std::cout << "\tDistance traveled " << odometry.mDistanceTraveled << "\n";
