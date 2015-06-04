@@ -43,7 +43,8 @@ RootState::RootState(QObject *parent) : BaseState(parent), mState(nullptr)
 	//QTimer::singleShot(1000, this, SLOT(MoveToNextState));
 
 	//SetState(new ReturnToStationState(this));
-	SetState(new LeaveBaseStation(this));
+	// SetState(new LeaveBaseStation(this));
+	SetState(new ReturnRealignState(this));
 
 	//SetState(new MoveForwardState(this, 10));
 }
@@ -406,7 +407,7 @@ void MoveForwardState::TeensyStatus(TeenseyStatus status)
 
 	auto odometry = Robot()->GetOdometryTraveledSince(mStartTime);
 
-	Robot()->SetWheelVelocity(0.65, 0.65);
+	Robot()->SetWheelVelocity(0.15, 0.15);
 
 	//std::cout << "\tDistance traveled " << odometry.mDistanceTraveled << "\n";
 
@@ -414,7 +415,7 @@ void MoveForwardState::TeensyStatus(TeenseyStatus status)
 	{
 		Robot()->SetWheelVelocity(0.0, 0.0);
 
-		std::cout << "Move state finished with " << odometry << "\n";
+		std::cout << "Move forward state finished with " << odometry << "\n";
 		SetFinished();
 	}
 }

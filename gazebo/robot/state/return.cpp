@@ -430,6 +430,7 @@ void ReturnRealignState::Realign()
 	//auto odometryDistance = odometry.mDistanceTraveled;
 
 	double endDecawaveValue = Robot()->GetDecawave()->lastDistance;
+	cout << "Decawave: " << endDecawaveValue << "\n";
 	double diff = startDecawaveValue - endDecawaveValue;
 
 	std::cout << "Realigning with diff: " << diff << "\n";
