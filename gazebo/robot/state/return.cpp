@@ -253,13 +253,13 @@ void ReturnMoveBackState::DecawaveUpdate(double value)
 		return;
 	}
 
-	//std::cout << "Decawave reading: " << value << " ("<< (lastReading-value) << ")\n";
+	std::cout << "Decawave reading: " << value << " ("<< (lastReading-value) << ")\n";
 	//lastReading = value;
 }
 
 void ReturnMoveBackState::UpdateDirection()
 {
-	std::cout << "Last " << mLastReadings.size() << "readings: \n";
+	std::cout << "Last " << mLastReadings.size() << " Decawave readings: \n";
 
 	for(std::size_t i = 0; i < mLastReadings.size(); i++)
 	{
@@ -285,6 +285,7 @@ void ReturnMoveBackState::UpdateDirection()
 			performance++;
 	}
 
+	cout << "Performance: " << performance << "\n";
 	if(performance >= 2)
 		return;
 
@@ -292,12 +293,12 @@ void ReturnMoveBackState::UpdateDirection()
 		case ReturnMoveEnum::FORWARD:
 		case ReturnMoveEnum::RIGHT: 
 			std::cout << "\tMoving left\n";
-			Robot()->SetWheelVelocity(0.25, 0.3);
+			Robot()->SetWheelVelocity(0.15, 0.2);
 			returnType = ReturnMoveEnum::LEFT;
 			break;
 		case ReturnMoveEnum::LEFT: 
 			std::cout << "\tMoving right\n";
-			Robot()->SetWheelVelocity(0.3, 0.25);
+			Robot()->SetWheelVelocity(0.2, 0.15);
 			returnType = ReturnMoveEnum::RIGHT;
 			break;
 	}
@@ -414,6 +415,7 @@ void ReturnRealignState::ReceiveObstcles(ObstacleMap obstacleMap)
 
 void ReturnRealignState::FinishedTrajectory()
 {
+	// To test: Is 1.0 right? Could we do less? 
 	mMoveForward = new MoveForwardState(this, 1.0);
 	connect(mMoveForward, &ProgressState::Finished, this, &ReturnRealignState::Realign);
 
@@ -437,7 +439,7 @@ void ReturnRealignState::Realign()
 	if(std::abs(diff) <= 0.33)
 	{
 		//We only moved 0.33 out of 1 meter in direction of the base station. 
-		//We must walking somewhat along the circle
+		cout << "Decawave says we must walking somewhat along the circle\n";
 		//Rotate 90 degrees
 		RotateState* rotate = new RotateState(this, M_PI/2);
 		connect(rotate, &ProgressState::Finished, this, &ReturnRealignState::FinishRotate);
@@ -448,7 +450,7 @@ void ReturnRealignState::Realign()
 
 	if(diff < 0)
 	{
-		//We are going completly in the wrong direction
+		cout << "Decawave says we are going completely in the wrong direction\n"
 		RotateState* rotate = new RotateState(this, M_PI);
 		connect(rotate, &ProgressState::Finished, this, &ReturnRealignState::FinishRotate);
 		rotate->Start();
@@ -456,7 +458,7 @@ void ReturnRealignState::Realign()
 		return;
 	}
 
-	std::cout << "We are finished! :)\n";
+	std::cout << "We are finished aligning the robot towards base with Decawave! :)\n";
 
 	//We are going somewhat in the correct direction
 	Robot()->SetWheelVelocity(0, 0);
