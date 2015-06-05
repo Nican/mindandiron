@@ -247,18 +247,22 @@ void ReturnMoveBackState::DecawaveUpdate(double value)
 		lastReadingId = 1;
 	}
 
-	if(value < 10.0){
+	// TODO: CHANGE TO SOMETHING LARGER - THIS IS FOR TESTING
+	if(value < 5.0){
 		Robot()->SetWheelVelocity(0.0, 0.0);
 		SetFinished();
 		return;
 	}
 
-	std::cout << "Decawave reading: " << value << " ("<< (lastReading-value) << ")\n";
 	//lastReading = value;
 }
 
 void ReturnMoveBackState::UpdateDirection()
 {
+	// ERIC: Increase max Teensy speed to 0.6
+	const double MAX_SIDE_VELOCITY = 0.03;
+	const double MAX_FORWARD_VELOCITY = 0.17;
+
 	std::cout << "Last " << mLastReadings.size() << " Decawave readings: \n";
 
 	for(std::size_t i = 0; i < mLastReadings.size(); i++)
@@ -280,25 +284,28 @@ void ReturnMoveBackState::UpdateDirection()
 	{
 		double lastDiff = mLastReadings[i-2] - mLastReadings[i-1];
 		double diff = mLastReadings[i-1] - mLastReadings[i];
-
 		if(diff > lastDiff)
 			performance++;
 	}
 
+	// Note to Henrique: if any diffs are negative, change state to realign
+
 	cout << "Performance: " << performance << "\n";
-	if(performance >= 2)
+	if(performance >= (mLastReadings.size() - 3))
 		return;
 
 	switch(returnType) {
 		case ReturnMoveEnum::FORWARD:
 		case ReturnMoveEnum::RIGHT: 
 			std::cout << "\tMoving left\n";
-			Robot()->SetWheelVelocity(0.15, 0.2);
+			Robot()->SetWheelVelocity(MAX_FORWARD_VELOCITY - MAX_SIDE_VELOCITY,
+									  MAX_FORWARD_VELOCITY + MAX_SIDE_VELOCITY);
 			returnType = ReturnMoveEnum::LEFT;
 			break;
 		case ReturnMoveEnum::LEFT: 
 			std::cout << "\tMoving right\n";
-			Robot()->SetWheelVelocity(0.2, 0.15);
+			Robot()->SetWheelVelocity(MAX_FORWARD_VELOCITY + MAX_SIDE_VELOCITY,
+									  MAX_FORWARD_VELOCITY - MAX_SIDE_VELOCITY);
 			returnType = ReturnMoveEnum::RIGHT;
 			break;
 	}
@@ -451,7 +458,7 @@ void ReturnRealignState::Realign()
 
 	if(diff < 0)
 	{
-		cout << "Decawave says we are going completely in the wrong direction\n"
+		cout << "Decawave says we are going completely in the wrong direction\n";
 		RotateState* rotate = new RotateState(this, M_PI);
 		connect(rotate, &ProgressState::Finished, this, &ReturnRealignState::FinishRotate);
 		rotate->Start();
