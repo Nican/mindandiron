@@ -195,9 +195,9 @@ KratosDecawave::KratosDecawave(nzmqt::ZMQContext* context, QObject* parent) : De
 	
 void KratosDecawave::messageReceived(const QList<QByteArray>& messages)
 {
-	//std::cout << "Message size: " << message.size () << "\n";
+	// std::cout << "Message size: " << message.size () << "\n";
+	// std::cout << "Got message! \n";
 
-	std::cout << "Got message! \n";
 	//Why is this a list of arrays?
 	for(auto& byteArray : messages)
 	{
