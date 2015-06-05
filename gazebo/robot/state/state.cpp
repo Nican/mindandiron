@@ -44,9 +44,9 @@ RootState::RootState(QObject *parent) : BaseState(parent), mState(nullptr)
 
 	//SetState(new ReturnToStationState(this));
 	// SetState(new LeaveBaseStation(this));
-	SetState(new ReturnRealignState(this));
+	// SetState(new ReturnRealignState(this));
 
-	//SetState(new ReturnMoveBackState(this));
+	SetState(new ReturnMoveBackState(this));
 	//SetState(new MoveForwardState(this, 10));
 }
 
@@ -445,6 +445,8 @@ void RotateState::TeensyStatus(TeenseyStatus status)
 
 	auto odometry = Robot()->GetOdometryTraveledSince(mStartTime);
 
+	// cout << "Odometry theta: " << odometry.mTheta << "\n";
+
 	if(mLastRotation != 0.0)
 	{
 		mTotalRotation += std::abs(odometry.mTheta - mLastRotation);
@@ -458,7 +460,7 @@ void RotateState::TeensyStatus(TeenseyStatus status)
 		Robot()->SetWheelVelocity(-TURN_STRENGTH, TURN_STRENGTH);
 
 	// if(mTotalRotation >= std::abs(mRotation))
-	if (std::abs(mTotalRotation) >= std::abs(mRotation) - 0.4)  // NOTE THIS SUBSTRACTION, IT'S SKETCHY (It's to deal by hand with slippage issues)
+	if (std::abs(mTotalRotation) >= (std::abs(mRotation) / 2.0))  // NOTE THIS DIVISION, IT'S SKETCHY (It's to deal by hand with slippage issues)
 	{
 		Robot()->SetWheelVelocity(0.0, 0.0);
 
