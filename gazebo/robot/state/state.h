@@ -180,7 +180,7 @@ public:
 	double startDecawaveValue;
 	double mLastPerformance;
 
-	std::array<double, 5> mLastReadings;
+	std::array<double, 4> mLastReadings;
 	std::size_t lastReadingId;
 
 	ReturnMoveBackState(QObject *parent) : ProgressState(parent), lastReadingId(0)
@@ -189,7 +189,8 @@ public:
 
 	virtual void Start() override;
 	void Reset();
-	void UpdateDirection();
+	double GetAverageDecawaveVelocity();
+	void UpdateDirection(double averageVelocity);
 
 public slots:
 	void TeensyStatus(TeenseyStatus status);

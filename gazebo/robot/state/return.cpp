@@ -238,13 +238,15 @@ void ReturnMoveBackState::DecawaveUpdate(double value)
 {
 	mLastReadings[lastReadingId] = value;
 
-	lastReadingId++;
-
-	if(lastReadingId == mLastReadings.size())
+	if(lastReadingId == mLastReadings.size() - 1)
 	{
-		UpdateDirection();
-		mLastReadings[0] = mLastReadings[mLastReadings.size()-1];
+		UpdateDirection(GetAverageDecawaveVelocity());
+		mLastReadings[0] = mLastReadings[lastReadingId];
 		lastReadingId = 1;
+	}
+	else
+	{
+		lastReadingId++;
 	}
 
 	// TODO: CHANGE TO SOMETHING LARGER - THIS IS FOR TESTING
@@ -253,63 +255,143 @@ void ReturnMoveBackState::DecawaveUpdate(double value)
 		SetFinished();
 		return;
 	}
-
-	//lastReading = value;
 }
 
-void ReturnMoveBackState::UpdateDirection()
+// Should return average velocity in m/s
+double ReturnMoveBackState::GetAverageDecawaveVelocity()
 {
-	// ERIC: Increase max Teensy speed to 0.6
-	const double MAX_SIDE_VELOCITY = 0.03;
-	const double MAX_FORWARD_VELOCITY = 0.17;
-
-	std::cout << "Last " << mLastReadings.size() << " Decawave readings: \n";
-
-	for(std::size_t i = 0; i < mLastReadings.size(); i++)
+	double averageValue = 0.0;
+	for(std::size_t i = 1; i < mLastReadings.size(); i++)
 	{
-		std::cout << "\t" << i << " = " << mLastReadings[i];
-
-		if(i > 0)
-		{
-			double diff = mLastReadings[i-1] - mLastReadings[i];
-			std::cout << " (" << diff << ")";
-		}
-
-		std::cout << "\n";
-	}
-
-	int performance = 0;
-
-	for(std::size_t i = 2; i < mLastReadings.size(); i++)
-	{
-		double lastDiff = mLastReadings[i-2] - mLastReadings[i-1];
 		double diff = mLastReadings[i-1] - mLastReadings[i];
-		if(diff > lastDiff)
-			performance++;
+		// Decawave updates at about 0.8 seconds
+		averageValue += diff / 0.8;  // THIS IS MORE ACCURATE THAN MEASURING TIME DIFF
+									 // There's some weird data buffering going on
 	}
 
-	// Note to Henrique: if any diffs are negative, change state to realign
+	// cout << "Average m/s value is: " << averageValue / (double) mLastReadings.size() << "\n";
+	return averageValue / (double) mLastReadings.size();
+}
 
-	cout << "Performance: " << performance << "\n";
-	if(performance >= (mLastReadings.size() - 3))
+
+//////////////////////////////////////////////////////////////////////////
+// ReturnMoveBackState number 2
+//////////////////////////////////////////////////////////////////////////
+void ReturnMoveBackState::UpdateDirection(double averageVelocity)
+{
+	// Note to Henrique: if any velocities are negative, change state to realign!
+	// ERIC: Increase max Teensy speed to 0.6
+
+	static double lastVelocity = 0.0;  // Stores last average velocity for comparison
+	const double MAX_SIDE_VELOCITY = 0.075;
+	const double MAX_FORWARD_VELOCITY = 0.275;
+	static double maxSeenVelocity = MAX_FORWARD_VELOCITY;
+
+	if (averageVelocity > maxSeenVelocity)
+		maxSeenVelocity = averageVelocity;
+
+	cout << "Average m/s value is: " << averageVelocity << "\n";
+	cout << "Last m/s value is: " << lastVelocity << "\n";
+
+	// If we have to, we could 
+	double forwardVelocity = MAX_FORWARD_VELOCITY;
+
+	// The "get average velocity" function overestimates a little, or the Teensy overdoes the velocity. Hard to know
+	// Test whether this works on grass, it's good on concrete
+	if (averageVelocity >= (1.0 * MAX_FORWARD_VELOCITY))
+	{
+		std::cout << "\tMoving FORWARD\n";
+		Robot()->SetWheelVelocity(forwardVelocity, forwardVelocity);
+		lastVelocity = averageVelocity;  // For comparison to next computed velocity
 		return;
+	}
+
+	if (averageVelocity >= lastVelocity)
+		cout << "State improved from last run, continuing on without DIRECTION change\n";
+	else if (returnType == ReturnMoveEnum::RIGHT) {
+		std::cout << "\tMoving LEFT\n";
+		returnType = ReturnMoveEnum::LEFT;
+	} else {
+		std::cout << "\tMoving RIGHT\n";
+		returnType = ReturnMoveEnum::RIGHT;
+	}
+
+	double proportionalReaction = (1.15 - averageVelocity / maxSeenVelocity) * MAX_SIDE_VELOCITY;
+	// cout << "forwardVelocity: " << forwardVelocity << "\n";
+	// cout << "proportionalReaction: " << proportionalReaction << "\n";
 
 	switch(returnType) {
 		case ReturnMoveEnum::FORWARD:
+			Robot()->SetWheelVelocity(forwardVelocity, forwardVelocity);
+			break;
 		case ReturnMoveEnum::RIGHT: 
-			std::cout << "\tMoving left\n";
-			Robot()->SetWheelVelocity(MAX_FORWARD_VELOCITY - MAX_SIDE_VELOCITY,
-									  MAX_FORWARD_VELOCITY + MAX_SIDE_VELOCITY);
-			returnType = ReturnMoveEnum::LEFT;
+			Robot()->SetWheelVelocity(forwardVelocity + proportionalReaction,
+									  forwardVelocity - proportionalReaction);
 			break;
 		case ReturnMoveEnum::LEFT: 
-			std::cout << "\tMoving right\n";
-			Robot()->SetWheelVelocity(MAX_FORWARD_VELOCITY + MAX_SIDE_VELOCITY,
-									  MAX_FORWARD_VELOCITY - MAX_SIDE_VELOCITY);
-			returnType = ReturnMoveEnum::RIGHT;
+			Robot()->SetWheelVelocity(forwardVelocity - proportionalReaction,
+									  forwardVelocity + proportionalReaction);
 			break;
 	}
+	lastVelocity = averageVelocity;  // For comparison to next computed velocity
 }
+
+
+//////////////////////////////////////////////////////////////////////////
+// ReturnMoveBackState number 1
+//////////////////////////////////////////////////////////////////////////
+// void ReturnMoveBackState::UpdateDirection()
+// {
+// 	const double MAX_SIDE_VELOCITY = 0.03;
+// 	const double MAX_FORWARD_VELOCITY = 0.17;
+
+// 	std::cout << "Last " << mLastReadings.size() << " Decawave readings: \n";
+
+// 	for(std::size_t i = 0; i < mLastReadings.size(); i++)
+// 	{
+// 		std::cout << "\t" << i << " = " << mLastReadings[i];
+
+// 		if(i > 0)
+// 		{
+// 			double diff = mLastReadings[i-1] - mLastReadings[i];
+// 			std::cout << " (" << diff << ")";
+// 		}
+
+// 		std::cout << "\n";
+// 	}
+
+// 	int performance = 0;
+
+// 	for(std::size_t i = 2; i < mLastReadings.size(); i++)
+// 	{
+// 		double lastDiff = mLastReadings[i-2] - mLastReadings[i-1];
+// 		double diff = mLastReadings[i-1] - mLastReadings[i];
+// 		if(diff > lastDiff)
+// 			performance++;
+// 	}
+
+// 	// Note to Henrique: if any diffs are negative, change state to realign
+
+// 	cout << "Performance: " << performance << "\n";
+// 	if(performance >= (mLastReadings.size() - 3))
+// 		return;
+
+// 	switch(returnType) {
+// 		case ReturnMoveEnum::FORWARD:
+// 		case ReturnMoveEnum::RIGHT: 
+// 			std::cout << "\tMoving left\n";
+// 			Robot()->SetWheelVelocity(MAX_FORWARD_VELOCITY - MAX_SIDE_VELOCITY,
+// 									  MAX_FORWARD_VELOCITY + MAX_SIDE_VELOCITY);
+// 			returnType = ReturnMoveEnum::LEFT;
+// 			break;
+// 		case ReturnMoveEnum::LEFT: 
+// 			std::cout << "\tMoving right\n";
+// 			Robot()->SetWheelVelocity(MAX_FORWARD_VELOCITY + MAX_SIDE_VELOCITY,
+// 									  MAX_FORWARD_VELOCITY - MAX_SIDE_VELOCITY);
+// 			returnType = ReturnMoveEnum::RIGHT;
+// 			break;
+// 	}
+// }
 
 void ReturnMoveBackState::TeensyStatus(TeenseyStatus status)
 {
