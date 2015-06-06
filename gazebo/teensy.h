@@ -39,5 +39,8 @@ struct Teensy2Status
 QDataStream &operator<<(QDataStream &out, const Robot::TeenseyStatus &item);
 QDataStream &operator>>(QDataStream &in, Robot::TeenseyStatus &item);
 
+QDataStream &operator<<(QDataStream &out, const Robot::TeensyCommand &item);
+QDataStream &operator>>(QDataStream &in, Robot::TeensyCommand &item);
+
 QDataStream &operator<<(QDataStream &out, const Robot::Teensy2Status &item);
 QDataStream &operator>>(QDataStream &in, Robot::Teensy2Status &item);

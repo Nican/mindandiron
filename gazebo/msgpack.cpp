@@ -131,6 +131,32 @@ QDataStream &operator>>(QDataStream &in, Robot::TeenseyStatus &item)
 	return in;
 }
 
+QDataStream &operator<<(QDataStream &out, const Robot::TeensyCommand &item)
+{
+	out << item.leftVel;
+	out << item.rightVel;
+	out << item.leftPos;
+	out << item.rightPos;
+	out << item.useVelocity;
+	out << item.collector;
+	out << item.sorter;
+
+	return out;
+}
+
+QDataStream &operator>>(QDataStream &in, Robot::TeensyCommand &item)
+{
+	in << item.leftVel;
+	in << item.rightVel;
+	in << item.leftPos;
+	in << item.rightPos;
+	in << item.useVelocity;
+	in << item.collector;
+	in << item.sorter;
+
+	return in;
+}
+
 
 QDataStream &operator<<(QDataStream &out, const Robot::Teensy2Status &item)
 {
