@@ -190,7 +190,8 @@ public:
 	virtual void Start() override;
 	void Reset();
 	double GetAverageDecawaveVelocity();
-	void UpdateDirection(double averageVelocity, int in, int out, int circle);
+	void UpdateDirectionCircular(double averageVelocity);
+	void UpdateDirection(double averageVelocity, int in, int out);
 
 public slots:
 	void TeensyStatus(TeenseyStatus status);

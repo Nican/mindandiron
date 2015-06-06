@@ -276,12 +276,13 @@ double ReturnMoveBackState::GetAverageDecawaveVelocity()
 //////////////////////////////////////////////////////////////////////////
 // Going In OR Going Out
 //////////////////////////////////////////////////////////////////////////
-void ReturnMoveBackState::UpdateDirection(double averageVelocity, int in, int out, int circle)
+void ReturnMoveBackState::UpdateDirection(double averageVelocity, int in, int out)
 {
 	if (!in && !out)  // Circle not implemented yet
 		return;
 
-	// Note to Henrique: if any velocities are positive, change state to realign!
+	// Note to Henrique: if any velocities are positive/negative when they
+	// shouldn't be, change state to realign!
 
 	static double lastVelocity = 0.0;  // Stores last average velocity for comparison
 	const double MAX_SIDE_VELOCITY = 0.075;
@@ -293,7 +294,6 @@ void ReturnMoveBackState::UpdateDirection(double averageVelocity, int in, int ou
 	{
 			maxSeenVelocity = averageVelocity;
 	}
-
 	// cout << "Average m/s value is: " << averageVelocity << "\n";
 	// cout << "Last m/s value is: " << lastVelocity << "\n";
 
@@ -306,7 +306,7 @@ void ReturnMoveBackState::UpdateDirection(double averageVelocity, int in, int ou
 	if ((out && averageVelocity <= (-1.0 * MAX_FORWARD_VELOCITY)) ||
 		(in  && averageVelocity >= ( 1.0 * MAX_FORWARD_VELOCITY)))
 	{
-		std::cout << "\tMoving FORWARD\n";
+		std::cout << "\tDoing well, moving FORWARD\n";
 		Robot()->SetWheelVelocity(forwardVelocity, forwardVelocity);
 		lastVelocity = averageVelocity;  // For comparison to next computed velocity
 		return;
@@ -327,7 +327,52 @@ void ReturnMoveBackState::UpdateDirection(double averageVelocity, int in, int ou
 	double proportionalReaction = (1.15 - averageVelocity / maxSeenVelocity) * MAX_SIDE_VELOCITY;
 	// cout << "forwardVelocity: " << forwardVelocity << "\n";
 	// cout << "proportionalReaction: " << proportionalReaction << "\n";
+	CommandVelocity(forwardVelocity, proportionalReaction)
+	lastVelocity = averageVelocity;  // For comparison to next computed velocity
+}
 
+
+void ReturnMoveBackState::UpdateDirectionCircular(double averageVelocity)
+{
+	static double lastVelocity = 0.0;  // Stores last average velocity for comparison
+	const double MAX_SIDE_VELOCITY = 0.075;
+	const double MAX_FORWARD_VELOCITY = 0.275;
+	// cout << "Average m/s value is: " << averageVelocity << "\n";
+	// cout << "Last m/s value is: " << lastVelocity << "\n";
+
+	// If we have to, we could make sideways motion move more slowly to not get off course
+	double forwardVelocity = MAX_FORWARD_VELOCITY;
+
+	if (abs(averageVelocity) <= (0.05 * MAX_FORWARD_VELOCITY))
+	{
+		std::cout << "\tDoing well, moving FORWARD\n";
+		Robot()->SetWheelVelocity(forwardVelocity, forwardVelocity);
+		lastVelocity = averageVelocity;  // For comparison to next computed velocity
+		return;
+	}
+
+	if (((averageVelocity < 0 && lastVelocity < 0) ||
+		 (averageVelocity > 0 && lastVelocity > 0)) &&
+		abs(averageVelocity) < abs(lastVelocity))
+	{
+		cout << "State improved from last run, continuing on without DIRECTION change\n";
+	} else if (returnType == ReturnMoveEnum::RIGHT) {
+		std::cout << "\tMoving LEFT\n";
+		returnType = ReturnMoveEnum::LEFT;
+	} else {
+		std::cout << "\tMoving RIGHT\n";
+		returnType = ReturnMoveEnum::RIGHT;
+	}
+
+	double proportionalReaction = averageVelocity / MAX_FORWARD_VELOCITY * MAX_SIDE_VELOCITY;
+	// cout << "forwardVelocity: " << forwardVelocity << "\n";
+	// cout << "proportionalReaction: " << proportionalReaction << "\n";
+	CommandVelocity(forwardVelocity, proportionalReaction)
+	lastVelocity = averageVelocity;  // For comparison to next computed velocity
+}
+
+void ReturnMoveBackState::CommandVelocity(double forwardVelocity, double proportionalReaction)
+{
 	switch(returnType) {
 		case ReturnMoveEnum::FORWARD:
 			Robot()->SetWheelVelocity(forwardVelocity, forwardVelocity);
@@ -341,10 +386,7 @@ void ReturnMoveBackState::UpdateDirection(double averageVelocity, int in, int ou
 									  forwardVelocity + proportionalReaction);
 			break;
 	}
-
-	lastVelocity = averageVelocity;  // For comparison to next computed velocity
 }
-
 
 void ReturnMoveBackState::TeensyStatus(TeenseyStatus status)
 {
