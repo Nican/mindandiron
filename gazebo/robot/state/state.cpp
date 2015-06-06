@@ -43,9 +43,10 @@ RootState::RootState(QObject *parent) : BaseState(parent), mState(nullptr)
 	//QTimer::singleShot(1000, this, SLOT(MoveToNextState));
 
 	//SetState(new ReturnToStationState(this));
-	SetState(new LeaveBaseStation(this));
+	// SetState(new LeaveBaseStation(this));
+	// SetState(new ReturnRealignState(this));
 
-	//SetState(new ReturnMoveBackState(this));
+	SetState(new ReturnMoveBackState(this));
 	//SetState(new MoveForwardState(this, 10));
 }
 
@@ -408,7 +409,7 @@ void MoveForwardState::TeensyStatus(TeenseyStatus status)
 	auto odometry = Robot()->GetOdometryTraveledSince(mStartTime);
 
 	// To test: Should these be set asymmetrically? Left wheel sometimes accelerates slower
-	Robot()->SetWheelVelocity(0.65, 0.65);
+	Robot()->SetWheelVelocity(0.15, 0.15);
 
 	//std::cout << "\tDistance traveled " << odometry.mDistanceTraveled << "\n";
 
@@ -416,7 +417,7 @@ void MoveForwardState::TeensyStatus(TeenseyStatus status)
 	{
 		Robot()->SetWheelVelocity(0.0, 0.0);
 
-		std::cout << "Move state finished with " << odometry << "\n";
+		std::cout << "Move forward state finished with " << odometry << "\n";
 		SetFinished();
 	}
 }
@@ -444,6 +445,8 @@ void RotateState::TeensyStatus(TeenseyStatus status)
 
 	auto odometry = Robot()->GetOdometryTraveledSince(mStartTime);
 
+	// cout << "Odometry theta: " << odometry.mTheta << "\n";
+
 	if(mLastRotation != 0.0)
 	{
 		mTotalRotation += std::abs(odometry.mTheta - mLastRotation);
@@ -457,7 +460,7 @@ void RotateState::TeensyStatus(TeenseyStatus status)
 		Robot()->SetWheelVelocity(-TURN_STRENGTH, TURN_STRENGTH);
 
 	// if(mTotalRotation >= std::abs(mRotation))
-	if (std::abs(mTotalRotation) >= std::abs(mRotation) - 0.4)  // NOTE THIS SUBSTRACTION, IT'S SKETCHY (It's to deal by hand with slippage issues)
+	if (std::abs(mTotalRotation) >= (std::abs(mRotation) / 2.0))  // NOTE THIS DIVISION, IT'S SKETCHY (It's to deal by hand with slippage issues)
 	{
 		Robot()->SetWheelVelocity(0.0, 0.0);
 
