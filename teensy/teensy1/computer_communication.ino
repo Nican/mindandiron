@@ -85,7 +85,7 @@ int boundCollectorSignal(int cmd) {
 int boundSorterSignal(int cmd) {
     // Decided to treat out-of-bound commands as illegitimate. Could
     // implement this as a clamp function as needed
-    if (cmd >= 0 && cmd < NUM_SORTER_SLOTS) {
+    if (cmd >= 0) {
         return cmd;
     } else {
         return 0;

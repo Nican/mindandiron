@@ -98,6 +98,31 @@ void roughlyControlWithRC(Servo servo, int signalPin) {
     commandCollectorSimple(servo, direction*speed);
 }
 
+// Controls the direction and speed of the collector
+void roughlyControlSorterWithRC(Servo servo, int signalPin) {
+    int duration = pulseIn(signalPin, HIGH);
+    int direction;
+    int speed;
+
+    // Adjusts the direction as appropriate
+    if (duration < MID_SIGNAL) {
+        direction = 1;
+    } else {
+        direction = -1;
+    }
+
+    // Brakes the collector when in the deadband
+    if (within(duration, MID_SIGNAL, IN_DEADBAND)) {
+        speed = 0;
+    } else if (within(duration, MID_SIGNAL, 2*IN_DEADBAND)) {
+        speed = 2 * SERVO_OUTPUT_SMALL_DELTA;
+    } else if (duration < MAX_SIGNAL && duration > MIN_SIGNAL) {
+        speed = 3 * SERVO_OUTPUT_SMALL_DELTA;
+    }
+
+    commandCollectorSimple(servo, direction*speed);
+}
+
 
 // Checks whether the given value is within a given offset from a goal value
 bool within(int value, int goal, int offset) {
