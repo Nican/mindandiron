@@ -52,13 +52,12 @@ public:
 	QFutureWatcher<std::vector<AprilTags::TagDetection>> mDetectionFutureWatcher;
 	QDateTime lastFrameTime;
 
-	double mTagSize;
 	double mFx;
 	double mFy;
 	double mPx;
 	double mPy;
 
-	AprilTagCamera(QObject* parent);
+	AprilTagCamera(double fx, double fy, double px, double py, QObject* parent);
 
 	bool IsProcessing();
 

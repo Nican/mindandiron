@@ -90,6 +90,8 @@ Kratos2::Kratos2(QObject* parent) :
 {
 	mContext = nzmqt::createDefaultContext(this);
 	mContext->start();
+
+	mApril2 = new AprilTagCamera(1064, 1064, 1920, 1080, this);
 }
 
 
@@ -99,11 +101,11 @@ void Kratos2::Initialize()
 	mPlanner = new TrajectoryPlanner2(this);
 	//mWheelPID = new WheelPID(this);
 
-	auto kinect = GetKinect();
-	connect(kinect, &Kinect::receiveDepthImage, mSensorLog, &SensorLog::receiveDepthImage);
-	connect(kinect, &Kinect::receiveDepthImage, this, &Kratos2::ProccessPointCloud);
-	connect(kinect, &Kinect::receiveColorImage, mSensorLog, &SensorLog::receiveKinectImage);
-	kinect->requestDepthFrame();
+	connect(GetKinect(), &Kinect::receiveDepthImage, mSensorLog, &SensorLog::receiveDepthImage);
+	connect(GetKinect(), &Kinect::receiveDepthImage, this, &Kratos2::ProccessPointCloud);
+	connect(GetKinect(), &Kinect::receiveColorImage, mSensorLog, &SensorLog::receiveKinectImage);
+	connect(GetKinect(), &Kinect::receiveColorImage, this, &Kratos2::receiveKinectImage);
+	GetKinect()->requestDepthFrame();
 
 	connect(GetDecawave(), &Decawave::statusUpdate, mSensorLog, &SensorLog::decawaveUpdate);
 
@@ -114,6 +116,11 @@ void Kratos2::Initialize()
 	connect(GetApril(), &AprilTagCamera::ReceiveFrame, mSensorLog, &SensorLog::ReceiveAprilTagImage);
 	connect(GetApril(), &AprilTagCamera::tagsDetected, mSensorLog, &SensorLog::ReceiveAprilTags);
 	connect(GetApril(), &AprilTagCamera::tagsDetected, this, &Kratos2::AprilTagDetected);
+
+
+	connect(mApril2, &AprilTagCamera::tagsDetected, mSensorLog, &SensorLog::ReceiveAprilTags2);
+	connect(mApril2, &AprilTagCamera::tagsDetected, this, &Kratos2::AprilTag2Detected);
+
 	
 	connect(&mFutureWatcher, SIGNAL(finished()), this, SLOT(FinishedPointCloud()));
 	connect(this, &Kratos2::WheelVelocityUpdate, mSensorLog, &SensorLog::WheelVelocityUpdate);
@@ -151,6 +158,56 @@ void Kratos2::AprilScanTimer()
 		GetTeensy2()->sendRaw(scanModeValues[lastScanValue]);
 		lastScanValue = (lastScanValue + 1) % scanModeValues.size();	
 	}
+}
+
+void Kratos2::AprilTag2Detected(QList<AprilTagDetectionItem> detections)
+{
+	AprilTagDetectionItem tag;
+	bool foundSameAsLast = false;
+
+	for(auto& detection : detections)
+	{
+		if(detection.detection.id == mLastAprilId)
+		{
+			tag = detection;
+			foundSameAsLast = true;
+			break;
+		}
+	}
+
+	if(foundSameAsLast == false)
+	{
+		if(detections.isEmpty())
+			return;
+
+		tag = detections[0];
+	}
+
+	const auto tagInfo = GetTagById(tag.detection.id);
+
+	if(tagInfo == nullptr)
+	{
+		std::cerr << "Unkown tag of id: " << tag.detection.id << "\n";
+		return;
+	}
+
+	//Update the robot location estimation
+	double euler = tag.euler.y() + tagInfo->mOrientation;
+	Vector2d translation = tag.translation.head<2>() + Vector2d(0.90, 0);
+
+	translation = Rotation2Dd(euler) * translation;
+	translation -= tagInfo->mOffset;
+
+	Affine2d aprilLocation;
+	aprilLocation.linear() = Rotation2Dd(M_PI - euler).toRotationMatrix(); //pi - euler = the tag is in front of the robot
+	aprilLocation.translation() = translation;
+
+	mLastAprilDetection = QDateTime::fromMSecsSinceEpoch(tag.time);
+	mLastAprilLocation = aprilLocation;
+
+	mSensorLog->AprilLocationUpdate(mLastAprilDetection, aprilLocation);
+
+	emit AprilLocationUpdate(aprilLocation);
 }
 
 void Kratos2::AprilTagDetected(QList<AprilTagDetectionItem> detections)
@@ -207,11 +264,11 @@ void Kratos2::AprilTagDetected(QList<AprilTagDetectionItem> detections)
 	}
 
 	//Update the robot location estimation
-	double euler = tag.euler.y() + tagInfo->mOrientation; //(6.4 / 180 * M_PI); //6.4 for gazebo, 8.3 for real life
+	double euler = tag.euler.y() + tagInfo->mOrientation;
 	Vector2d translation = tag.translation.head<2>();
 
 	translation = Rotation2Dd(euler) * translation;
-	translation -= tagInfo->mOffset; //Vector2d(1.1, -0.5);
+	translation -= tagInfo->mOffset;
 
 	euler -= servoAngle;
 
@@ -299,6 +356,14 @@ void Kratos2::ProccessPointCloud(DepthImgData mat)
 	});
 
 	mFutureWatcher.setFuture(future);
+}
+
+void Kratos2::receiveKinectImage(Robot::ImgData mat)
+{
+	QImage image(mat.data.data(), mat.width, mat.height, QImage::Format_RGB888);
+	image = image.mirrored(true, false);
+
+	mApril2->ReadFrame(image);
 }
 
 

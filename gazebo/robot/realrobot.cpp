@@ -55,6 +55,7 @@ void KratosSampleDetection::messageReceived(const QList<QByteArray>& messages)
 		samples.append(sample);
 	}
 
+	mLastDetection = samples;
 	emit SampleDetected(samples);
 }
 
@@ -63,9 +64,9 @@ void KratosSampleDetection::messageReceived(const QList<QByteArray>& messages)
 //////////////////////////
 
 KratosAprilTag::KratosAprilTag(QObject* parent) : 
-	AprilTagCamera(parent)
+	AprilTagCamera(1315, 1315, 1920, 1080, parent)
 {
-	mCamera = new KratosCamera("usb-046d_HD_Pro_Webcam_C920_2245793F-video-index0", 1920, 1080, this);
+	mCamera = new KratosCamera("usb-046d_HD_Pro_Webcam_C920_2245793F-video-index0", mPx, mPy, this);
 	// mCamera = new KratosCamera("usb-046d_HD_Pro_Webcam_C920_2245793F-video-index0", 1280, 720, this);
 	//mCamera = new KratosCamera("usb-046d_HD_Pro_Webcam_C920_2245793F-video-index0", 960, 540, this);
 	//usb-046d_HD_Pro_Webcam_C920_F19B696F-video-index0

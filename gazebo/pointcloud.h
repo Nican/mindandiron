@@ -72,7 +72,7 @@ struct RegionGrowingSegmenter : public BaseGroundProcessor<PointCloud::Ptr, Poin
 	RegionGrowingSegmenter() :
 		numberOfNeighbours(60),
 		smoothnessThreshold(5.0),
-		curvatureThreshold(0.05)
+		curvatureThreshold(0.1)
 	{
 	}
 

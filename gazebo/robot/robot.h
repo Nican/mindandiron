@@ -106,6 +106,8 @@ class SampleDetection : public QObject
 	Q_OBJECT
 
 public:
+	QList<DetectedSample> mLastDetection;
+
 	SampleDetection(QObject* parent) : QObject(parent)
 	{
 	}
@@ -145,6 +147,7 @@ public slots:
 	void ReceiveAprilTagImage(QImage image);
 	void SendAprilTagInfo();
 	void ReceiveAprilTags(QList<AprilTagDetectionItem> tags);
+	void ReceiveAprilTags2(QList<AprilTagDetectionItem> tags);
 	void SampleDetected(QList<DetectedSample> samples);
 };
 
@@ -197,8 +200,7 @@ public:
 
 	void Initialize();
 
-	//The state is only set on the next frame
-	//void SetState(BaseState* nextState); 
+	AprilTagCamera* mApril2;
 
 	virtual Kinect* GetKinect() = 0;
 	virtual Teensy* GetTeensy() = 0;
@@ -218,10 +220,12 @@ public:
 
 public slots:
 	void ProccessPointCloud(Robot::DepthImgData mat);
+	void receiveKinectImage(Robot::ImgData mat);
 	void TeensyStatus(TeenseyStatus status);
 	void FinishedPointCloud();
 
 	void AprilTagDetected(QList<AprilTagDetectionItem> detections);
+	void AprilTag2Detected(QList<AprilTagDetectionItem> detections);
 	void AprilScanTimer();
 
 	void StartStateMachine();

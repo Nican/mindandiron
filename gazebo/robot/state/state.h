@@ -12,6 +12,7 @@ class TrajectorySearch;
 class MoveForwardState;
 class MoveTowardsGoalState;
 class RotateState;
+class ExploreState;
 
 class BaseState : public QObject
 {
@@ -107,12 +108,47 @@ public:
 public slots:
 	void MoveToRotate();
 	void MoveToNextState();
-	void FoundAprilTag(Eigen::Affine2d newLocation);
-	void NavigateToSample(QList<DetectedSample> samples);
+};
+
+
+class Level1State : public ProgressState
+{
+	Q_OBJECT
+public:
+
+	LeaveBaseStation* leaveBase;
+	MoveTowardsGoalState* mMoveInfront;
+	ExploreState* mExplore;
+
+	Level1State(QObject *parent) : ProgressState(parent), leaveBase(nullptr), mMoveInfront(nullptr)
+	{
+	}
+
+	virtual void Start() override;
+
+public slots:
+	void StartToTravelBehind();
+	void MoveForwardBehind();
+	void StartExplore();
+};
+
+
+class NavigateToSample : public ProgressState
+{
+	Q_OBJECT
+public:
+	int finalApproach;
+
+	NavigateToSample(QObject *parent) : ProgressState(parent)
+	{
+	}
+
+	virtual void Start() override;
+
+public slots:
 	void ProportionalSteerOverSample(QList<DetectedSample> samples);
 	void FinishSampleCollection();
 };
-
 
 
 class BackIntoBaseStationState : public ProgressState
@@ -192,6 +228,7 @@ public:
 	double GetAverageDecawaveVelocity();
 	void UpdateDirectionCircular(double averageVelocity);
 	void UpdateDirection(double averageVelocity, int in, int out);
+	void CommandVelocity(double forwardVelocity, double proportionalReaction);
 
 public slots:
 	void TeensyStatus(TeenseyStatus status);
@@ -232,11 +269,16 @@ public:
 	MoveTowardsGoalState* mGoalMove;
 	QDateTime mStartTime;
 
-	ExploreState(QObject *parent) : ProgressState(parent)
+	ExploreState(QObject *parent) : ProgressState(parent), mGoalMove(nullptr)
 	{
 	}
 
 	virtual void Start() override;
+
+public slots:
+	void StartNavigation();
+	void FailedNavigation();
+	void MoveToNextState();
 };
 
 
@@ -275,7 +317,8 @@ public:
 	virtual void Start() override;
 	void DriveTowards(Odometry odometry, Eigen::Vector2d goal);
 
-
+signals:
+	void Failed();
 
 public slots:
 	void UpdateTrajectory(ObstacleMap);

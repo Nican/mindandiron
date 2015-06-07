@@ -29,11 +29,12 @@ const QVector<AprilOffset> &GetOffsets()
 {
 	static QVector<AprilOffset> offsets({
 		//For simulation
-		AprilOffset(0, 0.733, {1.1, -0.5}, 8.3 / 180 * M_PI),
-		AprilOffset(1, 0.733, {1.1, 0.5}, -8.3 / 180 * M_PI),
+		AprilOffset(0, 0.159, {1.1, -0.5}, 6.4 / 180 * M_PI),
+		AprilOffset(1, 0.733, {1.1, 0.5}, -6.4 / 180 * M_PI),
 
 		//For actual robot
-		AprilOffset(6, 0.733, {1.1, -0.5}, 8.3 / 180 * M_PI)
+		AprilOffset(6, 0.733, {1.1, -0.5}, 8.3 / 180 * M_PI), //0.733
+		AprilOffset(29, 0.733, {1.1, -0.5}, 8.3 / 180 * M_PI)
 	});
 
 	return offsets;
@@ -80,11 +81,10 @@ static void wRo_to_euler(const Eigen::Matrix3d& wRo, double& yaw, double& pitch,
 	roll  = standardRad(atan2(wRo(0,2)*s - wRo(1,2)*c, -wRo(0,1)*s + wRo(1,1)*c));
 }
 
-AprilTagCamera::AprilTagCamera(QObject* parent) : 
+AprilTagCamera::AprilTagCamera(double fx, double fy, double px, double py, QObject* parent) : 
 	QObject(parent),
-	mTagSize(0.733), //0.829 -- 0.159
-	mFx(1315), mFy(1315),
-	mPx(1920/2), mPy(1080/2)
+	mFx(fx), mFy(fy),
+	mPx(px), mPy(py)
 	// mPx(1280/2), mPy(720/2)
 	//mPx(960/2), mPy(540/2)
 {
@@ -115,9 +115,10 @@ void AprilTagCamera::ReadFrame(QImage image)
 	}
 
 	cv::Mat cvImage(image.height(), image.width(), CV_8UC3, (uchar*)image.bits(), image.bytesPerLine());
-
 	cvImage = cvImage.clone();
-	
+
+	//DebugImage(cvImage);
+
 	auto future = QtConcurrent::run([cvImage, this]()
 	{
 		cv::Mat image_gray;
@@ -150,11 +151,13 @@ void AprilTagCamera::finishedProcessing()
 			continue;
 		}
 
+
+
 		AprilTagDetectionItem item;
 		item.detection = tag;
 		item.time = lastFrameTime.toMSecsSinceEpoch();
 
-		tag.getRelativeTranslationRotation(tagInfo->mSize, mFx, mFy, mPx, mPy, item.translation, item.rotation);
+		tag.getRelativeTranslationRotation(tagInfo->mSize, mFx, mFy, mPx/2, mPy/2, item.translation, item.rotation);
 
 		Eigen::Matrix3d F;
 		F <<

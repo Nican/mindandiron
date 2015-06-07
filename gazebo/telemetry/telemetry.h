@@ -189,6 +189,7 @@ public:
 	DepthViewerTab* mDepthViewer;
 	MapOverview* mGridView;
 	AprilTagLabel* mAprilTag;
+	AprilTagLabel* mAprilTag2;
 
 
 public slots:

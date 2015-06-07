@@ -41,29 +41,29 @@ DepthViewerTab::DepthViewerTab(QWidget *parent)
 
 void DepthViewerTab::ReceiveData(const Robot::DepthImgData &imgData)
 {
-	// auto size = imgData.data.size();
-	// std::vector<unsigned char> blobData(imgData.width * imgData.height * 3);
-	// double maxValue = *std::max_element( imgData.data.begin(), imgData.data.end() );
+	auto size = imgData.data.size();
+	std::vector<unsigned char> blobData(imgData.width * imgData.height * 3);
+	double maxValue = *std::max_element( imgData.data.begin(), imgData.data.end() );
 
-	// for(std::size_t i = 0; i < size; i++)
-	// {
-	// 	float dist = imgData.data[i];
+	for(std::size_t i = 0; i < size; i++)
+	{
+		float dist = imgData.data[i];
 
-	// 	if(dist <= 0.0001)
-	// 		dist = 5.0;
+		if(dist <= 0.0001)
+			dist = 5.0;
 
-	// 	blobData[i*3] = blobData[i*3+1] = blobData[i*3+2] = (unsigned char)(dist / maxValue * 255);
-	// }
+		blobData[i*3] = blobData[i*3+1] = blobData[i*3+2] = (unsigned char)(dist / maxValue * 255);
+	}
 
-	// QImage qImage(blobData.data(), imgData.width, imgData.height, QImage::Format_RGB888 );
-	// mDepthCamera->setPixmap(QPixmap::fromImage(qImage));
+	QImage qImage(blobData.data(), imgData.width, imgData.height, QImage::Format_RGB888 );
+	mDepthCamera->setPixmap(QPixmap::fromImage(qImage));
 }
 
 void DepthViewerTab::ReceivePointCloud(const PclPointCloud::Ptr pointCloud)
 {
-	// viewer->updatePointCloud (pointCloud, "cloud");
-	// viewer->resetCamera ();
-	// qvtkWidget->update ();
+	viewer->updatePointCloud (pointCloud, "cloud");
+	viewer->resetCamera ();
+	qvtkWidget->update ();
 }
 
 
@@ -161,6 +161,9 @@ MainWindow::MainWindow(QWidget *parent)
 
 	mAprilTag = new AprilTagLabel(this);
 	tabbed->addTab(mAprilTag, "APRIL TAG");
+
+	mAprilTag2 = new AprilTagLabel(this);
+	tabbed->addTab(mAprilTag2, "APRIL TAG2");
 
 	mWheelOdometry = new WheelOdometryTab(this);
 	tabbed->addTab(mWheelOdometry, "WHEEL ODOMETRY");
@@ -284,12 +287,8 @@ void MainWindow::messageReceived(const QList<QByteArray>& messages)
 	if(id == '\x11')
 	{
 		QList<AprilTagDetectionItem> tags;
-
-		{
-			QDataStream stream(messages[1]);
-			stream.setVersion(QDataStream::Qt_4_8);
-			stream >> tags;
-		}
+		QDataStream stream(messages[1]);
+		stream >> tags;
 
 		mAprilTag->ReadTags(tags);
 		mGridView->ReadTags(tags);		
@@ -334,6 +333,27 @@ void MainWindow::messageReceived(const QList<QByteArray>& messages)
 		stream >> positions;
 
 		mGridView->ShowPositionHistory(positions);
+	}
+
+
+	if(id == '\x16')
+	{
+		QList<AprilTagDetectionItem> tags;
+		QDataStream stream(messages[1]);
+		stream >> tags;
+
+		mAprilTag2->ReadTags(tags);
+	}
+
+	if(id == '\x17')
+	{
+		Robot::ImgData mat;
+		QDataStream stream(messages[1]);
+		stream >> mat;
+
+		QImage image(mat.data.data(), mat.width, mat.height, QImage::Format_RGB888);
+		image = image.mirrored(true, false);
+		mAprilTag2->UpdateImage(image);
 	}
 }
 

@@ -240,7 +240,7 @@ void ReturnMoveBackState::DecawaveUpdate(double value)
 
 	if(lastReadingId == mLastReadings.size() - 1)
 	{
-		UpdateDirection(GetAverageDecawaveVelocity(), 1, 0, 0);
+		UpdateDirection(GetAverageDecawaveVelocity(), 1, 0);
 		mLastReadings[0] = mLastReadings[lastReadingId];
 		lastReadingId = 1;
 	}
@@ -327,7 +327,7 @@ void ReturnMoveBackState::UpdateDirection(double averageVelocity, int in, int ou
 	double proportionalReaction = (1.15 - averageVelocity / maxSeenVelocity) * MAX_SIDE_VELOCITY;
 	// cout << "forwardVelocity: " << forwardVelocity << "\n";
 	// cout << "proportionalReaction: " << proportionalReaction << "\n";
-	CommandVelocity(forwardVelocity, proportionalReaction)
+	CommandVelocity(forwardVelocity, proportionalReaction);
 	lastVelocity = averageVelocity;  // For comparison to next computed velocity
 }
 
@@ -367,7 +367,7 @@ void ReturnMoveBackState::UpdateDirectionCircular(double averageVelocity)
 	double proportionalReaction = averageVelocity / MAX_FORWARD_VELOCITY * MAX_SIDE_VELOCITY;
 	// cout << "forwardVelocity: " << forwardVelocity << "\n";
 	// cout << "proportionalReaction: " << proportionalReaction << "\n";
-	CommandVelocity(forwardVelocity, proportionalReaction)
+	CommandVelocity(forwardVelocity, proportionalReaction);
 	lastVelocity = averageVelocity;  // For comparison to next computed velocity
 }
 

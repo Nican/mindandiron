@@ -220,7 +220,7 @@ void TrajectorySearch::Iterate()
 ///////////////////////////////
 
 TrajectoryPlanner2::TrajectoryPlanner2(Kratos2* parent) : 
-QObject(parent), mRobot(parent) //, mOdometry(0.69), world(b2Vec2(0.0, 0.0))
+QObject(parent), mRobot(parent)
 {
 	connect(&mFutureWatcher, SIGNAL(finished()), this, SLOT(FinishedObstacles()));
 }
@@ -268,11 +268,11 @@ void TrajectoryPlanner2::UpdateObstacles(SegmentedPointCloud pointCloud)
 	        //2 = not grouped in any cluster
 			walkabilityMap(imagePt.x(), imagePt.y()) = pt.b == 255 ? 2 : 1;
 
-
+			//Red points mean obstacles
 			if(pt.r == 255)
 			{
 				Vector2d newPt(imagePt.y() * 5.0f / 512.0f + 0.6f, imagePt.x() * 5.0f / 512.0f - 2.5f);
-				//obstacleMap.mObstacleList.push_back(newPt);
+				obstacleMap.mObstacleList.push_back(newPt);
 			}
 	    }	    
 

@@ -16,37 +16,32 @@ void GazeboSampleDetection::receiveUpdate(const RobotGazeboTickData &data)
 
 void GazeboSampleDetection::TeensyStatus(TeenseyStatus status)
 {
-	static const Vector2d sampleLocation(6, 3);
+	static const Vector2d sampleLocation(-20, 20);
+	QList<DetectedSample> detections;
 
 	Vector2d relative = sampleLocation - gazeboData.robotPosition.head<2>();
-
-	// std::cout << relative.transpose() << 
-	// 	"\n\t" << sampleLocation.transpose() << 
-	// 	"\n\t" << data.robotPosition.transpose() << "\n";
-	//double angle = std::atan2(relative.y(), relative.x());
-
-	//std::cout << "Robot angle: " << data.robotOrientation << "\n";
-	//std::cout << "\tangle: " << angle << "\n";
-
-	//double relativeAngle = angle - data.robotOrientation;
-
 	Vector2d relative2 = Rotation2Dd(-gazeboData.robotOrientation) * relative;
 
 	//Assume that the detector can see objects at most 10m away
-	if(relative2.norm() > 10.0)
-		return;
+	if(relative2.norm() <= 10.0)
+	{
+		//Or more than 90 degrees from the view of view
+		if(abs(atan2(relative2.y(), relative2.x())) <= (45.0 * M_PI / 180.0))
+		{
+			DetectedSample sample;
+		 	sample.location = relative2;
+			sample.name = "test";
 
-	DetectedSample sample;
- 	sample.location = relative2;
-	sample.name = "test";
+			detections += sample;
+		}
+	}
 
-	QList<DetectedSample> detections({sample});
-
+	mLastDetection = detections;
 	emit SampleDetected(detections);
 }
 
 GazeboAprilTag::GazeboAprilTag(GazeboKratos* parent) 
-	: AprilTagCamera(parent), robot(parent)
+	: AprilTagCamera(1, 1, 1920, 1080, parent), robot(parent)
 {
 }
 
@@ -96,9 +91,6 @@ void GazeboAprilTag::finishedProcessing()
 
 		affine.translation() = rotation * affine.translation();
 		affine.linear() = AngleAxisd(tick.robotOrientation - robotCameraAngle + M_PI, Vector3d::UnitZ()) * affine.linear();
-
-		//std::cout << "\tAfter Rotation: " << affine.translation().transpose() << "\n";
-		//std::cout << "\tAngle " << (affine.linear().eulerAngles(1,2,0) * 180 / M_PI).transpose() << "\n";
 
 		item.translation = affine.translation();
 		item.rotation = affine.linear();
@@ -261,8 +253,8 @@ GazeboKratos::GazeboKratos(QObject* parent)
 void GazeboKratos::fireControlUpdate()
 {
 	RobotGazeboControl control;
-	control.leftVelocity = GetLeftVelocity() * 5;
-	control.rightVelocity = GetRightVelocity() * 5;
+	control.leftVelocity = GetLeftVelocity() * 2.5;
+	control.rightVelocity = GetRightVelocity() * 2.5;
 	control.aprilAngle = mTeensy2->GetAprilGazeboAngle();
 
 	QByteArray buffer;
@@ -301,10 +293,10 @@ void GazeboKratos::messageReceived(const QList<QByteArray>& messages)
 			Robot::ImgData data;
 			stream >> data;
 
-			if(mKinect->depthFrameRequested)
+			if(mKinect->colorFrameRequested)
 			{
 				emit mKinect->receiveColorImage(data);
-				mKinect->depthFrameRequested = false;
+				mKinect->colorFrameRequested = false;
 			}
 		}
 		else if(id == 2)

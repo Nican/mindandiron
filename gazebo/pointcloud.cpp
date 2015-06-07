@@ -104,7 +104,7 @@ PointCloud::Ptr RegionGrowingSegmenter::AsyncronousUpdate(PointCloud::Ptr imgClo
 
 
 	//Rotate back the camera angle
-	const Eigen::Affine3f transform(AngleAxisf(0.52359878, Vector3f::UnitX()));
+	const Eigen::Affine3f transform(AngleAxisf(0.174532925, Vector3f::UnitX()));
 
 	for(auto &point : imgCloud2->points)
 	{
@@ -260,7 +260,7 @@ RegionsType MultiPlaneSegmenter::AsyncronousUpdate(PointCloud::Ptr imgCloud)
 
 	pcl::OrganizedMultiPlaneSegmentation<pcl::PointXYZRGB, pcl::Normal, pcl::Label> mps;
 	mps.setMinInliers (minInliers);
-	mps.setAngularThreshold (0.017453 * angularThreshold); //3 degrees
+	mps.setAngularThreshold (3 * M_PI / 180.0 * angularThreshold); //3 degrees
 	mps.setDistanceThreshold (distanceThreshold); //2cm
 	mps.setRefinementComparator (refinement_compare);
 

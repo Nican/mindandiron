@@ -171,6 +171,11 @@ void SensorLog::receiveKinectImage(Robot::ImgData mat)
 	query.bindValue(":timestamp", QDateTime::currentDateTime().toMSecsSinceEpoch() , QSql::In);
 	query.bindValue(":data", buffer, QSql::In | QSql::Binary);
 	query.exec();
+
+	QList<QByteArray> msg;
+	msg += QByteArray("\x17");
+	msg += buffer;
+	mSocket->sendMessage(msg);
 }
 
 void SensorLog::teensyStatus(TeenseyStatus status)
@@ -384,12 +389,23 @@ void SensorLog::ReceiveAprilTags(QList<AprilTagDetectionItem> tags)
 
 	{
 		QDataStream stream(&buffer, QIODevice::WriteOnly);
-		stream.setVersion(QDataStream::Qt_4_8);
 		stream << tags;
 	}
 
 	QList<QByteArray> msg;
 	msg += QByteArray("\x11");
+	msg += buffer;
+	mSocket->sendMessage(msg);	
+}
+
+void SensorLog::ReceiveAprilTags2(QList<AprilTagDetectionItem> tags)
+{
+	QByteArray buffer;
+	QDataStream stream(&buffer, QIODevice::WriteOnly);
+	stream << tags;
+
+	QList<QByteArray> msg;
+	msg += QByteArray("\x16");
 	msg += buffer;
 	mSocket->sendMessage(msg);	
 }

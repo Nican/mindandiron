@@ -4,86 +4,172 @@
 using namespace Robot;
 using namespace Eigen;
 
+
+
+
 ////////////////////
-////	LeaveBaseStation
+////	Level1State
+////	1. Start at the base station
+////	2. Leave base station, and turn 180 degrees
+////	3. Travel behind the base station to find samples
 ////////////////////
 
-void LeaveBaseStation::Start()
+void Level1State::Start()
 {
-	// connect(Robot()->GetSampleDetection(), &SampleDetection::SampleDetected, this, &LeaveBaseStation::NavigateToSample);
-	connect(Robot()->GetSampleDetection(), &SampleDetection::SampleDetected, this, &LeaveBaseStation::ProportionalSteerOverSample);
-	finalApproach = 0;
-
-	//auto move = new MoveForwardState(this, 2.0);
-	//move->Start();
-
-	//connect(move, &ProgressState::Finished, this, &LeaveBaseStation::MoveToRotate);
+	leaveBase = new LeaveBaseStation(this);
+	connect(leaveBase, &ProgressState::Finished, this, &Level1State::StartToTravelBehind);
+	leaveBase->Start();
 }
 
-void LeaveBaseStation::MoveToRotate()
+void Level1State::StartToTravelBehind()
 {
-	//auto rotate = new RotateState(this, M_PI/2);
-	//rotate->Start();
+	leaveBase->deleteLater();
+	leaveBase = nullptr;
 
-	//connect(rotate, &ProgressState::Finished, this, &LeaveBaseStation::MoveToNextState);
+	mMoveInfront = new MoveTowardsGoalState(this);
+	mMoveInfront->mGoal = Vector2d(1.0, 4.0);
+	mMoveInfront->mReverse = false;
+	mMoveInfront->mAprilUpdates = true;
+	
+	connect(mMoveInfront, &ProgressState::Finished, this, &Level1State::MoveForwardBehind);
+	mMoveInfront->Start();
 }
 
-void LeaveBaseStation::MoveToNextState()
+void Level1State::MoveForwardBehind()
 {
-	//connect(Robot(), &Kratos2::AprilLocationUpdate, this, &LeaveBaseStation::FoundAprilTag);
-}
+	auto estimate = Robot()->mLocation.GetEstimate();
 
-void LeaveBaseStation::FoundAprilTag(Eigen::Affine2d newLocation)
-{
-	/*
-	Robot()->SetWheelVelocity(0.0, 0.0);
-
-	if(mMoveInfront != nullptr)
-		return;
+	mMoveInfront->deleteLater();
+	mMoveInfront = nullptr;
 
 	Rotation2Dd rotation2D(0);
-	rotation2D.fromRotationMatrix(newLocation.linear());
-	
+	rotation2D.fromRotationMatrix(estimate.linear());
+
 	mMoveInfront = new MoveTowardsGoalState(this);
-	mMoveInfront->mGoal = Vector2d(0.0, 3.0);
-	mMoveInfront->mStartPos = newLocation.translation();
+	mMoveInfront->mGoal = Vector2d(-6.0, 6.0);
+	mMoveInfront->mStartPos = estimate.translation();
 	mMoveInfront->mStartAngle = rotation2D.angle();
-	mMoveInfront->mReverse = true;
+	mMoveInfront->mReverse = false;
 	mMoveInfront->mAprilUpdates = true;
+	
+	connect(mMoveInfront, &ProgressState::Finished, this, &Level1State::StartExplore);
 	mMoveInfront->Start();
-	*/
 }
 
-void LeaveBaseStation::NavigateToSample(QList<DetectedSample> samples)
+void Level1State::StartExplore()
 {
-	if(samples.isEmpty())
-		return;
+	mMoveInfront->deleteLater();
+	mMoveInfront = nullptr;
 
-	if(mMoveInfront != nullptr)
+	mExplore = new ExploreState(this);
+	//connect(mExplore, &ProgressState::Finished, this, &Level1State::EndExplore);
+	mExplore->Start();
+
+}
+
+
+////////////////////
+////	ExploreState
+////////////////////
+
+
+void ExploreState::Start()
+{
+	std::cout << "Starting explore state\n";
+	StartNavigation();
+}
+
+void ExploreState::StartNavigation()
+{
+	if(mGoalMove != nullptr)
 	{
-		if(mMoveInfront->mStartTime.msecsTo(QDateTime::currentDateTime()) < 5000)
-			return;
-
-		//Replan!
-		mMoveInfront->SetFinished();
-		mMoveInfront->deleteLater();
-		mMoveInfront = nullptr;
+		mGoalMove->deleteLater();
+		mGoalMove = nullptr;
 	}
 
-	auto sample = samples[0];
-	mMoveInfront = new MoveTowardsGoalState(this);
-	mMoveInfront->mGoal = samples[0].location;
-	mMoveInfront->Start();
+	//Look at the current decawave value
+	//Decide if we should keep moving, or head back
+
+	if(Robot()->GetDecawave()->lastDistance > 80)
+	{
+		std::cout << "Ending explore. We are too far away from the decawave\n";
+		SetFinished();
+		return;
+	}
+
+	mGoalMove = new MoveTowardsGoalState(this);
+	mGoalMove->mGoal = Vector2d(2.0, 0.0);
+	mGoalMove->mReverse = false;
+	mGoalMove->mAprilUpdates = false;
+
+	connect(mGoalMove, &MoveTowardsGoalState::Failed, this, &ExploreState::FailedNavigation);
+	connect(mGoalMove, &ProgressState::Finished, this, &ExploreState::MoveToNextState);
+	mGoalMove->Start();
+
 }
 
-void LeaveBaseStation::ProportionalSteerOverSample(QList<DetectedSample> samples)
+void ExploreState::MoveToNextState()
 {
+	if(Robot()->GetSampleDetection()->mLastDetection.size() > 0)
+	{
+		std::cout << "Navigating to sample\n";
+		auto navigate = new NavigateToSample(this);
+		connect(navigate, &ProgressState::Finished, this, &ExploreState::StartNavigation);
+		navigate->Start();
+	}
+	else
+	{
+		std::cout << "Restarting navigation\n";
+		StartNavigation();
+	}
+}
+
+
+void ExploreState::FailedNavigation()
+{
+	auto estimate = Robot()->mLocation.GetEstimate();
+
+	mGoalMove->deleteLater();
+	mGoalMove = nullptr;
+
+	Rotation2Dd rotation2D(0);
+	rotation2D.fromRotationMatrix(estimate.linear());
+	double rotateDirection = M_PI / 2;
+
+	if((estimate.linear() * Vector2d(1.0, 0.0)).x() < 0)
+	{
+		rotateDirection *= -1;
+	}
+
+	std::cout << "Failed navigation. Rotating " << rotateDirection * 180 / M_PI << "degrees\n";
+
+	ProgressState* newState = new RotateState(this, rotateDirection);
+	connect(newState, &ProgressState::Finished, this, &ExploreState::StartNavigation);
+	newState->Start();
+}
+
+
+////////////////////
+////	NavigateToSample
+////////////////////
+
+void NavigateToSample::Start()
+{
+	connect(Robot()->GetSampleDetection(), &SampleDetection::SampleDetected, this, &NavigateToSample::ProportionalSteerOverSample);
+	finalApproach = 0;
+}
+
+void NavigateToSample::ProportionalSteerOverSample(QList<DetectedSample> samples)
+{
+	if(IsFinished())
+		return;
+
 	const double SIDE_VELOCITY_MAX_OFFSET = 0.15;
 	const double P_FORWARD_VELOCITY = 0.12;
 	const double MAX_FORWARD_VELOCITY = 0.25;
 	const double MAX_ANGLE = 36.0*M_PI/180.0;  // The camera FOV is 70 degrees
 
-	cout << "sample[0]: " << samples[0].location << "\n";
+	cout << "sample[0]: " << samples[0].location.transpose() << "\n";
 	if(samples.isEmpty())
 		return;
 
@@ -112,10 +198,36 @@ void LeaveBaseStation::ProportionalSteerOverSample(QList<DetectedSample> samples
 	}
 }
 
-void LeaveBaseStation::FinishSampleCollection()
+void NavigateToSample::FinishSampleCollection()
 {
 	Robot()->SetWheelVelocity(0.0, 0.0);
 	Robot()->GetTeensy()->SetCollector(0);
 	finalApproach = 0;
+	SetFinished();
+}
+
+
+////////////////////
+////	LeaveBaseStation
+////////////////////
+
+void LeaveBaseStation::Start()
+{
+	auto move = new MoveForwardState(this, 2.0);
+	move->Start();
+
+	connect(move, &ProgressState::Finished, this, &LeaveBaseStation::MoveToRotate);
+}
+
+void LeaveBaseStation::MoveToRotate()
+{
+	auto rotate = new RotateState(this, M_PI/2);
+	rotate->Start();
+
+	connect(rotate, &ProgressState::Finished, this, &LeaveBaseStation::MoveToNextState);
+}
+
+void LeaveBaseStation::MoveToNextState()
+{
 	SetFinished();
 }

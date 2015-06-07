@@ -43,10 +43,10 @@ RootState::RootState(QObject *parent) : BaseState(parent), mState(nullptr)
 	//QTimer::singleShot(1000, this, SLOT(MoveToNextState));
 
 	//SetState(new ReturnToStationState(this));
-	// SetState(new LeaveBaseStation(this));
 	// SetState(new ReturnRealignState(this));
 
-	SetState(new ReturnMoveBackState(this));
+	SetState(new Level1State(this));
+	//SetState(new ReturnMoveBackState(this));
 	//SetState(new MoveForwardState(this, 10));
 }
 
@@ -101,18 +101,6 @@ void ProgressState::SetFinished()
 {
 	mIsFinished = true;
 	emit Finished();
-}
-
-
-
-////////////////////
-////	Explore State
-////////////////////
-
-void ExploreState::Start()
-{
-	mGoalMove = new MoveTowardsGoalState(this);
-	mGoalMove->mGoal = Vector2d(10.0, 10.0);
 }
 
 
@@ -279,6 +267,8 @@ void MoveTowardsGoalState::UpdateTrajectory(ObstacleMap obstacleMap)
 	if(IsFinished())
 		return;
 
+	std::cout << "started update trajectory\n";
+
 	using namespace Eigen;
 	auto odometry = Robot()->GetOdometryTraveledSince(mStartTime, obstacleMap.mCreatedTime);
 	auto odometry2 = Robot()->GetOdometryTraveledSince(mStartTime);
@@ -298,7 +288,7 @@ void MoveTowardsGoalState::UpdateTrajectory(ObstacleMap obstacleMap)
 	mObstacleHistory.enqueue(historyItem);
 
 	auto currentTime = QDateTime::currentDateTime();
-	auto validRange = currentTime.addSecs(-25);
+	auto validRange = currentTime.addSecs(-5);
 
 	while(mObstacleHistory.size() > 0 && mObstacleHistory.head().mMap.mCreatedTime < validRange)
 		mObstacleHistory.dequeue();
@@ -342,8 +332,8 @@ void MoveTowardsGoalState::UpdateTrajectory(ObstacleMap obstacleMap)
 				}
 			}
 
-			//if(!hasNeighbor)
-			//	reducedObstacles.emplace_back(pt);
+			if(!hasNeighbor)
+				reducedObstacles.emplace_back(pt);
 		}
 
 		auto planner = std::make_shared<TrajectorySearch>(reducedObstacles, odometry2.mPosition, odometry2.mTheta, this->mGoal);
@@ -381,6 +371,7 @@ void MoveTowardsGoalState::FinishedTrajectory()
 	else
 	{
 		std::cout << "Found no soultion for the next path. :(\n";
+		emit Failed();
 	}
 
 	Robot()->mSensorLog->ReceivePath(points);
