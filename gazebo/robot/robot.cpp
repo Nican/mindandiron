@@ -91,7 +91,7 @@ Kratos2::Kratos2(QObject* parent) :
 	mContext = nzmqt::createDefaultContext(this);
 	mContext->start();
 
-	mApril2 = new AprilTagCamera(1064, 1064, 1920, 1080, this);
+	mApril2 = new AprilTagCamera(1064*2/3, 1064*2/3, 1280, 720, this);
 }
 
 
@@ -199,7 +199,7 @@ void Kratos2::AprilTag2Detected(QList<AprilTagDetectionItem> detections)
 	translation -= tagInfo->mOffset;
 
 	Affine2d aprilLocation;
-	aprilLocation.linear() = Rotation2Dd(M_PI - euler).toRotationMatrix(); //pi - euler = the tag is in front of the robot
+	aprilLocation.linear() = Rotation2Dd(M_PI + euler).toRotationMatrix(); //pi - euler = the tag is in front of the robot
 	aprilLocation.translation() = translation;
 
 	mLastAprilDetection = QDateTime::fromMSecsSinceEpoch(tag.time);
@@ -361,7 +361,7 @@ void Kratos2::ProccessPointCloud(DepthImgData mat)
 void Kratos2::receiveKinectImage(Robot::ImgData mat)
 {
 	QImage image(mat.data.data(), mat.width, mat.height, QImage::Format_RGB888);
-	image = image.mirrored(true, false);
+	image = image.mirrored(true, false).scaled(1280, 720, Qt::KeepAspectRatio);
 
 	mApril2->ReadFrame(image);
 }
@@ -430,7 +430,7 @@ Odometry Kratos2::GetOdometryTraveledSince(QDateTime startTime, QDateTime endTim
 		lastRight = right;
 
 		if(std::abs(diffLeft) > 0.1 || std::abs(diffRight) > 0.1){
-			std::cout << "\t Skipping large jump: " << diffLeft << "\t" << diffRight << "\n";
+			//std::cout << "\t Skipping large jump: " << diffLeft << "\t" << diffRight << "\n";
 			continue;
 		}
 

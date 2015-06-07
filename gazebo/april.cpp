@@ -33,8 +33,8 @@ const QVector<AprilOffset> &GetOffsets()
 		AprilOffset(1, 0.733, {1.1, 0.5}, -6.4 / 180 * M_PI),
 
 		//For actual robot
-		AprilOffset(6, 0.733, {1.1, -0.5}, 8.3 / 180 * M_PI), //0.733
-		AprilOffset(29, 0.733, {1.1, -0.5}, 8.3 / 180 * M_PI)
+		AprilOffset(6, 0.733, {1.1, -0.5}, 8.3 / 180 * M_PI) //0.733
+		,AprilOffset(29, 0.733, {1.1, 0.5}, -8.3 / 180 * M_PI)
 	});
 
 	return offsets;

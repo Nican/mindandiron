@@ -45,8 +45,8 @@ RootState::RootState(QObject *parent) : BaseState(parent), mState(nullptr)
 	//SetState(new ReturnToStationState(this));
 	// SetState(new ReturnRealignState(this));
 
-	SetState(new Level1State(this));
-	//SetState(new ReturnMoveBackState(this));
+	// SetState(new Level1State(this));
+	SetState(new ReturnMoveBackState(this));
 	//SetState(new MoveForwardState(this, 10));
 }
 
@@ -124,10 +124,15 @@ void MoveTowardsGoalState::Start()
 	mStartTime = QDateTime::currentDateTime();
 
 	connect(Robot()->GetTeensy(), &Teensy::statusUpdate, this, &MoveTowardsGoalState::TeensyStatus);
-	connect(Robot()->mPlanner, SIGNAL(ObstacleMapUpdate(ObstacleMap)), this, SLOT(UpdateTrajectory(ObstacleMap)));
+	//connect(Robot()->mPlanner, SIGNAL(ObstacleMapUpdate(ObstacleMap)), this, SLOT(UpdateTrajectory(ObstacleMap)));
 	connect(Robot(), &Kratos2::AprilLocationUpdate, this, &MoveTowardsGoalState::FoundAprilTag);
 
 	connect(&mPathFutureWatcher, SIGNAL(finished()), this, SLOT(FinishedTrajectory()));
+
+	ObstacleMap fake;
+	fake.mCreatedTime = QDateTime::currentDateTime();
+
+	UpdateTrajectory(fake);
 }
 
 void MoveTowardsGoalState::FoundAprilTag(Eigen::Affine2d newLocation)
@@ -143,7 +148,7 @@ void MoveTowardsGoalState::TeensyStatus(TeenseyStatus status)
 
 	if(mLastResult == nullptr || mLastResultPoints.size() == 0)
 	{
-		std::cout << "Do not have results and I do not know where I am going. " << mLastResultPoints.size() << "\n";
+		//std::cout << "Do not have results and I do not know where I am going. " << mLastResultPoints.size() << "\n";
 		//Robot()->SetWheelVelocity(0.2, 0.15);
 		return;
 	}

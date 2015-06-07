@@ -15,20 +15,20 @@ void ReturnToStationState::Start()
 	//Get the -30 seconds of odometry
 	auto odometry = Robot()->GetOdometryTraveledSince(mStartTime.addSecs(-10));
 
-	if(Robot()->GetDecawave()->lastDistance < 10.0 || true)
-	{
-		SetState(new ReturnLocateAprilState(this));
-	} 
-	else if(odometry.mPosition.norm() < 1.0)
-	{
-		//If we moved less than 1 meter, we need to re-align
+	// if(Robot()->GetDecawave()->lastDistance < 10.0)
+	// {
+	// 	SetState(new ReturnLocateAprilState(this));
+	// } 
+	// else if(odometry.mPosition.norm() < 1.0)
+	// {
+	// 	//If we moved less than 1 meter, we need to re-align
 		SetState(new ReturnRealignState(this));
-	}
-	else
-	{
-		//TODO: Rotate to the desired orientation
-		SetState(new ReturnRealignState(this));
-	}
+	// }
+	// else
+	// {
+	// 	//TODO: Rotate to the desired orientation
+	// 	SetState(new ReturnRealignState(this));
+	// }
 }
 
 
@@ -129,14 +129,13 @@ void ReturnLocateAprilState::Start()
 	
 	mRotate = new RotateState(this, M_PI);
 	connect(mRotate, &ProgressState::Finished, this, &ReturnLocateAprilState::FinishRotate);
-	// mRotate->Start();
+	mRotate->Start();
 
 	mFinishedRotatingTime = QDateTime::currentDateTime();
 
 	mStartTime = QDateTime::currentDateTime();
 
-	//Can we see the april tag?
-	connect(Robot(), &Kratos2::AprilLocationUpdate, this, &ReturnLocateAprilState::FoundAprilTag);
+	
 }
 
 void ReturnLocateAprilState::TeensyStatus(TeenseyStatus status)
@@ -157,6 +156,8 @@ void ReturnLocateAprilState::FinishRotate()
 	//Robot()->SetWheelVelocity(0.0, 0.0);
 
 	mFinishedRotatingTime = QDateTime::currentDateTime();
+	//Can we see the april tag?
+	connect(Robot(), &Kratos2::AprilLocationUpdate, this, &ReturnLocateAprilState::FoundAprilTag);
 }
 
 void ReturnLocateAprilState::FoundAprilTag(Eigen::Affine2d newLocation)
@@ -240,7 +241,8 @@ void ReturnMoveBackState::DecawaveUpdate(double value)
 
 	if(lastReadingId == mLastReadings.size() - 1)
 	{
-		UpdateDirection(GetAverageDecawaveVelocity(), 1, 0);
+		// UpdateDirection(GetAverageDecawaveVelocity(), 1, 0);
+		UpdateDirectionCircular(GetAverageDecawaveVelocity());
 		mLastReadings[0] = mLastReadings[lastReadingId];
 		lastReadingId = 1;
 	}
@@ -250,7 +252,7 @@ void ReturnMoveBackState::DecawaveUpdate(double value)
 	}
 
 	// TODO: CHANGE TO SOMETHING LARGER - THIS IS FOR TESTING
-	if(value < 5.0){
+	if(value < 10.0){
 		Robot()->SetWheelVelocity(0.0, 0.0);
 		SetFinished();
 		return;
@@ -334,29 +336,52 @@ void ReturnMoveBackState::UpdateDirection(double averageVelocity, int in, int ou
 
 void ReturnMoveBackState::UpdateDirectionCircular(double averageVelocity)
 {
+	static int guessIsLeftIn = 0;  // Guesses that "in" is to the left of the robot
 	static double lastVelocity = 0.0;  // Stores last average velocity for comparison
 	const double MAX_SIDE_VELOCITY = 0.075;
 	const double MAX_FORWARD_VELOCITY = 0.275;
-	// cout << "Average m/s value is: " << averageVelocity << "\n";
-	// cout << "Last m/s value is: " << lastVelocity << "\n";
+	cout << "Average m/s value is: " << averageVelocity << "\n";
+	cout << "Last m/s value is: " << lastVelocity << "\n";
 
 	// If we have to, we could make sideways motion move more slowly to not get off course
 	double forwardVelocity = MAX_FORWARD_VELOCITY;
 
-	if (abs(averageVelocity) <= (0.05 * MAX_FORWARD_VELOCITY))
+
+	const double guessVelocityCutoff = 0.05;
+	if ((returnType == ReturnMoveEnum::LEFT  && (averageVelocity < (lastVelocity - guessVelocityCutoff))) ||
+	    (returnType == ReturnMoveEnum::RIGHT && (averageVelocity > (lastVelocity + guessVelocityCutoff))))
 	{
-		std::cout << "\tDoing well, moving FORWARD\n";
+		if (guessIsLeftIn < 3)
+			guessIsLeftIn++;
+	}
+	if ((returnType == ReturnMoveEnum::LEFT  && (averageVelocity > (lastVelocity - guessVelocityCutoff))) ||
+	    (returnType == ReturnMoveEnum::RIGHT && (averageVelocity < (lastVelocity + guessVelocityCutoff))))
+	{
+		if (guessIsLeftIn > -3)
+			guessIsLeftIn--;
+	}
+	cout << "guessIsLeftIn: " << guessIsLeftIn << "\n";
+
+
+	if (abs(averageVelocity) <= (0.15 * MAX_FORWARD_VELOCITY))
+	{
+		std::cout << "\tDoing well, moving FORWARD: " << forwardVelocity << " m/s\n";
 		Robot()->SetWheelVelocity(forwardVelocity, forwardVelocity);
 		lastVelocity = averageVelocity;  // For comparison to next computed velocity
 		return;
 	}
 
+
+	cout << "(averageVelocity < 0 && lastVelocity < 0): " << (averageVelocity < 0 && lastVelocity < 0) << "\n";
+	cout << "(averageVelocity > 0 && lastVelocity > 0): " << (averageVelocity > 0 && lastVelocity > 0) << "\n";
+	cout << "abs(averageVelocity) < abs(lastVelocity): " << (abs(averageVelocity) < abs(lastVelocity)) << "\n";
 	if (((averageVelocity < 0 && lastVelocity < 0) ||
 		 (averageVelocity > 0 && lastVelocity > 0)) &&
 		abs(averageVelocity) < abs(lastVelocity))
 	{
 		cout << "State improved from last run, continuing on without DIRECTION change\n";
-	} else if (returnType == ReturnMoveEnum::RIGHT) {
+	} else if ((averageVelocity < 0 && guessIsLeftIn >= 0) ||
+		   	   (averageVelocity > 0 && guessIsLeftIn < 0)) {
 		std::cout << "\tMoving LEFT\n";
 		returnType = ReturnMoveEnum::LEFT;
 	} else {
@@ -364,9 +389,9 @@ void ReturnMoveBackState::UpdateDirectionCircular(double averageVelocity)
 		returnType = ReturnMoveEnum::RIGHT;
 	}
 
-	double proportionalReaction = averageVelocity / MAX_FORWARD_VELOCITY * MAX_SIDE_VELOCITY;
-	// cout << "forwardVelocity: " << forwardVelocity << "\n";
-	// cout << "proportionalReaction: " << proportionalReaction << "\n";
+	double proportionalReaction = abs(averageVelocity) / MAX_FORWARD_VELOCITY * MAX_SIDE_VELOCITY;
+	cout << "forwardVelocity: " << forwardVelocity << "\n";
+	cout << "proportionalReaction: " << proportionalReaction << "\n";
 	CommandVelocity(forwardVelocity, proportionalReaction);
 	lastVelocity = averageVelocity;  // For comparison to next computed velocity
 }
@@ -466,10 +491,13 @@ void ReturnMoveBackState::Reset()
 
 void ReturnRealignState::Start()
 {
-	connect(Robot()->mPlanner, SIGNAL(ObstacleMapUpdate(ObstacleMap)), this, SLOT(ReceiveObstcles(ObstacleMap)));
+	//connect(Robot()->mPlanner, SIGNAL(ObstacleMapUpdate(ObstacleMap)), this, SLOT(ReceiveObstcles(ObstacleMap)));
 	connect(&mPathFutureWatcher, SIGNAL(finished()), this, SLOT(FinishedTrajectory()));
+	FinishedTrajectory();
 
 	Robot()->SetWheelVelocity(0.0, 0.0);
+
+
 }
 
 void ReturnRealignState::ReceiveObstcles(ObstacleMap obstacleMap)
@@ -552,5 +580,6 @@ void ReturnRealignState::Realign()
 
 void ReturnRealignState::FinishRotate()
 {
-	connect(Robot()->mPlanner, SIGNAL(ObstacleMapUpdate(ObstacleMap)), this, SLOT(ReceiveObstcles(ObstacleMap)));
+	//connect(Robot()->mPlanner, SIGNAL(ObstacleMapUpdate(ObstacleMap)), this, SLOT(ReceiveObstcles(ObstacleMap)));
+	FinishedTrajectory();
 }

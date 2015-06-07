@@ -53,7 +53,7 @@ void Level1State::MoveForwardBehind()
 	mMoveInfront->mAprilUpdates = true;
 	
 	connect(mMoveInfront, &ProgressState::Finished, this, &Level1State::StartExplore);
-	mMoveInfront->Start();
+	//mMoveInfront->Start();
 }
 
 void Level1State::StartExplore()

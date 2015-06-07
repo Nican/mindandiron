@@ -64,7 +64,8 @@ void KratosSampleDetection::messageReceived(const QList<QByteArray>& messages)
 //////////////////////////
 
 KratosAprilTag::KratosAprilTag(QObject* parent) : 
-	AprilTagCamera(1315, 1315, 1920, 1080, parent)
+	// AprilTagCamera(1315, 1315, 1920, 1080, parent)
+AprilTagCamera(877, 877, 1280, 720, parent)
 {
 	mCamera = new KratosCamera("usb-046d_HD_Pro_Webcam_C920_2245793F-video-index0", mPx, mPy, this);
 	// mCamera = new KratosCamera("usb-046d_HD_Pro_Webcam_C920_2245793F-video-index0", 1280, 720, this);
@@ -151,8 +152,8 @@ bool KratosKinect::onNewFrame(libfreenect2::Frame::Type type, libfreenect2::Fram
 
 	if(type == libfreenect2::Frame::Color)
 	{
-		if(colorRequested == false)
-			return false;
+		//if(colorRequested == false)
+		//	return false;
 
 		colorRequested = false;
 
