@@ -39,11 +39,11 @@ void ReturnToStationState::MoveToNextState()
 	if(qobject_cast<ReturnRealignState*>(mState) != nullptr)
 	{
 		//Move towards base station
-		SetState(new ReturnMoveBackState(this));
+		SetState(new DecawaveMoveRadialState(1, this));
 		return;
 	}
 
-	if(qobject_cast<ReturnMoveBackState*>(mState) != nullptr)
+	if(qobject_cast<DecawaveMoveRadialState*>(mState) != nullptr)
 	{
 		//Locate april tag
 		SetState(new ReturnLocateAprilState(this));
@@ -220,29 +220,26 @@ void ReturnLocateAprilState::FinishedRealignRotation()
 // }
 
 ////////////////////
-////	ReturnMoveBackState
+////	DecawaveMoveRadialState
 ////	Move forward while attempting to minimize the distance between odometry and decawave distance traveled
 ////////////////////
 
-void ReturnMoveBackState::Start()
+void DecawaveMoveRadialState::Start()
 {
 	mLastPerformance = 0.0;
 	returnType = ReturnMoveEnum::FORWARD;
 	Robot()->SetWheelVelocity(0.2, 0.2);
 
-	Reset();
-	connect(Robot()->GetTeensy(), &Teensy::statusUpdate, this, &ReturnMoveBackState::TeensyStatus);
-	connect(Robot()->GetDecawave(), &Decawave::statusUpdate, this, &ReturnMoveBackState::DecawaveUpdate);
+	connect(Robot()->GetDecawave(), &Decawave::statusUpdate, this, &DecawaveMoveRadialState::DecawaveUpdate);
 }
 
-void ReturnMoveBackState::DecawaveUpdate(double value)
+void DecawaveMoveRadialState::DecawaveUpdate(double value)
 {
 	mLastReadings[lastReadingId] = value;
 
 	if(lastReadingId == mLastReadings.size() - 1)
 	{
-		UpdateDirection(GetAverageDecawaveVelocity(), 1, 0);
-		// UpdateDirectionCircular(GetAverageDecawaveVelocity());
+		UpdateDirection(GetAverageDecawaveVelocity(), in);
 		mLastReadings[0] = mLastReadings[lastReadingId];
 		lastReadingId = 1;
 	}
@@ -251,16 +248,15 @@ void ReturnMoveBackState::DecawaveUpdate(double value)
 		lastReadingId++;
 	}
 
-	// TODO: CHANGE TO SOMETHING LARGER - THIS IS FOR TESTING
-	if(value < 10.0){
-		Robot()->SetWheelVelocity(0.0, 0.0);
-		SetFinished();
-		return;
-	}
+	// if(value < 10.0){
+	// 	Robot()->SetWheelVelocity(0.0, 0.0);
+	// 	SetFinished();
+	// 	return;
+	// }
 }
 
 // Should return average velocity in m/s
-double ReturnMoveBackState::GetAverageDecawaveVelocity()
+double DecawaveMoveRadialState::GetAverageDecawaveVelocity()
 {
 	double averageValue = 0.0;
 	for(std::size_t i = 1; i < mLastReadings.size(); i++)
@@ -270,133 +266,62 @@ double ReturnMoveBackState::GetAverageDecawaveVelocity()
 		averageValue += diff / 0.8;  // THIS IS MORE ACCURATE THAN MEASURING TIME DIFF
 									 // There's some weird data buffering going on
 	}
-
-	// cout << "Average m/s value is: " << averageValue / (double) mLastReadings.size() << "\n";
 	return averageValue / (double) mLastReadings.size();
 }
 
-//////////////////////////////////////////////////////////////////////////
-// Going In OR Going Out
-//////////////////////////////////////////////////////////////////////////
-void ReturnMoveBackState::UpdateDirection(double averageVelocity, int in, int out)
+void DecawaveMoveRadialState::UpdateDirection(double averageVelocity, int in)
 {
-	if (!in && !out)  // Circle not implemented yet
-		return;
-
 	// Note to Henrique: if any velocities are positive/negative when they
-	// shouldn't be, change state to realign!
+	// shouldn't be, change state to realign?
 
 	static double lastVelocity = 0.0;  // Stores last average velocity for comparison
 	const double MAX_SIDE_VELOCITY = 0.075;
 	const double MAX_FORWARD_VELOCITY = 0.57;
 	static double maxSeenVelocity = MAX_FORWARD_VELOCITY;
 
-	if ((out && averageVelocity < maxSeenVelocity) ||
+	if ((!in && averageVelocity < maxSeenVelocity) ||
 	    (in  && averageVelocity > maxSeenVelocity))
 	{
 			maxSeenVelocity = averageVelocity;
 	}
-	cout << "Average m/s value is: " << averageVelocity << "\n";
-	cout << "Last m/s value is: " << lastVelocity << "\n";
+	std::cout << "Average m/s value is: " << averageVelocity << "\n";
+	std::cout << "Last m/s value is: " << lastVelocity << "\n";
 
-	// If we have to, we could make sideways motion move more slowly to not get off course
 	double forwardVelocity = MAX_FORWARD_VELOCITY;
 
 	// The "get average velocity" function overestimates a little, or the
 	// Teensy overdoes the velocity. Hard to know. Test whether the multiplier
 	// (currently 1.0) works on grass, it's good on concrete
-	if ((out && averageVelocity <= (-1.0 * MAX_FORWARD_VELOCITY)) ||
+	if ((!in && averageVelocity <= (-1.0 * MAX_FORWARD_VELOCITY)) ||
 		(in  && averageVelocity >= ( 1.0 * MAX_FORWARD_VELOCITY)))
 	{
-		std::cout << "\tDoing well, moving FORWARD\n";
+		std::cout << "Doing well, moving FORWARD\n";
 		Robot()->SetWheelVelocity(forwardVelocity, forwardVelocity);
 		lastVelocity = averageVelocity;  // For comparison to next computed velocity
 		return;
 	}
 
-	if ((out && averageVelocity <= lastVelocity) ||
+	if ((!in && averageVelocity <= lastVelocity) ||
 		(in  && averageVelocity >= lastVelocity))
 	{
-		cout << "State improved from last run, continuing on without DIRECTION change\n";
+		std::cout << "State improved from last run, continuing on without DIRECTION change\n";
 	} else if (returnType == ReturnMoveEnum::RIGHT) {
-		std::cout << "\tMoving LEFT\n";
+		std::cout << "Moving LEFT\n";
 		returnType = ReturnMoveEnum::LEFT;
 	} else {
-		std::cout << "\tMoving RIGHT\n";
+		std::cout << "Moving RIGHT\n";
 		returnType = ReturnMoveEnum::RIGHT;
 	}
 
 	double proportionalReaction = (1.15 - averageVelocity / maxSeenVelocity) * MAX_SIDE_VELOCITY;
-	// cout << "forwardVelocity: " << forwardVelocity << "\n";
-	// cout << "proportionalReaction: " << proportionalReaction << "\n";
+	// std::cout << "forwardVelocity: " << forwardVelocity << "\n";
+	// std::cout << "proportionalReaction: " << proportionalReaction << "\n";
 	CommandVelocity(forwardVelocity, proportionalReaction);
 	lastVelocity = averageVelocity;  // For comparison to next computed velocity
 }
 
 
-void ReturnMoveBackState::UpdateDirectionCircular(double averageVelocity)
-{
-	static int guessIsLeftIn = 0;  // Guesses that "in" is to the left of the robot
-	static double lastVelocity = 0.0;  // Stores last average velocity for comparison
-	const double MAX_SIDE_VELOCITY = 0.075;
-	const double MAX_FORWARD_VELOCITY = 0.275;
-
-	// If we have to, we could make sideways motion move more slowly to not get off course
-	double forwardVelocity = MAX_FORWARD_VELOCITY;
-
-
-	const double guessVelocityCutoff = 0.2 * MAX_FORWARD_VELOCITY;
-	if ((returnType == ReturnMoveEnum::LEFT  && (averageVelocity > (lastVelocity + guessVelocityCutoff))) ||
-	    (returnType == ReturnMoveEnum::RIGHT && (averageVelocity < (lastVelocity - guessVelocityCutoff))))
-	{
-		cout << "Making guess higher\n";
-		if (guessIsLeftIn < 2)
-			guessIsLeftIn++;
-	}
-	if ((returnType == ReturnMoveEnum::LEFT  && (averageVelocity < (lastVelocity - guessVelocityCutoff))) ||
-	    (returnType == ReturnMoveEnum::RIGHT && (averageVelocity > (lastVelocity + guessVelocityCutoff))))
-	{
-		cout << "Making guess lower\n";
-		if (guessIsLeftIn > -2)
-			guessIsLeftIn--;
-	}
-	cout << "returnType: " << (int) returnType << "\n";
-	cout << "Average m/s value is: " << averageVelocity << "\n";
-	cout << "Last m/s value is: " << lastVelocity << "\n";
-	cout << "guessIsLeftIn: " << guessIsLeftIn << "\n";
-
-
-	if (abs(averageVelocity) <= (0.15 * MAX_FORWARD_VELOCITY))
-	{
-		std::cout << "\tDoing well, moving FORWARD: " << forwardVelocity << " m/s\n";
-		Robot()->SetWheelVelocity(forwardVelocity, forwardVelocity);
-		lastVelocity = averageVelocity;  // For comparison to next computed velocity
-		return;
-	}
-
-
-	if (((averageVelocity < 0 && lastVelocity < 0) ||
-		 (averageVelocity > 0 && lastVelocity > 0)) &&
-		abs(averageVelocity) < abs(lastVelocity))
-	{
-		cout << "State improved from last run, continuing on without DIRECTION change\n";
-	} else if ((averageVelocity < 0 && guessIsLeftIn >= 0) ||
-		   	   (averageVelocity > 0 && guessIsLeftIn < 0)) {
-		std::cout << "\tMoving LEFT\n";
-		returnType = ReturnMoveEnum::LEFT;
-	} else {
-		std::cout << "\tMoving RIGHT\n";
-		returnType = ReturnMoveEnum::RIGHT;
-	}
-
-	double proportionalReaction = abs(averageVelocity) / MAX_FORWARD_VELOCITY * MAX_SIDE_VELOCITY;
-	// cout << "forwardVelocity: " << forwardVelocity << "\n";
-	// cout << "proportionalReaction: " << proportionalReaction << "\n";
-	CommandVelocity(forwardVelocity, proportionalReaction);
-	lastVelocity = averageVelocity;  // For comparison to next computed velocity
-}
-
-void ReturnMoveBackState::CommandVelocity(double forwardVelocity, double proportionalReaction)
+void DecawaveMoveRadialState::CommandVelocity(double forwardVelocity, double proportionalReaction)
 {
 	switch(returnType) {
 		case ReturnMoveEnum::FORWARD:
@@ -413,73 +338,64 @@ void ReturnMoveBackState::CommandVelocity(double forwardVelocity, double proport
 	}
 }
 
-void ReturnMoveBackState::TeensyStatus(TeenseyStatus status)
+
+void DecawaveMoveTangentialState::UpdateDirection(double averageVelocity, int in)
 {
-	/*
-	if(mStartTime.msecsTo(QDateTime::currentDateTime()) < 4000)
-		return;
+	static int guessIsLeftIn = 0;  // Guesses that "in" is to the left of the robot
+	static double lastVelocity = 0.0;  // Stores last average velocity for comparison
+	const double MAX_SIDE_VELOCITY = 0.075;
+	const double MAX_FORWARD_VELOCITY = 0.35;
 
-	auto odometry = Robot()->GetOdometryTraveledSince(mStartTime);
-	auto newDecawave = Robot()->GetDecawave()->lastDistance;
+	double forwardVelocity = MAX_FORWARD_VELOCITY;
 
-	double decawaveDiff = startDecawaveValue - newDecawave;
-	double diff = std::abs(decawaveDiff - odometry.mDistanceTraveled) / odometry.mDistanceTraveled;
-
-	if(decawaveDiff > 0.0)
+	const double guessVelocityCutoff = 0.2 * MAX_FORWARD_VELOCITY;
+	if ((returnType == ReturnMoveEnum::LEFT  && (averageVelocity > (lastVelocity + guessVelocityCutoff))) ||
+	    (returnType == ReturnMoveEnum::RIGHT && (averageVelocity < (lastVelocity - guessVelocityCutoff))))
 	{
-		//TODO: WTF: Wa are getting farther away?
+		// std::cout << "Making guess higher\n";
+		if (guessIsLeftIn < 2)
+			guessIsLeftIn++;
 	}
-
-	std::cout << "Returning to base station: \n";
-	std::cout << "\tDecawave diff: " << decawaveDiff << "\t" << " Odometry: " << odometry << "\n";
-	std::cout << "\tTotal diff: " << diff << "\n";
-
-	//TODO: Remove 0.1 constant, and add a value that is relative to odometry.mDistanceTraveled
-	if(std::abs(diff) < 0.1)
+	if ((returnType == ReturnMoveEnum::LEFT  && (averageVelocity < (lastVelocity - guessVelocityCutoff))) ||
+	    (returnType == ReturnMoveEnum::RIGHT && (averageVelocity > (lastVelocity + guessVelocityCutoff))))
 	{
-		//We are going in the right direction
-		Robot()->SetWheelVelocity(0.3, 0.3);
-		returnType = ReturnMoveEnum::FORWARD;
-		std::cout << "\tMoving forward\n";
+		// std::cout << "Making guess lower\n";
+		if (guessIsLeftIn > -2)
+			guessIsLeftIn--;
 	}
-	else
+	// std::cout << "returnType: " << (int) returnType << "\n";
+	// std::cout << "Average m/s value is: " << averageVelocity << "\n";
+	// std::cout << "Last m/s value is: " << lastVelocity << "\n";
+	std::cout << "guessIsLeftIn: " << guessIsLeftIn << "\n";
+
+
+	if (abs(averageVelocity) <= (0.15 * MAX_FORWARD_VELOCITY))
 	{
-		if(mLastPerformance != 0.0 && mLastPerformance < diff)
-		{
-			//We did not have an improvement since the last run
-			switch(returnType) {
-				case ReturnMoveEnum::FORWARD:
-				case ReturnMoveEnum::RIGHT: 
-					std::cout << "\tMoving left\n";
-					Robot()->SetWheelVelocity(0.2, 0.3);
-					returnType = ReturnMoveEnum::LEFT;
-					break;
-				case ReturnMoveEnum::LEFT: 
-					std::cout << "\tMoving right\n";
-					Robot()->SetWheelVelocity(0.3, 0.2);
-					returnType = ReturnMoveEnum::RIGHT;
-					break;
-			}		
-		}
-	}
-
-	mLastPerformance = diff;
-
-	Reset();
-
-	if(newDecawave < 10.0){
-		Robot()->SetWheelVelocity(0.0, 0.0);
-		SetFinished();
+		std::cout << "\tDoing well, moving FORWARD: " << forwardVelocity << " m/s\n";
+		Robot()->SetWheelVelocity(forwardVelocity, forwardVelocity);
+		lastVelocity = averageVelocity;  // For comparison to next computed velocity
 		return;
 	}
-	*/
-}
 
-void ReturnMoveBackState::Reset()
-{
-	mStartTime = QDateTime::currentDateTime();
-	//startDecawaveValue = Robot()->GetDecawave()->lastDistance;
-	//std::cout << "Reseting the moving back (" << startDecawaveValue << ")\n";
+	if (((averageVelocity < 0 && lastVelocity < 0) ||
+		 (averageVelocity > 0 && lastVelocity > 0)) &&
+		abs(averageVelocity) < abs(lastVelocity))
+	{
+		std::cout << "State improved from last run, continuing on without DIRECTION change\n";
+	} else if ((averageVelocity < 0 && guessIsLeftIn >= 0) ||
+		   	   (averageVelocity > 0 && guessIsLeftIn < 0)) {
+		std::cout << "\tMoving LEFT\n";
+		returnType = ReturnMoveEnum::LEFT;
+	} else {
+		std::cout << "\tMoving RIGHT\n";
+		returnType = ReturnMoveEnum::RIGHT;
+	}
+
+	double proportionalReaction = abs(averageVelocity) / MAX_FORWARD_VELOCITY * MAX_SIDE_VELOCITY;
+	// std::cout << "forwardVelocity: " << forwardVelocity << "\n";
+	// std::cout << "proportionalReaction: " << proportionalReaction << "\n";
+	CommandVelocity(forwardVelocity, proportionalReaction);
+	lastVelocity = averageVelocity;  // For comparison to next computed velocity
 }
 
 

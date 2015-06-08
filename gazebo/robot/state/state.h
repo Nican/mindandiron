@@ -207,33 +207,43 @@ enum class ReturnMoveEnum
 	RIGHT
 };
 
-class ReturnMoveBackState : public ProgressState
+class DecawaveMoveRadialState : public ProgressState
 {
 	Q_OBJECT
 public:
-
 	ReturnMoveEnum returnType;
 	QDateTime mStartTime;
 	double startDecawaveValue;
 	double mLastPerformance;
 
+	int in;  // Should the robot travel in?
 	std::array<double, 4> mLastReadings;
 	std::size_t lastReadingId;
 
-	ReturnMoveBackState(QObject *parent) : ProgressState(parent), lastReadingId(0)
+	DecawaveMoveRadialState(int goIn, QObject *parent) : ProgressState(parent), lastReadingId(0)
 	{
+		in = goIn;
 	}
 
 	virtual void Start() override;
-	void Reset();
 	double GetAverageDecawaveVelocity();
-	void UpdateDirectionCircular(double averageVelocity);
-	void UpdateDirection(double averageVelocity, int in, int out);
+	virtual void UpdateDirection(double averageVelocity, int in);
 	void CommandVelocity(double forwardVelocity, double proportionalReaction);
 
 public slots:
-	void TeensyStatus(TeenseyStatus status);
 	void DecawaveUpdate(double value);
+};
+
+
+class DecawaveMoveTangentialState : public DecawaveMoveRadialState
+{
+	Q_OBJECT
+public:
+	DecawaveMoveTangentialState(QObject *parent) : DecawaveMoveRadialState(0, parent)
+	{
+	}
+	virtual void UpdateDirection(double averageVelocity, int in) override;
+public slots:
 };
 
 
