@@ -116,7 +116,7 @@ void loop() {
         } else {
           servoLeft.write(getLeftAutoWheelCmd());
           servoRight.write(getRightAutoWheelCmd());
-          // commandSorter(servoSorter, sorterAutoSlotCmd);  // Uncomment when wired
+          commandSorter(servoSorter, sorterAutoSlotCmd);  // Uncomment when wired
           if (collectorAutoCmd) {
               commandCollectorSimple(servoCollector, SERVO_OUTPUT_LARGE_DELTA);
           } else {

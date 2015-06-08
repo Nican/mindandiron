@@ -33,7 +33,7 @@ def main():
         message = ser.readline()
         print(message)
         LPOS, RPOS = checkForJumps(message, LPOS, RPOS)
-        if counter % cycleCounts == 0 and counter < 75000:
+        if counter % cycleCounts == 0 and counter < 50000:
             print('WRITING DATA TO TEENSY')
             # Format
             # \tLVEL\tRVEL\tLPOS\tRPOS\tVEL?\tCOLL\tSORT\tEND

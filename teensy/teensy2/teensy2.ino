@@ -12,11 +12,11 @@
 
 #define SORTER_SWITCH_1_PIN A9
 #define SORTER_1_CUTOFF_HIGH 30  // For Schmitt trigger
-#define SORTER_1_CUTOFF_LOW 4
+#define SORTER_1_CUTOFF_LOW 7
 #define SORTER_1_OUT_PIN 20
 #define SORTER_SWITCH_2_PIN A8
 #define SORTER_2_CUTOFF_HIGH 30  // For Schmitt trigger
-#define SORTER_2_CUTOFF_LOW 4
+#define SORTER_2_CUTOFF_LOW 7
 #define SORTER_2_OUT_PIN 21
 
 
@@ -81,13 +81,13 @@ void loop() {
     digitalWrite(SORTER_1_OUT_PIN, sorter1CMDValue);
     digitalWrite(SORTER_2_OUT_PIN, sorter2CMDValue);
 
-//    Serial.print("Sorter 1: "); Serial.print(sorterSwitch1Value);
-//        Serial.print("\t"); Serial.print(sorter1CMDValue);
-//    Serial.print("\tSorter 2: "); Serial.print(sorterSwitch2Value);
-//        Serial.print("\t"); Serial.println(sorter2CMDValue);
+    Serial.print("Sorter 1: "); Serial.print(sorterSwitch1Value);
+        Serial.print("\t"); Serial.print(sorter1CMDValue);
+    Serial.print("\tSorter 2: "); Serial.print(sorterSwitch2Value);
+        Serial.print("\t"); Serial.println(sorter2CMDValue);
 
-    printDataToComputer(Herkulex.getAngle(CAM_SERVO_ID),
-                        getCurrent(), getPaused());
+//    printDataToComputer(Herkulex.getAngle(CAM_SERVO_ID),
+//                        getCurrent(), getPaused());
     delay(5);
 
     // Periodically reboots the servo, every three minutes (roughly)

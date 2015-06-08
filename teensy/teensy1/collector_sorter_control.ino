@@ -1,7 +1,7 @@
 // Put professional header here
 // Include some type of copyright
 
-
+int commandedSlot = 0;
 volatile int sorter1State = LOW;
 volatile int lastSorter1State = LOW;
 volatile int sorter2State = LOW;
@@ -48,14 +48,14 @@ void commandSorter(Servo servo, int slot) {
 //        speedAdd = (i - 200) / iScalar;
 //    }
     speedAdd = i / iScalar;
-    Serial.print("i: "); Serial.print(i); Serial.print("\tSlot CMD: "); Serial.print(slot); Serial.print("\tcurrentSlot: "); Serial.println(getCurrentSlot());
+//    Serial.print("i: "); Serial.print(i); Serial.print("\tSlot CMD: "); Serial.print(slot); Serial.print("\tcurrentSlot: "); Serial.println(getCurrentSlot());
 
-    if (i % 5 == 0) {
+    if (i % 20 == 0) {
         if (slot == currentSlot) {
             servo.write(MIN_SERVO_SPEED);
             i = 0;
         } else if (slot > currentSlot) {
-            servo.write(180);
+            servo.write(140);
 //            servo.write(MIN_SERVO_SPEED + SORTER_SPEED);
 //            if ((MIN_SERVO_SPEED + SORTER_SPEED + speedAdd) < 180) {
 //                servo.write(MIN_SERVO_SPEED + SORTER_SPEED + speedAdd);
