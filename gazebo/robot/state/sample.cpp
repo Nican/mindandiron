@@ -156,11 +156,23 @@ void ExploreState::FailedNavigation()
 void NavigateToSample::Start()
 {
 	connect(Robot()->GetSampleDetection(), &SampleDetection::SampleDetected, this, &NavigateToSample::ProportionalSteerOverSample);
+	connect(Robot()->GetTeensy(), &Teensy::statusUpdate, this, &NavigateToSample::TeensyStatus);
 	finalApproach = 0;
+	mLastSampleSeen = QDateTime::currentDateTime();
+}
+
+void NavigateToSample::TeensyStatus(TeenseyStatus status)
+{
+	if (!finalApproach) {
+		if(std::abs(this->mLastSampleSeen.msecsTo(QDateTime::currentDateTime())) > 4000)
+			FinishSampleCollection();
+	}
 }
 
 void NavigateToSample::ProportionalSteerOverSample(QList<DetectedSample> samples)
 {
+	mLastSampleSeen = QDateTime::currentDateTime();
+
 	if(IsFinished() || finalApproach)
 		return;
 

@@ -139,6 +139,7 @@ class NavigateToSample : public ProgressState
 	Q_OBJECT
 public:
 	int finalApproach;
+	QDateTime mLastSampleSeen;
 
 	NavigateToSample(QObject *parent) : ProgressState(parent)
 	{
@@ -147,6 +148,7 @@ public:
 	virtual void Start() override;
 
 public slots:
+	void TeensyStatus(TeenseyStatus status);
 	void ProportionalSteerOverSample(QList<DetectedSample> samples);
 	void MomentarilyHaltRobot();
 	void BackUpToCollectSample();
