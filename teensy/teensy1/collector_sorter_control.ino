@@ -50,21 +50,21 @@ void commandSorter(Servo servo, int slot) {
     speedAdd = i / iScalar;
     Serial.print("i: "); Serial.print(i); Serial.print("\tSlot CMD: "); Serial.print(slot); Serial.print("\tcurrentSlot: "); Serial.println(getCurrentSlot());
 
-    if (i % 3 == 0){
-        servo.write(MIN_SERVO_SPEED); 
-    } else {
+    if (i % 5 == 0) {
         if (slot == currentSlot) {
             servo.write(MIN_SERVO_SPEED);
             i = 0;
         } else if (slot > currentSlot) {
-            servo.write(MIN_SERVO_SPEED + SORTER_SPEED);
+            servo.write(180);
+//            servo.write(MIN_SERVO_SPEED + SORTER_SPEED);
 //            if ((MIN_SERVO_SPEED + SORTER_SPEED + speedAdd) < 180) {
 //                servo.write(MIN_SERVO_SPEED + SORTER_SPEED + speedAdd);
 //            } else {
 //                servo.write(180);
 //            }
         } else {
-            servo.write(MIN_SERVO_SPEED - SORTER_SPEED);
+            servo.write(0);
+//            servo.write(MIN_SERVO_SPEED - SORTER_SPEED);
 //            if ((MIN_SERVO_SPEED - SORTER_SPEED - speedAdd) > 0) {
 //                servo.write(MIN_SERVO_SPEED - SORTER_SPEED - speedAdd);
 //            } else {
@@ -72,6 +72,8 @@ void commandSorter(Servo servo, int slot) {
 //            }
 //            travelDirection = LOW;
         }
+    } else {
+        servo.write(MIN_SERVO_SPEED);
     }
 }
 

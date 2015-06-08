@@ -163,11 +163,23 @@ void ExploreState::FailedNavigation()
 void NavigateToSample::Start()
 {
 	connect(Robot()->GetSampleDetection(), &SampleDetection::SampleDetected, this, &NavigateToSample::ProportionalSteerOverSample);
+	connect(Robot()->GetTeensy(), &Teensy::statusUpdate, this, &NavigateToSample::TeensyStatus);
 	finalApproach = 0;
+	mLastSampleSeen = QDateTime::currentDateTime();
+}
+
+void NavigateToSample::TeensyStatus(TeenseyStatus status)
+{
+	if (!finalApproach) {
+		if(std::abs(this->mLastSampleSeen.msecsTo(QDateTime::currentDateTime())) > 4000)
+			FinishSampleCollection();
+	}
 }
 
 void NavigateToSample::ProportionalSteerOverSample(QList<DetectedSample> samples)
 {
+	mLastSampleSeen = QDateTime::currentDateTime();
+
 	if(IsFinished() || finalApproach)
 		return;
 
@@ -181,6 +193,7 @@ void NavigateToSample::ProportionalSteerOverSample(QList<DetectedSample> samples
 		return;
 
 	auto sample = samples[0];
+	sample.location[1] = sample.location[1] - 0.2;
 	double angle = atan2(sample.location[1], sample.location[0]);  // The way atan2 works, we want to give data as (side-to-side, forward)
 	double leftVelocity = P_FORWARD_VELOCITY - SIDE_VELOCITY_MAX_OFFSET * angle / MAX_ANGLE;
 	double rightVelocity = P_FORWARD_VELOCITY + SIDE_VELOCITY_MAX_OFFSET * angle / MAX_ANGLE;
@@ -210,7 +223,13 @@ void NavigateToSample::MomentarilyHaltRobot()
 void NavigateToSample::BackUpToCollectSample()
 {
 	Robot()->SetWheelVelocity(-0.2, -0.2);
-	QTimer::singleShot(7000, this, SLOT(FinishSampleCollection()));
+	QTimer::singleShot(7000, this, SLOT(LongHaltForRobot()));
+}
+
+void NavigateToSample::LongHaltForRobot()
+{
+	Robot()->SetWheelVelocity(0.0, 0.0);
+	QTimer::singleShot(20000, this, SLOT(FinishSampleCollection()));
 }
 
 void NavigateToSample::FinishSampleCollection()
