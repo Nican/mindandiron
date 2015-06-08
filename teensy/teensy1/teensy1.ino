@@ -42,7 +42,7 @@ int useVelocityControl = 1;       // 1 to use velocity PID, 0 to use position PI
 Servo servoSorter;
 Servo servoCollector;
 int lastSorterCmd = 0;
-int sorterAutoSlot = 0;  // 10 discrete slots (position control)
+int sorterAutoSlotCmd = 0;  // 10 discrete slots (position control)
 int collectorAutoCmd = 0;
 
 // TURN ON LIGHT WHEN ON
@@ -61,10 +61,11 @@ void setup() {
     pinMode(RIGHT_CMD_IN, INPUT);
     pinMode(COLLECTOR_CMD_IN, INPUT);
     pinMode(SORTER_CMD_IN, INPUT);
-    pinMode(SORTER_MAGNET_PIN, INPUT);
     pinMode(AUTO_SWITCH_IN, INPUT);
     pinMode(AUTO_SWITCH_OUT, OUTPUT);
     pinMode(COLLECTOR_OUT_PIN, OUTPUT);
+    pinMode(SORTER_1_IN_PIN, INPUT);
+    pinMode(SORTER_2_IN_PIN, INPUT);
     servoLeft.attach(LEFT_OUT_PIN); servoLeft.write(MIN_SERVO_SPEED);
     lastLeftCmd = MIN_SERVO_SPEED;
     servoRight.attach(RIGHT_OUT_PIN); servoRight.write(MIN_SERVO_SPEED);
@@ -100,7 +101,7 @@ void loop() {
                          &rightPositionSetpoint,
                          &useVelocityControl,
                          &collectorAutoCmd,
-                         &sorterAutoSlot);
+                         &sorterAutoSlotCmd);
     setLeftWheelVelocityPIDSetpoint(leftVelocitySetpoint);
     setRightWheelVelocityPIDSetpoint(rightVelocitySetpoint);
 //    setLeftWheelPositionPIDSetpoint(leftPositionSetpoint);
@@ -115,7 +116,7 @@ void loop() {
         } else {
           servoLeft.write(getLeftAutoWheelCmd());
           servoRight.write(getRightAutoWheelCmd());
-          // commandSorter(servoSorter, sorterAutoSlot);  Uncomment when wired
+          // commandSorter(servoSorter, sorterAutoSlotCmd);  // Uncomment when wired
           if (collectorAutoCmd) {
               commandCollectorSimple(servoCollector, SERVO_OUTPUT_LARGE_DELTA);
           } else {
@@ -130,7 +131,7 @@ void loop() {
         }
         lastLeftCmd = passThroughRC(servoLeft, LEFT_CMD_IN, lastLeftCmd);
         lastRightCmd = passThroughRC(servoRight, RIGHT_CMD_IN, lastRightCmd);
-        // lastSorterCmd = passThroughRC(servoSorter, SORTER_CMD_IN, lastSorterCmd);
+        roughlyControlSorterWithRC(servoSorter, SORTER_CMD_IN);
         roughlyControlWithRC(servoCollector, COLLECTOR_CMD_IN);
     }
 

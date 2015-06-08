@@ -2,21 +2,33 @@
 // Include some type of copyright
 
 
-volatile int lastMagnetState = HIGH;
+volatile int sorter1State = LOW;
+volatile int lastSorter1State = LOW;
+volatile int sorter2State = LOW;
+volatile int lastSorter2State = LOW;
 volatile int travelDirection = HIGH;  // HIGH when increasing numbers
 volatile int currentSlot = 0;
+int i = 0;  // For counting how long it takes to get to next state
+const int iScalar = 10;  // Scales i effect on sorter speed
+int speedAdd = 0;  // Adds increasingly strong commands as time goes on, to deal with sticking
 
 
 void checkSorterSlotChange() {
-    int currentMagnetState = digitalRead(SORTER_MAGNET_PIN);
-    if (lastMagnetState == HIGH and currentMagnetState == LOW) {
+    int sorter1State = digitalRead(SORTER_1_IN_PIN);
+    int sorter2State = digitalRead(SORTER_2_IN_PIN);
+
+    if (lastSorter1State == HIGH and sorter1State == LOW) {
         if (travelDirection) {
+            Serial.println("INCREMENTING slot");
             currentSlot++;
         } else {
+            Serial.println("DECREMENTING slot");
             currentSlot--;
         }
     }
-    lastMagnetState = currentMagnetState;
+
+    lastSorter1State = sorter1State;
+    lastSorter2State = sorter2State;
 }
 
 
@@ -28,13 +40,38 @@ int getCurrentSlot() {
 // TODO(Eric): Test
 void commandSorter(Servo servo, int slot) {
     travelDirection = HIGH;
-    if (slot == currentSlot) {
-        servo.write(MIN_SERVO_SPEED);
-    } else if (slot < currentSlot) {
-        servo.write(MIN_SERVO_SPEED + SORTER_SPEED);
+
+    i++;
+//    if (i < 200) {
+//        speedAdd = 0;
+//    } else {
+//        speedAdd = (i - 200) / iScalar;
+//    }
+    speedAdd = i / iScalar;
+    Serial.print("i: "); Serial.print(i); Serial.print("\tSlot CMD: "); Serial.print(slot); Serial.print("\tcurrentSlot: "); Serial.println(getCurrentSlot());
+
+    if (i % 3 == 0){
+        servo.write(MIN_SERVO_SPEED); 
     } else {
-        servo.write(MIN_SERVO_SPEED - SORTER_SPEED);
-        travelDirection = LOW;
+        if (slot == currentSlot) {
+            servo.write(MIN_SERVO_SPEED);
+            i = 0;
+        } else if (slot > currentSlot) {
+            servo.write(MIN_SERVO_SPEED + SORTER_SPEED);
+//            if ((MIN_SERVO_SPEED + SORTER_SPEED + speedAdd) < 180) {
+//                servo.write(MIN_SERVO_SPEED + SORTER_SPEED + speedAdd);
+//            } else {
+//                servo.write(180);
+//            }
+        } else {
+            servo.write(MIN_SERVO_SPEED - SORTER_SPEED);
+//            if ((MIN_SERVO_SPEED - SORTER_SPEED - speedAdd) > 0) {
+//                servo.write(MIN_SERVO_SPEED - SORTER_SPEED - speedAdd);
+//            } else {
+//                servo.write(0);
+//            }
+//            travelDirection = LOW;
+        }
     }
 }
 

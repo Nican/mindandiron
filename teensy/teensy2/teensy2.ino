@@ -10,11 +10,24 @@
 #include "camera_servo_includes.h"
 
 
+#define SORTER_SWITCH_1_PIN A9
+#define SORTER_1_CUTOFF_HIGH 30  // For Schmitt trigger
+#define SORTER_1_CUTOFF_LOW 4
+#define SORTER_1_OUT_PIN 20
+#define SORTER_SWITCH_2_PIN A8
+#define SORTER_2_CUTOFF_HIGH 30  // For Schmitt trigger
+#define SORTER_2_CUTOFF_LOW 4
+#define SORTER_2_OUT_PIN 21
+
+
 int camServoSetpoint = 0;
 int ledState = LOW;
 volatile int ledCounter = 0;
 uint16_t loopCounter = 0;
-
+int sorterSwitch1Value = 0;  // For the switch 1 readings
+int sorter1CMDValue = 0;
+int sorterSwitch2Value = 0;  // For the switch 2 readings
+int sorter2CMDValue = 0;
 
 void setup() {
     Serial.begin(9600);
@@ -33,22 +46,48 @@ void setup() {
     Timer1.initialize(5000000);  // Timer period in microseconds (max 8.3s)
     Timer1.attachInterrupt(handleLights);
     pinMode(LIGHT_OUT_PIN, OUTPUT);
+    
+    // SET UP THE SORTER COMMUNICATION
+    pinMode(SORTER_1_OUT_PIN, OUTPUT);
+    pinMode(SORTER_2_OUT_PIN, OUTPUT);
 }
 
 void loop() {
     readComputerCommands(&camServoSetpoint);
 
-//    REMOVE COMMENTS WHEN NOT TESTING UNDER RC
-//    if (getAuto()) {
+    if (getAuto()) {
         int command = camServoSetpoint;  // Make copy in case calue is updated
         Herkulex.moveOneAngle(CAM_SERVO_ID, command, 500, LED_GREEN);
-//    } else {
-//        Herkulex.moveOneAngle(CAM_SERVO_ID, 0, 1000, LED_BLUE);
-//        Herkulex.setLed(CAM_SERVO_ID, LED_PINK);
-//    }
+    } else {
+        Herkulex.moveOneAngle(CAM_SERVO_ID, 0, 1000, LED_BLUE);
+        Herkulex.setLed(CAM_SERVO_ID, LED_PINK);
+    }
 
-    printDataToComputer(Herkulex.getAngle(CAM_SERVO_ID),
-                        getCurrent(), getPaused());
+
+    sorterSwitch1Value = analogRead(SORTER_SWITCH_1_PIN);
+    sorterSwitch2Value = analogRead(SORTER_SWITCH_2_PIN);
+   
+    if (sorterSwitch1Value > SORTER_1_CUTOFF_HIGH) {
+        sorter1CMDValue = HIGH;
+    } else if (sorterSwitch1Value < SORTER_1_CUTOFF_LOW) {
+        sorter1CMDValue = LOW;
+    }
+    if (sorterSwitch2Value > SORTER_2_CUTOFF_HIGH) {
+        sorter2CMDValue = HIGH;
+    } else if (sorterSwitch2Value < SORTER_2_CUTOFF_LOW) {
+        sorter2CMDValue = LOW;
+    }
+
+    digitalWrite(SORTER_1_OUT_PIN, sorter1CMDValue);
+    digitalWrite(SORTER_2_OUT_PIN, sorter2CMDValue);
+
+    Serial.print("Sorter 1: "); Serial.print(sorterSwitch1Value);
+        Serial.print("\t"); Serial.print(sorter1CMDValue);
+    Serial.print("\tSorter 2: "); Serial.print(sorterSwitch2Value);
+        Serial.print("\t"); Serial.println(sorter2CMDValue);
+
+//    printDataToComputer(Herkulex.getAngle(CAM_SERVO_ID),
+//                        getCurrent(), getPaused());
     delay(5);
 
     // Periodically reboots the servo, every three minutes (roughly)

@@ -19,5 +19,7 @@
 #define MID_SIGNAL 1525
 #define MIN_SIGNAL 1100
 #define IN_DEADBAND 100  // Gives a deadband around zero for RC stability
+#define SERVO_OUTPUT_SMALL_DELTA 15    // Servo output deviation from MID (95)
+#define SERVO_OUTPUT_LARGE_DELTA 85    // Servo output deviation from MID (95)
 
 #endif  // TEENSY_TEENSY1_RC_INCLUDES_H_

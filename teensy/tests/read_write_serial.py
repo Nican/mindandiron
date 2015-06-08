@@ -17,7 +17,7 @@ def checkForJumps(msg, LPOS, RPOS):
 def main():
     ser = serial.Serial('/dev/kratos_teensy', 9600)
     counter = 0
-    cycleCounts = 10
+    cycleCounts = 500
     lVel = -0.3
     lAdd = 0.05
     rVel = 0.3
@@ -33,19 +33,22 @@ def main():
         message = ser.readline()
         print(message)
         LPOS, RPOS = checkForJumps(message, LPOS, RPOS)
-        if counter % cycleCounts == 0 and counter < 5000:
+        if counter % cycleCounts == 0 and counter < 75000:
             print('WRITING DATA TO TEENSY')
             # Format
             # \tLVEL\tRVEL\tLPOS\tRPOS\tVEL?\tCOLL\tSORT\tEND
             message = '\t%.2f\t%.2f\t%d\t%d\t%d\t%d\t%d\tEND' % (lVel, rVel, lPos, rPos, useVelocity, Collector, Sorter)
             ser.write(message)
             print(message)
-            lVel += lAdd
-            if abs(lVel) > 0.35:
-                lAdd *= -1
-            rVel += rAdd
-            if abs(rVel) > 0.35:
-                rAdd *= -1
+
+            Sorter += 1
+
+            # lVel += lAdd
+            # if abs(lVel) > 0.35:
+            #     lAdd *= -1
+            # rVel += rAdd
+            # if abs(rVel) > 0.35:
+            #     rAdd *= -1
         counter += 1
 
 
