@@ -204,6 +204,8 @@ void MapOverview::ReceiveObstacleMap(std::vector<Eigen::Vector2d> points)
 		delete mCore;
 
 	mCore = new QGraphicsItemGroup();
+	mCore->setPos(mRobotInstance->pos());
+	mCore->setRotation(mRobotInstance->rotation());
 
 	int id = 0;
 

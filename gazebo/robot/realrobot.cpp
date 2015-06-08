@@ -124,6 +124,7 @@ KratosKinect::KratosKinect(QObject* parent) :
 	else
 	{
 		mDev->start();
+		requestColorFrame();
 	}
 }
 

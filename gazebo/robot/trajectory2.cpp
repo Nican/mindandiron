@@ -286,5 +286,7 @@ void TrajectoryPlanner2::FinishedObstacles()
 {
 	mObstacleMap = mFutureWatcher.future().result();
 
+	mRobot->mSensorLog->SendObstacles(mObstacleMap.mObstacleList);
+
 	 emit ObstacleMapUpdate(mObstacleMap);
 }

@@ -26,34 +26,10 @@ void Level1State::StartToTravelBehind()
 	leaveBase->deleteLater();
 	leaveBase = nullptr;
 
-	mMoveInfront = new MoveTowardsGoalState(this);
-	mMoveInfront->mGoal = Vector2d(0.0, 4.0);
-	mMoveInfront->mReverse = false;
-	mMoveInfront->mAprilUpdates = true;
+	auto move = new TravelToWayPoint(Vector2d(-10.0, 10.0), this);
+	move->Start();
 	
-	connect(mMoveInfront, &ProgressState::Finished, this, &Level1State::MoveForwardBehind);
-	mMoveInfront->Start();
-}
-
-void Level1State::MoveForwardBehind()
-{
-	auto estimate = Robot()->mLocation.GetEstimate();
-
-	mMoveInfront->deleteLater();
-	mMoveInfront = nullptr;
-
-	Rotation2Dd rotation2D(0);
-	rotation2D.fromRotationMatrix(estimate.linear());
-
-	mMoveInfront = new MoveTowardsGoalState(this);
-	mMoveInfront->mGoal = Vector2d(-6.0, 6.0);
-	mMoveInfront->mStartPos = estimate.translation();
-	mMoveInfront->mStartAngle = rotation2D.angle();
-	mMoveInfront->mReverse = false;
-	mMoveInfront->mAprilUpdates = true;
-	
-	connect(mMoveInfront, &ProgressState::Finished, this, &Level1State::StartExplore);
-	//mMoveInfront->Start();
+	connect(move, &ProgressState::Finished, this, &Level1State::StartExplore);
 }
 
 void Level1State::StartExplore()
@@ -64,7 +40,6 @@ void Level1State::StartExplore()
 	mExplore = new ExploreState(this);
 	//connect(mExplore, &ProgressState::Finished, this, &Level1State::EndExplore);
 	mExplore->Start();
-
 }
 
 
@@ -77,56 +52,87 @@ void ExploreState::Start()
 {
 	std::cout << "Starting explore state\n";
 	StartNavigation();
+
+	connect(Robot()->GetSampleDetection(), &SampleDetection::SampleDetected, this, &ExploreState::StartSampleCollection);
+	connect(Robot()->mPlanner, &TrajectoryPlanner2::ObstacleMapUpdate, this, &ExploreState::ObstacleMapUpdate);
 }
 
 void ExploreState::StartNavigation()
 {
-	if(mGoalMove != nullptr)
-	{
-		mGoalMove->deleteLater();
-		mGoalMove = nullptr;
-	}
+	mExploreOut = new DecawaveMoveRadialState(0, this);
+	//connect(mExploreOut, &ProgressState::Finished, this, &ExploreState::RestartNavigation);
+	mExploreOut->Start();
+}
 
-	//Look at the current decawave value
-	//Decide if we should keep moving, or head back
-
-	if(Robot()->GetDecawave()->lastDistance > 80)
+void ExploreState::StartSampleCollection(QList<DetectedSample> samples)
+{
+	if(mExploreOut == nullptr)
 	{
-		std::cout << "Ending explore. We are too far away from the decawave\n";
-		SetFinished();
+		//We are already trying to collect the sample
 		return;
 	}
 
-	mGoalMove = new MoveTowardsGoalState(this);
-	mGoalMove->mGoal = Vector2d(2.0, 0.0);
-	mGoalMove->mReverse = false;
-	mGoalMove->mAprilUpdates = false;
+	mExploreOut->SetFinished();
+	mExploreOut->deleteLater();
+	mExploreOut = nullptr;
 
-	connect(mGoalMove, &MoveTowardsGoalState::Failed, this, &ExploreState::FailedNavigation);
-	connect(mGoalMove, &ProgressState::Finished, this, &ExploreState::MoveToNextState);
-	mGoalMove->Start();
+	mSampleNavigation = new NavigateToSample(this);
+	connect(mSampleNavigation, &ProgressState::Finished, this, &ExploreState::RestartNavigation);
+	mSampleNavigation->Start();
 
 }
 
-void ExploreState::MoveToNextState()
+void ExploreState::RestartNavigation()
 {
-	if(Robot()->GetSampleDetection()->mLastDetection.size() > 0)
+	if(mSampleNavigation != nullptr)
 	{
-		std::cout << "Navigating to sample\n";
-		auto navigate = new NavigateToSample(this);
-		connect(navigate, &ProgressState::Finished, this, &ExploreState::StartNavigation);
-		navigate->Start();
+		mSampleNavigation->deleteLater();
+		mSampleNavigation = nullptr;
 	}
-	else
+
+	StartNavigation();
+}
+
+void ExploreState::ObstacleMapUpdate(ObstacleMap obstacleMap)
+{
+	bool inRadius = false;
+
+	for(auto& pt : obstacleMap.mObstacleList)
 	{
-		std::cout << "Restarting navigation\n";
-		StartNavigation();
+		if(pt.norm() <= 3.0){
+			inRadius = true;
+			break;
+		}
 	}
+
+	if(inRadius)
+	{
+		int left = 0;
+		int right = 0;
+
+		for(auto& pt : obstacleMap.mObstacleList)
+		{
+			if(pt.y() > 0)
+				left++;
+			else
+				right++;
+		}
+
+		auto rotate = new RotateState(this, (left > right) ? (M_PI/2) : (-M_PI/2) );
+		connect(rotate, &ProgressState::Finished, this, &ExploreState::FinishRotate);
+		rotate->Start();
+	}
+}
+
+void ExploreState::FinishRotate()
+{
+
 }
 
 
 void ExploreState::FailedNavigation()
 {
+	/*
 	auto estimate = Robot()->mLocation.GetEstimate();
 
 	mGoalMove->deleteLater();
@@ -146,6 +152,7 @@ void ExploreState::FailedNavigation()
 	ProgressState* newState = new RotateState(this, rotateDirection);
 	connect(newState, &ProgressState::Finished, this, &ExploreState::StartNavigation);
 	newState->Start();
+	*/
 }
 
 

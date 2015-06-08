@@ -129,7 +129,7 @@ public:
 
 public slots:
 	void StartToTravelBehind();
-	void MoveForwardBehind();
+	//void MoveForwardBehind();
 	void StartExplore();
 };
 
@@ -279,10 +279,11 @@ class ExploreState : public ProgressState
 	Q_OBJECT
 public:
 
-	MoveTowardsGoalState* mGoalMove;
+	DecawaveMoveRadialState* mExploreOut;
+	NavigateToSample* mSampleNavigation;
 	QDateTime mStartTime;
 
-	ExploreState(QObject *parent) : ProgressState(parent), mGoalMove(nullptr)
+	ExploreState(QObject *parent) : ProgressState(parent), mExploreOut(nullptr), mSampleNavigation(nullptr)
 	{
 	}
 
@@ -291,7 +292,11 @@ public:
 public slots:
 	void StartNavigation();
 	void FailedNavigation();
-	void MoveToNextState();
+	void RestartNavigation();
+
+	void FinishRotate();
+
+	void StartSampleCollection(QList<DetectedSample> samples);
 };
 
 

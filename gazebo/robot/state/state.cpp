@@ -335,7 +335,7 @@ void MoveTowardsGoalState::UpdateTrajectory(ObstacleMap obstacleMap)
 	}
 
 	
-	Robot()->mSensorLog->SendObstacles(buildObstacleMap);
+	//Robot()->mSensorLog->SendObstacles(buildObstacleMap);
 
 	auto future = QtConcurrent::run([this, buildObstacleMap, odometry2](){
 		//std::cout << "Started search from: " << odometry2 << "\n";
