@@ -148,6 +148,8 @@ public:
 
 public slots:
 	void ProportionalSteerOverSample(QList<DetectedSample> samples);
+	void MomentarilyHaltRobot();
+	void BackUpToCollectSample();
 	void FinishSampleCollection();
 };
 

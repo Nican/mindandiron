@@ -193,9 +193,21 @@ void NavigateToSample::ProportionalSteerOverSample(QList<DetectedSample> samples
 			Robot()->SetWheelVelocity(MAX_FORWARD_VELOCITY, MAX_FORWARD_VELOCITY);
 			Robot()->GetTeensy()->SetCollector(1);
 			finalApproach = 1;
-			QTimer::singleShot(7000, this, SLOT(FinishSampleCollection()));
+			QTimer::singleShot(5000, this, SLOT(MomentarilyHaltRobot()));
 		}
 	}
+}
+
+void NavigateToSample::MomentarilyHaltRobot()
+{
+	Robot()->SetWheelVelocity(0.0, 0.0);
+	QTimer::singleShot(1000, this, SLOT(BackUpToCollectSample()));
+}
+
+void NavigateToSample::BackUpToCollectSample()
+{
+	Robot()->SetWheelVelocity(-0.2, -0.2);
+	QTimer::singleShot(7000, this, SLOT(FinishSampleCollection()));
 }
 
 void NavigateToSample::FinishSampleCollection()
