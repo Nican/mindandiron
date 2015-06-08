@@ -42,11 +42,18 @@ RootState::RootState(QObject *parent) : BaseState(parent), mState(nullptr)
 
 	//QTimer::singleShot(1000, this, SLOT(MoveToNextState));
 
-	//SetState(new ReturnToStationState(this));
+	
+	
+}
+
+void RootState::Start()
+{
+	SetState(new ReturnToStationState(this));
+
 	// SetState(new ReturnRealignState(this));
 
 	// SetState(new Level1State(this));
-	SetState(new ReturnMoveBackState(this));
+	//SetState(new ReturnMoveBackState(this));
 	//SetState(new MoveForwardState(this, 10));
 }
 
@@ -99,6 +106,12 @@ bool ProgressState::IsValid()
 
 void ProgressState::SetFinished()
 {
+	if(mIsFinished)
+	{
+		std::cout << "Calling SetFinished twice. :(\n";
+		return;
+	}
+
 	mIsFinished = true;
 	emit Finished();
 }

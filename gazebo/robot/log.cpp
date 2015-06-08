@@ -8,6 +8,8 @@
 using namespace Robot;
 using namespace nzmqt;
 
+static const bool lowBandwidth = false;
+
 SensorLog::SensorLog(Kratos2* parent, nzmqt::ZMQContext* context) : 
 QObject(parent),
 mDb(QSqlDatabase::addDatabase("QSQLITE"))
@@ -157,7 +159,9 @@ void SensorLog::receiveDepthImage(DepthImgData mat)
 	QList<QByteArray> msg;
 	msg += QByteArray("\x01");
 	msg += buffer;
-	mSocket->sendMessage(msg);
+	
+	if(!lowBandwidth)
+		mSocket->sendMessage(msg);
 }
 
 void SensorLog::receiveKinectImage(Robot::ImgData mat)
@@ -175,7 +179,9 @@ void SensorLog::receiveKinectImage(Robot::ImgData mat)
 	QList<QByteArray> msg;
 	msg += QByteArray("\x17");
 	msg += buffer;
-	mSocket->sendMessage(msg);
+	
+	if(!lowBandwidth)
+		mSocket->sendMessage(msg);
 }
 
 void SensorLog::teensyStatus(TeenseyStatus status)
@@ -243,7 +249,9 @@ void SensorLog::ReceiveSegmentedPointcloud(SegmentedPointCloud pointCloud)
 	QList<QByteArray> msg;
 	msg += QByteArray("\x03");
 	msg += data;
-	mSocket->sendMessage(msg);
+	
+	if(!lowBandwidth)
+		mSocket->sendMessage(msg);
 }
 
 void SensorLog::decawaveUpdate(double distance)
@@ -306,7 +314,9 @@ void SensorLog::WheelVelocityUpdate(double left, double right)
 	QList<QByteArray> msg;
 	msg += QByteArray("\x06");
 	msg += buffer; //QByteArray(sbuf.data(), sbuf.size());
-	mSocket->sendMessage(msg);
+
+	if(!lowBandwidth)
+		mSocket->sendMessage(msg);
 }
 
 void SensorLog::ReceivePath(const std::vector<Eigen::Vector2d> &points)
@@ -357,7 +367,9 @@ void SensorLog::SendAprilTagInfo()
 	QList<QByteArray> msg;
 	msg += QByteArray("\x10");
 	msg += buffer;
-	mSocket->sendMessage(msg);
+	
+	if(!lowBandwidth)
+		mSocket->sendMessage(msg);
 }
 
 void SensorLog::ReceiveAprilTags(QList<AprilTagDetectionItem> tags)

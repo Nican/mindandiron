@@ -210,7 +210,7 @@ void KratosDecawave::messageReceived(const QList<QByteArray>& messages)
 			double val = doubleVal.toDouble();
 			lastDistance = val;
 
-			//std::cout << "Read decawave value: " << val << "\n";
+			// std::cout << "Read decawave value: " << val << "\n";
 
 			emit statusUpdate(val);
 		}

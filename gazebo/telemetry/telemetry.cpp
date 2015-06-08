@@ -286,6 +286,7 @@ void MainWindow::messageReceived(const QList<QByteArray>& messages)
 
 	if(id == '\x11')
 	{
+		//std::cout << "poop\n";
 		QList<AprilTagDetectionItem> tags;
 		QDataStream stream(messages[1]);
 		stream >> tags;
@@ -352,7 +353,7 @@ void MainWindow::messageReceived(const QList<QByteArray>& messages)
 		stream >> mat;
 
 		QImage image(mat.data.data(), mat.width, mat.height, QImage::Format_RGB888);
-		image = image.mirrored(true, false);
+		image = image.mirrored(true, false).scaled(1280, 720, Qt::KeepAspectRatio);
 		mAprilTag2->UpdateImage(image);
 	}
 }

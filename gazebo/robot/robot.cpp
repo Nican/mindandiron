@@ -6,6 +6,7 @@
 #include <QVariant>
 #include <QSqlError>
 #include <QSqlQuery>
+#include <QThreadPool>
 
 
 using namespace Robot;
@@ -92,6 +93,7 @@ Kratos2::Kratos2(QObject* parent) :
 	mContext->start();
 
 	mApril2 = new AprilTagCamera(1064*2/3, 1064*2/3, 1280, 720, this);
+	mApril2->setObjectName("KinectImage");
 }
 
 
@@ -105,7 +107,8 @@ void Kratos2::Initialize()
 	connect(GetKinect(), &Kinect::receiveDepthImage, this, &Kratos2::ProccessPointCloud);
 	connect(GetKinect(), &Kinect::receiveColorImage, mSensorLog, &SensorLog::receiveKinectImage);
 	connect(GetKinect(), &Kinect::receiveColorImage, this, &Kratos2::receiveKinectImage);
-	GetKinect()->requestDepthFrame();
+	//GetKinect()->requestDepthFrame();
+	GetKinect()->requestColorFrame();
 
 	connect(GetDecawave(), &Decawave::statusUpdate, mSensorLog, &SensorLog::decawaveUpdate);
 
@@ -158,6 +161,9 @@ void Kratos2::AprilScanTimer()
 		GetTeensy2()->sendRaw(scanModeValues[lastScanValue]);
 		lastScanValue = (lastScanValue + 1) % scanModeValues.size();	
 	}
+
+	//auto pool = QThreadPool::globalInstance();
+	//std::cout << "Thread pool: " << pool->activeThreadCount() << "/" << pool->maxThreadCount() << "\n";
 }
 
 void Kratos2::AprilTag2Detected(QList<AprilTagDetectionItem> detections)

@@ -27,7 +27,7 @@ void Level1State::StartToTravelBehind()
 	leaveBase = nullptr;
 
 	mMoveInfront = new MoveTowardsGoalState(this);
-	mMoveInfront->mGoal = Vector2d(1.0, 4.0);
+	mMoveInfront->mGoal = Vector2d(0.0, 4.0);
 	mMoveInfront->mReverse = false;
 	mMoveInfront->mAprilUpdates = true;
 	

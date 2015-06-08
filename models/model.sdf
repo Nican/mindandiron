@@ -61,7 +61,7 @@
     </visual>
 
    <visual name='depth_visual'>
-      <pose>0.34 0 0.8 0 0.52359878 0</pose>
+      <pose>0.34 0 0.8 0 0.174532925 0</pose>
       <geometry>
         <box>
           <size>0.2 0.1 0.1</size>
@@ -70,7 +70,7 @@
     </visual>
 
     <sensor type="depth" name="xtion_sensor">
-      <pose>0.34 0 0.8 0 0.52359878 0</pose> <!--0.7 0 0.8 0 0.52359878 0-->
+      <pose>0.34 0 0.8 0 0.174532925 0</pose> <!--0.7 0 0.8 0 0.52359878 0-->
       <always_on>true</always_on>
       <update_rate>1.0</update_rate>
       <topic>tteesstt</topic>

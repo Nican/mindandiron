@@ -73,6 +73,8 @@ AprilTagCamera(877, 877, 1280, 720, parent)
 	//usb-046d_HD_Pro_Webcam_C920_F19B696F-video-index0
 	//usb-046d_HD_Pro_Webcam_C920_2245793F-video-index0 -- April camera
 
+	setObjectName("AprilTagCamera");
+
 	connect(&mImageWatcher, SIGNAL(finished()), this, SLOT(ReceiveCameraFrame()));
 	RequestFrame();
 }
@@ -80,6 +82,8 @@ AprilTagCamera(877, 877, 1280, 720, parent)
 void KratosAprilTag::ReceiveCameraFrame()
 {
 	QImage frame = mImageWatcher.future().result();
+
+	// std::cout << "Grabbing on main thread: " << QDateTime::currentDateTime().toString("hh:mm:ss.zzz").toStdString() << "\n";
 
 	emit this->ReceiveFrame(frame);
 
@@ -89,10 +93,12 @@ void KratosAprilTag::ReceiveCameraFrame()
 void KratosAprilTag::RequestFrame()
 {
 	QFuture<QImage> future = QtConcurrent::run([this](){
+		// std::cout << "Starting grab image: " << QDateTime::currentDateTime().toString("hh:mm:ss.zzz").toStdString() << "\n";
 		QImage frame = this->mCamera->read();
 
 		//static int counter = 0;
 		//frame.save("a" + QString::number(counter++) + ".png");
+		// std::cout << "Finishing grab image: " << QDateTime::currentDateTime().toString("hh:mm:ss.zzz").toStdString() << "\n";
 
 		return frame;
 	});

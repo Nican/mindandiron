@@ -42,6 +42,7 @@ public:
 	RootState(QObject *parent);
 
 	void SetState(ProgressState* nextState);
+	virtual void Start() override;
 
 public slots:
 	void MoveToNextState();

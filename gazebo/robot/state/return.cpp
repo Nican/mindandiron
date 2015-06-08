@@ -241,8 +241,8 @@ void ReturnMoveBackState::DecawaveUpdate(double value)
 
 	if(lastReadingId == mLastReadings.size() - 1)
 	{
-		// UpdateDirection(GetAverageDecawaveVelocity(), 1, 0);
-		UpdateDirectionCircular(GetAverageDecawaveVelocity());
+		UpdateDirection(GetAverageDecawaveVelocity(), 1, 0);
+		// UpdateDirectionCircular(GetAverageDecawaveVelocity());
 		mLastReadings[0] = mLastReadings[lastReadingId];
 		lastReadingId = 1;
 	}
@@ -288,7 +288,7 @@ void ReturnMoveBackState::UpdateDirection(double averageVelocity, int in, int ou
 
 	static double lastVelocity = 0.0;  // Stores last average velocity for comparison
 	const double MAX_SIDE_VELOCITY = 0.075;
-	const double MAX_FORWARD_VELOCITY = 0.275;
+	const double MAX_FORWARD_VELOCITY = 0.57;
 	static double maxSeenVelocity = MAX_FORWARD_VELOCITY;
 
 	if ((out && averageVelocity < maxSeenVelocity) ||
@@ -296,8 +296,8 @@ void ReturnMoveBackState::UpdateDirection(double averageVelocity, int in, int ou
 	{
 			maxSeenVelocity = averageVelocity;
 	}
-	// cout << "Average m/s value is: " << averageVelocity << "\n";
-	// cout << "Last m/s value is: " << lastVelocity << "\n";
+	cout << "Average m/s value is: " << averageVelocity << "\n";
+	cout << "Last m/s value is: " << lastVelocity << "\n";
 
 	// If we have to, we could make sideways motion move more slowly to not get off course
 	double forwardVelocity = MAX_FORWARD_VELOCITY;
@@ -340,26 +340,29 @@ void ReturnMoveBackState::UpdateDirectionCircular(double averageVelocity)
 	static double lastVelocity = 0.0;  // Stores last average velocity for comparison
 	const double MAX_SIDE_VELOCITY = 0.075;
 	const double MAX_FORWARD_VELOCITY = 0.275;
-	cout << "Average m/s value is: " << averageVelocity << "\n";
-	cout << "Last m/s value is: " << lastVelocity << "\n";
 
 	// If we have to, we could make sideways motion move more slowly to not get off course
 	double forwardVelocity = MAX_FORWARD_VELOCITY;
 
 
-	const double guessVelocityCutoff = 0.05;
+	const double guessVelocityCutoff = 0.2 * MAX_FORWARD_VELOCITY;
+	if ((returnType == ReturnMoveEnum::LEFT  && (averageVelocity > (lastVelocity + guessVelocityCutoff))) ||
+	    (returnType == ReturnMoveEnum::RIGHT && (averageVelocity < (lastVelocity - guessVelocityCutoff))))
+	{
+		cout << "Making guess higher\n";
+		if (guessIsLeftIn < 2)
+			guessIsLeftIn++;
+	}
 	if ((returnType == ReturnMoveEnum::LEFT  && (averageVelocity < (lastVelocity - guessVelocityCutoff))) ||
 	    (returnType == ReturnMoveEnum::RIGHT && (averageVelocity > (lastVelocity + guessVelocityCutoff))))
 	{
-		if (guessIsLeftIn < 3)
-			guessIsLeftIn++;
-	}
-	if ((returnType == ReturnMoveEnum::LEFT  && (averageVelocity > (lastVelocity - guessVelocityCutoff))) ||
-	    (returnType == ReturnMoveEnum::RIGHT && (averageVelocity < (lastVelocity + guessVelocityCutoff))))
-	{
-		if (guessIsLeftIn > -3)
+		cout << "Making guess lower\n";
+		if (guessIsLeftIn > -2)
 			guessIsLeftIn--;
 	}
+	cout << "returnType: " << (int) returnType << "\n";
+	cout << "Average m/s value is: " << averageVelocity << "\n";
+	cout << "Last m/s value is: " << lastVelocity << "\n";
 	cout << "guessIsLeftIn: " << guessIsLeftIn << "\n";
 
 
@@ -372,9 +375,6 @@ void ReturnMoveBackState::UpdateDirectionCircular(double averageVelocity)
 	}
 
 
-	cout << "(averageVelocity < 0 && lastVelocity < 0): " << (averageVelocity < 0 && lastVelocity < 0) << "\n";
-	cout << "(averageVelocity > 0 && lastVelocity > 0): " << (averageVelocity > 0 && lastVelocity > 0) << "\n";
-	cout << "abs(averageVelocity) < abs(lastVelocity): " << (abs(averageVelocity) < abs(lastVelocity)) << "\n";
 	if (((averageVelocity < 0 && lastVelocity < 0) ||
 		 (averageVelocity > 0 && lastVelocity > 0)) &&
 		abs(averageVelocity) < abs(lastVelocity))
@@ -390,8 +390,8 @@ void ReturnMoveBackState::UpdateDirectionCircular(double averageVelocity)
 	}
 
 	double proportionalReaction = abs(averageVelocity) / MAX_FORWARD_VELOCITY * MAX_SIDE_VELOCITY;
-	cout << "forwardVelocity: " << forwardVelocity << "\n";
-	cout << "proportionalReaction: " << proportionalReaction << "\n";
+	// cout << "forwardVelocity: " << forwardVelocity << "\n";
+	// cout << "proportionalReaction: " << proportionalReaction << "\n";
 	CommandVelocity(forwardVelocity, proportionalReaction);
 	lastVelocity = averageVelocity;  // For comparison to next computed velocity
 }
@@ -534,7 +534,7 @@ void ReturnRealignState::FinishedTrajectory()
 	mMoveForward->Start();
 
 	startDecawaveValue = Robot()->GetDecawave()->lastDistance;
-
+	std::cout << "Start Decawave: " << startDecawaveValue << "\n";
 	std::cout << "Finished calculating trajectory\n";
 }
 
@@ -544,7 +544,8 @@ void ReturnRealignState::Realign()
 	//auto odometryDistance = odometry.mDistanceTraveled;
 
 	double endDecawaveValue = Robot()->GetDecawave()->lastDistance;
-	cout << "Decawave: " << endDecawaveValue << "\n";
+	std::cout << "Start Decawave: " << startDecawaveValue << "\n";
+	std::cout << "End Decawave: " << endDecawaveValue << "\n";
 	double diff = startDecawaveValue - endDecawaveValue;
 
 	std::cout << "Realigning with diff: " << diff << "\n";

@@ -35,6 +35,8 @@ const QVector<AprilOffset> &GetOffsets()
 		//For actual robot
 		AprilOffset(6, 0.733, {1.1, -0.5}, 8.3 / 180 * M_PI) //0.733
 		,AprilOffset(29, 0.733, {1.1, 0.5}, -8.3 / 180 * M_PI)
+		,AprilOffset(12, 0.733, {1.1, 0.5}, (8.3+180) / 180 * M_PI)
+		,AprilOffset(18, 0.733, {1.1, -0.5}, (-8.3+180) / 180 * M_PI)
 	});
 
 	return offsets;
@@ -121,12 +123,15 @@ void AprilTagCamera::ReadFrame(QImage image)
 
 	auto future = QtConcurrent::run([cvImage, this]()
 	{
+		//std::cout << objectName().toStdString() << " Starting processing image: " << QDateTime::currentDateTime().toString("hh:mm:ss.zzz").toStdString() << "\n";
 		cv::Mat image_gray;
 		std::vector<AprilTags::TagDetection> detections;
 
 		cv::cvtColor(cvImage, image_gray, CV_BGR2GRAY);
 
 		detections = m_tagDetector->extractTags(image_gray);
+
+		// std::cout << "Finish processing image : " << QDateTime::currentDateTime().toString("hh:mm:ss.zzz").toStdString()<< "\n";
 
 		return detections;
 	});
@@ -140,6 +145,8 @@ void AprilTagCamera::finishedProcessing()
 {
 	auto detections = mDetectionFutureWatcher.future().result();
 	QList<AprilTagDetectionItem> detectionsItems;
+
+	// std::cout << "Main thread grabbing tags: " << QDateTime::currentDateTime().toString("hh:mm:ss.zzz").toStdString() << "\n";
 
 	for(auto &tag : detections)
 	{

@@ -137,7 +137,7 @@ MapOverview::MapOverview(QWidget *parent)
 	trajectoryPath = scene.addPath(QPainterPath(), QPen(Qt::blue, 0));
 	mPlannedTrajectory = scene.addPath(QPainterPath(), QPen(Qt::red, 0));
 
-	mDecawaveCircle = scene.addEllipse(0, 0, 0, 0, QPen(Qt::black, 0));
+	mDecawaveCircle = scene.addEllipse(0, -1.21, 0, 0, QPen(Qt::black, 0));
 
 	mMovingLine = scene.addLine(0, 0, 0, 0, QPen(Qt::black, 0));
 
@@ -189,7 +189,7 @@ void MapOverview::SetRobot(Eigen::Vector2d pos, double angle)
 
 void MapOverview::ReceiveDecawaveReading(double distance)
 {
-	mDecawaveCircle->setRect(-distance, -distance, distance*2, distance*2);
+	mDecawaveCircle->setRect(-distance- 1.2, -distance, distance*2, distance*2);
 }
 
 void MapOverview::ReceiveControlStatus(const std::vector<double> &velocities)
