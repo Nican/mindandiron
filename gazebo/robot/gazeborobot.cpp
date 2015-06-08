@@ -1,5 +1,6 @@
 #include "gazeborobot.h"
 #include "../msgpack.h"
+#include <random>
 #include <QDebug>
 #include <iostream>
 #include <QTimer>
@@ -89,8 +90,12 @@ void GazeboAprilTag::finishedProcessing()
 
 		//std::cout << "Found sample: " << item.detection.id << "(" << affine.translation().transpose() << ")\n";
 
+		static std::random_device rd;
+		static std::mt19937 gen(rd());
+		std::normal_distribution<> d(0, 0.1 * M_PI / 180.0);
+
 		affine.translation() = rotation * affine.translation();
-		affine.linear() = AngleAxisd(tick.robotOrientation - robotCameraAngle + M_PI, Vector3d::UnitZ()) * affine.linear();
+		affine.linear() = AngleAxisd(tick.robotOrientation - robotCameraAngle + M_PI + d(gen), Vector3d::UnitZ()) * affine.linear();
 
 		item.translation = affine.translation();
 		item.rotation = affine.linear();
@@ -98,7 +103,7 @@ void GazeboAprilTag::finishedProcessing()
 		//item.euler.y() = M_PI - item.euler.y();
 
 		//30m limit range
-		if(item.translation.norm() > 15.0)
+		if(item.translation.norm() > 30.0)
 			continue;
 
 		detectionsItems.append(item);
@@ -127,7 +132,7 @@ void GazeboDevawave::receiveUpdate(const RobotGazeboTickData &data)
 
 void GazeboDevawave::fireUpdate()
 {
-	double distance = mLastTick.robotPosition.norm();
+	double distance = (mLastTick.robotPosition.head<2>() + Vector2d(1.1, 0.0)).norm();
 	lastDistance = distance;
 	emit statusUpdate(distance);
 }
@@ -248,6 +253,29 @@ GazeboKratos::GazeboKratos(QObject* parent)
 
     QProcess *myProcess = new QProcess();
     myProcess->start(program, arguments);
+}
+
+void GazeboKratos::AprilTag2Detected(QList<AprilTagDetectionItem> detections)
+{
+	if(detections.isEmpty())
+		return;
+
+	static std::random_device rd;
+	static std::mt19937 gen(rd());
+	std::normal_distribution<> d(0, 0.1 * M_PI / 180.0);
+
+	auto tag = detections[0];
+
+	Affine2d aprilLocation;
+	aprilLocation.linear() = Rotation2Dd(mTeensey->mLastTick.robotOrientation + d(gen)).toRotationMatrix();
+	aprilLocation.translation() = mTeensey->mLastTick.robotPosition.head<2>();
+
+	mLastAprilDetection = QDateTime::fromMSecsSinceEpoch(tag.time);
+	mLastAprilLocation = aprilLocation;
+
+	mSensorLog->AprilLocationUpdate(mLastAprilDetection, aprilLocation);
+
+	emit AprilLocationUpdate(aprilLocation);
 }
 
 void GazeboKratos::fireControlUpdate()

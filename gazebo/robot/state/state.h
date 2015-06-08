@@ -342,6 +342,29 @@ public slots:
 
 
 
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+class TravelToWayPoint : public ProgressState
+{
+	Q_OBJECT
+public:
+
+	Eigen::Vector2d mTargetPosition;
+	bool mReverse;
+
+	TravelToWayPoint(Eigen::Vector2d position, QObject *parent);
+	virtual void Start() override;
+
+public slots:
+	void TeensyStatus(TeenseyStatus status);
+};
+
+
+
+
+
+
 class MoveForwardState : public ProgressState
 {
 	Q_OBJECT

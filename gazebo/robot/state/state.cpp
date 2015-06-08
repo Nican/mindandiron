@@ -47,12 +47,14 @@ RootState::RootState(QObject *parent) : BaseState(parent), mState(nullptr)
 }
 
 void RootState::Start()
-{
-	SetState(new ReturnToStationState(this));
+{	
+	//SetState(new TravelToWayPoint(Vector2d(10,10), this));
+	//SetState(new ReturnToStationState(this));
 
 	// SetState(new ReturnRealignState(this));
 
 	// SetState(new Level1State(this));
+	SetState(new NavigateToSample(this));
 	//SetState(new ReturnMoveBackState(this));
 	//SetState(new MoveForwardState(this, 10));
 }

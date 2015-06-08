@@ -165,6 +165,8 @@ public:
 		return QString("gazebo");
 	}
 
+	virtual void AprilTag2Detected(QList<AprilTagDetectionItem> detections) override;
+
 protected slots:
 	void fireControlUpdate();
     void messageReceived(const QList<QByteArray>& message);

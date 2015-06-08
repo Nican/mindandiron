@@ -166,7 +166,7 @@ int main(int argc, char* argv[])
 	*/
 
 	Robot::RealRobot robot;
-	// Robot::GazeboKratos robot;
+	//Robot::GazeboKratos robot;
 	robot.Initialize();
 
 	return app.exec();

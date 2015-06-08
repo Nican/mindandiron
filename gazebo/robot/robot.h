@@ -225,7 +225,7 @@ public slots:
 	void FinishedPointCloud();
 
 	void AprilTagDetected(QList<AprilTagDetectionItem> detections);
-	void AprilTag2Detected(QList<AprilTagDetectionItem> detections);
+	virtual void AprilTag2Detected(QList<AprilTagDetectionItem> detections);
 	void AprilScanTimer();
 
 	void StartStateMachine();

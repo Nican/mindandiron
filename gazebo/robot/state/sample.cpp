@@ -161,7 +161,7 @@ void NavigateToSample::Start()
 
 void NavigateToSample::ProportionalSteerOverSample(QList<DetectedSample> samples)
 {
-	if(IsFinished())
+	if(IsFinished() || finalApproach)
 		return;
 
 	const double SIDE_VELOCITY_MAX_OFFSET = 0.15;
@@ -169,7 +169,7 @@ void NavigateToSample::ProportionalSteerOverSample(QList<DetectedSample> samples
 	const double MAX_FORWARD_VELOCITY = 0.25;
 	const double MAX_ANGLE = 36.0*M_PI/180.0;  // The camera FOV is 70 degrees
 
-	cout << "sample[0]: " << samples[0].location.transpose() << "\n";
+	// cout << "sample[0]: " << samples[0].location.transpose() << "\n";
 	if(samples.isEmpty())
 		return;
 
@@ -178,23 +178,19 @@ void NavigateToSample::ProportionalSteerOverSample(QList<DetectedSample> samples
 	double leftVelocity = P_FORWARD_VELOCITY - SIDE_VELOCITY_MAX_OFFSET * angle / MAX_ANGLE;
 	double rightVelocity = P_FORWARD_VELOCITY + SIDE_VELOCITY_MAX_OFFSET * angle / MAX_ANGLE;
 
-	// cout << "angle (deg): " << angle*180/M_PI << "\tleftVelocity: " << leftVelocity << "\trightVelocity: " << rightVelocity << "\n";
-	// cout << "sample.location.norm(): " << sample.location.norm() << "\n";
+	cout << "angle (deg): " << angle*180/M_PI << "\tleftVelocity: " << leftVelocity << "\trightVelocity: " << rightVelocity << "\n";
+	cout << "sample.location.norm(): " << sample.location.norm() << "\n";
 
-	if (finalApproach) {
-		return;
+	if (sample.location.norm() > 1.85) {
+		// Do proportional control
+		Robot()->SetWheelVelocity(leftVelocity, rightVelocity);
+	} else if (abs(angle) > 0.05) {
+		Robot()->SetWheelVelocity(leftVelocity - P_FORWARD_VELOCITY, rightVelocity - P_FORWARD_VELOCITY);
 	} else {
-		if (sample.location.norm() > 2.75) {
-			// Do proportional control
-			Robot()->SetWheelVelocity(leftVelocity, rightVelocity);
-		} else if (abs(angle) > 0.05) {
-			Robot()->SetWheelVelocity(leftVelocity - P_FORWARD_VELOCITY, rightVelocity - P_FORWARD_VELOCITY);
-		} else {
 			Robot()->SetWheelVelocity(MAX_FORWARD_VELOCITY, MAX_FORWARD_VELOCITY);
 			Robot()->GetTeensy()->SetCollector(1);
 			finalApproach = 1;
 			QTimer::singleShot(5000, this, SLOT(MomentarilyHaltRobot()));
-		}
 	}
 }
 
@@ -225,7 +221,7 @@ void NavigateToSample::FinishSampleCollection()
 
 void LeaveBaseStation::Start()
 {
-	auto move = new MoveForwardState(this, 2.0);
+	auto move = new TravelToWayPoint(Vector2d(2.0, 0.0), this);
 	move->Start();
 
 	connect(move, &ProgressState::Finished, this, &LeaveBaseStation::MoveToRotate);
@@ -233,10 +229,12 @@ void LeaveBaseStation::Start()
 
 void LeaveBaseStation::MoveToRotate()
 {
-	auto rotate = new RotateState(this, M_PI/2);
-	rotate->Start();
+	// auto rotate = new RotateState(this, M_PI/2);
+	// rotate->Start();
+	auto move = new TravelToWayPoint(Vector2d(0.0, 4.0), this);
+	move->Start();
 
-	connect(rotate, &ProgressState::Finished, this, &LeaveBaseStation::MoveToNextState);
+	connect(move, &ProgressState::Finished, this, &LeaveBaseStation::MoveToNextState);
 }
 
 void LeaveBaseStation::MoveToNextState()
