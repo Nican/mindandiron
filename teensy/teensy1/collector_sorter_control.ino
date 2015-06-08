@@ -19,10 +19,8 @@ void checkSorterSlotChange() {
 
     if (lastSorter1State == HIGH and sorter1State == LOW) {
         if (travelDirection) {
-            Serial.println("INCREMENTING slot");
             currentSlot++;
         } else {
-            Serial.println("DECREMENTING slot");
             currentSlot--;
         }
     }
