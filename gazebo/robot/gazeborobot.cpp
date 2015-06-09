@@ -17,14 +17,15 @@ void GazeboSampleDetection::receiveUpdate(const RobotGazeboTickData &data)
 
 void GazeboSampleDetection::TeensyStatus(TeenseyStatus status)
 {
-	static const Vector2d sampleLocation(-20, 20);
+	static bool sampleCollected = false;
+	static const Vector2d sampleLocation(-40, 40);
 	QList<DetectedSample> detections;
 
 	Vector2d relative = sampleLocation - gazeboData.robotPosition.head<2>();
 	Vector2d relative2 = Rotation2Dd(-gazeboData.robotOrientation) * relative;
 
 	//Assume that the detector can see objects at most 10m away
-	if(relative2.norm() <= 10.0)
+	if(relative2.norm() <= 10.0 && sampleCollected == false)
 	{
 		//Or more than 90 degrees from the view of view
 		if(abs(atan2(relative2.y(), relative2.x())) <= (45.0 * M_PI / 180.0))
@@ -35,6 +36,9 @@ void GazeboSampleDetection::TeensyStatus(TeenseyStatus status)
 
 			detections += sample;
 		}
+
+		if(relative2.norm() <= 1.0)
+			sampleCollected = true;
 	}
 
 	mLastDetection = detections;
@@ -46,9 +50,8 @@ GazeboAprilTag::GazeboAprilTag(GazeboKratos* parent)
 {
 }
 
-void GazeboAprilTag::finishedProcessing()
+void GazeboAprilTag::finishedProcessing(std::vector<AprilTags::TagDetection> detections)
 {
-	auto detections = mDetectionFutureWatcher.future().result();
 	QList<AprilTagDetectionItem> detectionsItems;
 
 	RobotGazeboTickData tick = robot->mTeensey->mLastTick;

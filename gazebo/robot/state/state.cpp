@@ -48,13 +48,17 @@ RootState::RootState(QObject *parent) : BaseState(parent), mState(nullptr)
 
 void RootState::Start()
 {	
+	SetState(new Level1State(this));
+	//SetState(new ReturnToStationState(this));
+
+
 	//SetState(new TravelToWayPoint(Vector2d(10,10), this));
 	//SetState(new ReturnToStationState(this));
 
 	// SetState(new ReturnRealignState(this));
 
-	// SetState(new Level1State(this));
-	SetState(new NavigateToSample(this));
+	
+	// SetState(new NavigateToSample(this));
 	//SetState(new ReturnMoveBackState(this));
 	//SetState(new MoveForwardState(this, 10));
 }
@@ -77,6 +81,12 @@ void RootState::SetState(ProgressState* nextState)
 
 void RootState::MoveToNextState()
 {
+	if(qobject_cast<Level1State*>(mState) != nullptr)
+	{
+		ProgressState* newState = new ReturnToStationState(this);
+		SetState(newState);
+	} 
+
 	/*
 	if(qobject_cast<MoveForwardState*>(mState) == nullptr)
 	{
@@ -232,8 +242,8 @@ void MoveTowardsGoalState::TeensyStatus(TeenseyStatus status)
 void MoveTowardsGoalState::DriveTowards(Odometry odometry, Eigen::Vector2d goal)
 {
 	const double ARRIVAL_RADIUS = 0.4 + 0.04 * goal.norm();  // meters, gets bigger as goal goes away from base
-	const double SIDE_VELOCITY_OFFSET = 0.02;  // meters/second
-	const double FORWARD_VELOCITY = 0.12;  // meters/second
+	const double SIDE_VELOCITY_OFFSET = 0.05;  // meters/second
+	const double FORWARD_VELOCITY = 0.35;  // meters/second
 
 	if(mReverse)
 		odometry.mTheta += M_PI;
@@ -471,7 +481,7 @@ void RotateState::TeensyStatus(TeenseyStatus status)
 		Robot()->SetWheelVelocity(-TURN_STRENGTH, TURN_STRENGTH);
 
 	// if(mTotalRotation >= std::abs(mRotation))
-	if (std::abs(mTotalRotation) >= (std::abs(mRotation) / 2.0))  // NOTE THIS DIVISION, IT'S SKETCHY (It's to deal by hand with slippage issues)
+	if (std::abs(mTotalRotation) >= (std::abs(mRotation) / 2.0)) /// 2.0  // NOTE THIS DIVISION, IT'S SKETCHY (It's to deal by hand with slippage issues)
 	{
 		Robot()->SetWheelVelocity(0.0, 0.0);
 

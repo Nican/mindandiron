@@ -211,6 +211,7 @@ void MainWindow::messageReceived(const QList<QByteArray>& messages)
 	{
 		double distance = *(reinterpret_cast<const double*>(messages[1].data()));
 		mGridView->ReceiveDecawaveReading(distance);
+		mGridView->mValueGrid->ReceiveDecawave(distance);
 
 	}
 

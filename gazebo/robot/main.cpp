@@ -29,11 +29,13 @@ int main(int argc, char* argv[])
 	qRegisterMetaType<Robot::DepthImgData>("Robot::DepthImgData");
 	qRegisterMetaType<Robot::ImgData>("Robot::ImgData");
 	qRegisterMetaType<Robot::TeenseyStatus>("Robot::TeenseyStatus");
+	qRegisterMetaType<Robot::AprilTagDetectionItem>("Robot::AprilTagDetectionItem");
+	qRegisterMetaType<QList<Robot::AprilTagDetectionItem>>("QList<AprilTagDetectionItem>");
 
 	/*
 	QSqlDatabase mDb(QSqlDatabase::addDatabase("QSQLITE"));
 	mDb.setHostName("localhost");
-	mDb.setDatabaseName("/home/nican/robot_2015_05_17_12_41_45.db");
+	mDb.setDatabaseName("/home/kratos/projects/mindandiron/gazebo/build/data/robot_2015_06_08_16_13_03.db");
 
 	if (!mDb.open())
 	{
@@ -84,9 +86,9 @@ int main(int argc, char* argv[])
 			detections = detector.extractTags(image_gray);
 
 			QString prefix(QString::number(detections.size()));
-			//image.save("/home/nican/april2/" + prefix + "_" + QString::fromStdString(std::to_string(id)) + ".png");
+			image.save("/home/kratos/april2/" + prefix + "_" + QString::fromStdString(std::to_string(id)) + ".png");
 		
-			//cv::imwrite ("/home/nican/april2/" + prefix.toStdString() + "_" + std::to_string(id) + ".png", tmp);
+			// cv::imwrite ("/home/nican/april2/" + prefix.toStdString() + "_" + std::to_string(id) + ".png", tmp);
 			auto end = std::chrono::high_resolution_clock::now();
         	std::chrono::duration<double> diff = end-start;
 
@@ -137,36 +139,8 @@ int main(int argc, char* argv[])
 	}
 	*/
 
-
- 
- /*
-	std::vector<TestItem> vecs = {
-		{M_PI / 2, {-3, 5.5, 0}, {5.5, 3.0, 0}},
-		{M_PI, {-3, 0.5, 0}, {3, -0.5, 0}},
-		{M_PI, {-3, -0.5, 0}, {3, 0.5, 0}},
-		{-M_PI / 2, {-3, -5.5, 0}, {5.5, -3.0, 0}}
-	};
-
-	double cameraRot = M_PI;
-
-	for(auto& item : vecs)
-	{
-		auto pos = AngleAxisd(-item.rot, Vector3d::UnitZ()) * (item.value);
-
-		auto rotation = AngleAxisd(M_PI - cameraRot, Vector3d::UnitZ());
-		auto pos2 = rotation * pos;
-
-		std::cout << pos2.transpose() << "\n";
-		std::cout << item.expected.transpose() << "\n";
-		std::cout << "\n";
-	}
-
-
-	return 0;
-	*/
-
 	Robot::RealRobot robot;
-	//Robot::GazeboKratos robot;
+	// Robot::GazeboKratos robot;
 	robot.Initialize();
 
 	return app.exec();

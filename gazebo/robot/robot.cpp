@@ -49,6 +49,8 @@ Eigen::Affine2d LocationEstimation::GetEstimate()
 
 void LocationEstimation::AprilLocationUpdate(Affine2d newLocation)
 {
+	//std::cout << QDateTime::currentDateTime().toString("hh:mm:ss.zzz").toStdString() << "got april update: " << newLocation.translation().transpose() << "\n";
+	
 	odometry = Odometry();
 
 	Rotation2Dd rotation2D(0);
@@ -58,6 +60,7 @@ void LocationEstimation::AprilLocationUpdate(Affine2d newLocation)
 	odometry.SetTheta(rotation2D.angle());
 
 	mHistory.clear();
+	
 }
 
 void LocationEstimation::SendUpdate()
@@ -103,11 +106,11 @@ void Kratos2::Initialize()
 	mPlanner = new TrajectoryPlanner2(this);
 	//mWheelPID = new WheelPID(this);
 
-	connect(GetKinect(), &Kinect::receiveDepthImage, mSensorLog, &SensorLog::receiveDepthImage);
-	connect(GetKinect(), &Kinect::receiveDepthImage, this, &Kratos2::ProccessPointCloud);
-	connect(GetKinect(), &Kinect::receiveColorImage, mSensorLog, &SensorLog::receiveKinectImage);
-	connect(GetKinect(), &Kinect::receiveColorImage, this, &Kratos2::receiveKinectImage);
-	//GetKinect()->requestDepthFrame();
+	connect(GetKinect(), &Kinect::receiveDepthImage, mSensorLog, &SensorLog::receiveDepthImage, Qt::QueuedConnection);
+	connect(GetKinect(), &Kinect::receiveDepthImage, this, &Kratos2::ProccessPointCloud, Qt::QueuedConnection);
+	connect(GetKinect(), &Kinect::receiveColorImage, mSensorLog, &SensorLog::receiveKinectImage, Qt::QueuedConnection);
+	connect(GetKinect(), &Kinect::receiveColorImage, this, &Kratos2::receiveKinectImage, Qt::QueuedConnection);
+	GetKinect()->requestDepthFrame();
 	GetKinect()->requestColorFrame();
 
 	connect(GetDecawave(), &Decawave::statusUpdate, mSensorLog, &SensorLog::decawaveUpdate);
@@ -117,12 +120,12 @@ void Kratos2::Initialize()
 	connect(GetTeensy2(), &Teensy2::statusUpdate, mSensorLog, &SensorLog::teensy2Status);
 
 	connect(GetApril(), &AprilTagCamera::ReceiveFrame, mSensorLog, &SensorLog::ReceiveAprilTagImage);
-	connect(GetApril(), &AprilTagCamera::tagsDetected, mSensorLog, &SensorLog::ReceiveAprilTags);
-	connect(GetApril(), &AprilTagCamera::tagsDetected, this, &Kratos2::AprilTagDetected);
+	connect(GetApril(), &AprilTagCamera::tagsDetected, mSensorLog, &SensorLog::ReceiveAprilTags, Qt::QueuedConnection);
+	connect(GetApril(), &AprilTagCamera::tagsDetected, this, &Kratos2::AprilTagDetected, Qt::QueuedConnection);
 
 
-	connect(mApril2, &AprilTagCamera::tagsDetected, mSensorLog, &SensorLog::ReceiveAprilTags2);
-	connect(mApril2, &AprilTagCamera::tagsDetected, this, &Kratos2::AprilTag2Detected);
+	connect(mApril2, &AprilTagCamera::tagsDetected, mSensorLog, &SensorLog::ReceiveAprilTags2, Qt::QueuedConnection);
+	connect(mApril2, &AprilTagCamera::tagsDetected, this, &Kratos2::AprilTag2Detected, Qt::QueuedConnection);
 
 	
 	connect(&mFutureWatcher, SIGNAL(finished()), this, SLOT(FinishedPointCloud()));
@@ -219,7 +222,7 @@ void Kratos2::AprilTag2Detected(QList<AprilTagDetectionItem> detections)
 void Kratos2::AprilTagDetected(QList<AprilTagDetectionItem> detections)
 {
 
-	// cout << "Last detection " << mLastAprilDetection.msecsTo(QDateTime::currentDateTime()) << "\n";
+	//cout << QDateTime::currentDateTime().toString("hh:mm:ss.zzz").toStdString()  << ": Robot found " << detections.size() << " detections\n";
 	AprilTagDetectionItem tag;
 	bool foundSameAsLast = false;
 
@@ -332,6 +335,14 @@ double Kratos2::GetRightVelocity()
 	return mRightWheelVelocity;
 }
 
+void Kratos2::receiveKinectImage(Robot::ImgData mat)
+{
+	QImage image(mat.data.data(), mat.width, mat.height, QImage::Format_RGB888);
+	image = image.mirrored(true, false).scaled(1280, 720, Qt::KeepAspectRatio);
+
+	mApril2->ReadFrame(image);
+}
+
 
 void Kratos2::ProccessPointCloud(DepthImgData mat)
 {
@@ -358,27 +369,21 @@ void Kratos2::ProccessPointCloud(DepthImgData mat)
 		segmented.mPointCloud = growingRegion.AsyncronousUpdate(imgCloud);
 		segmented.mTimestamp = currentTime;
 
+		//std::cout << QDateTime::currentDateTime().toString("hh:mm:ss.zzz").toStdString() << ":Finished to segment\n";
+
 		return segmented;
 	});
 
 	mFutureWatcher.setFuture(future);
 }
 
-void Kratos2::receiveKinectImage(Robot::ImgData mat)
-{
-	QImage image(mat.data.data(), mat.width, mat.height, QImage::Format_RGB888);
-	image = image.mirrored(true, false).scaled(1280, 720, Qt::KeepAspectRatio);
-
-	mApril2->ReadFrame(image);
-}
-
-
-
 void Kratos2::FinishedPointCloud()
 {
 	//std::cout << "Finished point cloud;\n";
 	auto kinect = GetKinect();
 	auto pointCloud = mFutureWatcher.future().result();
+
+	//std::cout << QDateTime::currentDateTime().toString("hh:mm:ss.zzz").toStdString() << ": Got segmented cloud\n";
 
 	if(kinect != nullptr)
 	{

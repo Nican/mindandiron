@@ -26,7 +26,7 @@ void Level1State::StartToTravelBehind()
 	leaveBase->deleteLater();
 	leaveBase = nullptr;
 
-	auto move = new TravelToWayPoint(Vector2d(-10.0, 10.0), this);
+	auto move = new TravelToWayPoint(Vector2d(-5.0, 5.0), this);
 	move->Start();
 	
 	connect(move, &ProgressState::Finished, this, &Level1State::StartExplore);
@@ -38,14 +38,27 @@ void Level1State::StartExplore()
 	mMoveInfront = nullptr;
 
 	mExplore = new ExploreState(this);
-	//connect(mExplore, &ProgressState::Finished, this, &Level1State::EndExplore);
+	connect(mExplore, &ProgressState::Finished, this, &Level1State::EndExplore);
 	mExplore->Start();
+}
+
+void Level1State::EndExplore()
+{
+	SetFinished();
 }
 
 
 ////////////////////
 ////	ExploreState
 ////////////////////
+
+ExploreState::ExploreState(QObject *parent) : 
+	ProgressState(parent)
+	,mExploreOut(nullptr)
+	,mSampleNavigation(nullptr)
+	,lastExploreRadius(40.0)
+{
+}
 
 
 void ExploreState::Start()
@@ -55,12 +68,36 @@ void ExploreState::Start()
 
 	connect(Robot()->GetSampleDetection(), &SampleDetection::SampleDetected, this, &ExploreState::StartSampleCollection);
 	connect(Robot()->mPlanner, &TrajectoryPlanner2::ObstacleMapUpdate, this, &ExploreState::ObstacleMapUpdate);
+	connect(Robot()->GetDecawave(), &Decawave::statusUpdate, this, &ExploreState::DecawaveUpdate);
+}
+
+void ExploreState::DecawaveUpdate(double value)
+{
+	if(value >= lastExploreRadius + 10.0)
+	{
+		lastExploreRadius = value;
+		ResetExplore();
+
+		auto rotate = new RotateState(this, M_PI/2);
+		connect(rotate, &ProgressState::Finished, this, &ExploreState::StartNavigation);
+		rotate->Start();
+	}
+
+}
+
+void ExploreState::ResetExplore()
+{
+	mExploreOut->SetFinished();
+	mExploreOut->deleteLater();
+	mExploreOut = nullptr;
 }
 
 void ExploreState::StartNavigation()
 {
+	std::cout << "Starting navigation (Decawave: "<< Robot()->GetDecawave()->lastDistance <<")\n";
+
+	//This state never finishes
 	mExploreOut = new DecawaveMoveRadialState(0, this);
-	//connect(mExploreOut, &ProgressState::Finished, this, &ExploreState::RestartNavigation);
 	mExploreOut->Start();
 }
 
@@ -72,10 +109,12 @@ void ExploreState::StartSampleCollection(QList<DetectedSample> samples)
 		return;
 	}
 
-	mExploreOut->SetFinished();
-	mExploreOut->deleteLater();
-	mExploreOut = nullptr;
+	if(samples.isEmpty())
+		return;
 
+	ResetExplore();
+
+	std::cout << "Start to navigate to sample\n";
 	mSampleNavigation = new NavigateToSample(this);
 	connect(mSampleNavigation, &ProgressState::Finished, this, &ExploreState::RestartNavigation);
 	mSampleNavigation->Start();
@@ -90,11 +129,19 @@ void ExploreState::RestartNavigation()
 		mSampleNavigation = nullptr;
 	}
 
-	StartNavigation();
+	//TODO: Go back to navigation
+	//StartNavigation();
+	SetFinished();
 }
 
 void ExploreState::ObstacleMapUpdate(ObstacleMap obstacleMap)
 {
+	if(mExploreOut == nullptr)
+	{
+		//We are already trying to collect the sample
+		return;
+	}
+	
 	bool inRadius = false;
 
 	for(auto& pt : obstacleMap.mObstacleList)
@@ -107,6 +154,9 @@ void ExploreState::ObstacleMapUpdate(ObstacleMap obstacleMap)
 
 	if(inRadius)
 	{
+		std::cout << "Found bad obstacles :(\n";
+		ResetExplore();
+
 		int left = 0;
 		int right = 0;
 
@@ -118,7 +168,13 @@ void ExploreState::ObstacleMapUpdate(ObstacleMap obstacleMap)
 				right++;
 		}
 
-		auto rotate = new RotateState(this, (left > right) ? (M_PI/2) : (-M_PI/2) );
+		std::cout << "Count: Left: " << left << "\tRight: " << right << " " << (left+right) << "\n";
+
+		if((left+right) < 50)
+			return;
+
+		mLastRotation =  (left > right) ? (M_PI/2) : (-M_PI/2);
+		auto rotate = new RotateState(this, mLastRotation);
 		connect(rotate, &ProgressState::Finished, this, &ExploreState::FinishRotate);
 		rotate->Start();
 	}
@@ -126,7 +182,17 @@ void ExploreState::ObstacleMapUpdate(ObstacleMap obstacleMap)
 
 void ExploreState::FinishRotate()
 {
+	std::cout << "Finished to rotate\n";
+	mExploreOut = new MoveForwardState(this, 3.0);
+	connect(mExploreOut, &ProgressState::Finished, this, &ExploreState::RotateBack);
+	mExploreOut->Start();
+}
 
+void ExploreState::RotateBack()
+{
+	auto rotate = new RotateState(this, -mLastRotation);
+	connect(rotate, &ProgressState::Finished, this, &ExploreState::StartNavigation);
+	rotate->Start();
 }
 
 
@@ -171,13 +237,21 @@ void NavigateToSample::Start()
 void NavigateToSample::TeensyStatus(TeenseyStatus status)
 {
 	if (!finalApproach) {
-		if(std::abs(this->mLastSampleSeen.msecsTo(QDateTime::currentDateTime())) > 4000)
+		auto timeDiff = std::abs(this->mLastSampleSeen.msecsTo(QDateTime::currentDateTime()));
+		std::cout << "Time diff since last seen sample " << timeDiff << "\n";
+
+		if(timeDiff > 3000)
+		{
 			FinishSampleCollection();
+		}
 	}
 }
 
 void NavigateToSample::ProportionalSteerOverSample(QList<DetectedSample> samples)
 {
+	if(samples.isEmpty())
+		return;
+
 	mLastSampleSeen = QDateTime::currentDateTime();
 
 	if(IsFinished() || finalApproach)
@@ -189,8 +263,6 @@ void NavigateToSample::ProportionalSteerOverSample(QList<DetectedSample> samples
 	const double MAX_ANGLE = 36.0*M_PI/180.0;  // The camera FOV is 70 degrees
 
 	// cout << "sample[0]: " << samples[0].location.transpose() << "\n";
-	if(samples.isEmpty())
-		return;
 
 	auto sample = samples[0];
 	sample.location[1] = sample.location[1] - 0.2;
@@ -247,7 +319,7 @@ void NavigateToSample::FinishSampleCollection()
 
 void LeaveBaseStation::Start()
 {
-	auto move = new TravelToWayPoint(Vector2d(2.0, 0.0), this);
+	auto move = new TravelToWayPoint(Vector2d(4.0, 0.0), this);
 	move->Start();
 
 	connect(move, &ProgressState::Finished, this, &LeaveBaseStation::MoveToRotate);
@@ -257,7 +329,7 @@ void LeaveBaseStation::MoveToRotate()
 {
 	// auto rotate = new RotateState(this, M_PI/2);
 	// rotate->Start();
-	auto move = new TravelToWayPoint(Vector2d(0.0, 4.0), this);
+	auto move = new TravelToWayPoint(Vector2d(0.0, 5.0), this);
 	move->Start();
 
 	connect(move, &ProgressState::Finished, this, &LeaveBaseStation::MoveToNextState);

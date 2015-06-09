@@ -32,7 +32,7 @@ public:
 
 	GazeboAprilTag(GazeboKratos* parent = 0);
 
-	virtual void finishedProcessing() override;
+	virtual void finishedProcessing(std::vector<AprilTags::TagDetection> detections) override;
 };
 
 class GazeboDevawave : public Decawave

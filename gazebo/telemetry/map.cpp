@@ -79,9 +79,15 @@ ValuesGrid::ValuesGrid(QWidget *parent) : QWidget(parent)
 	formLayout2->addRow(tr("&Paused:"), mPaused = new QLabel("NA"));
 	groupBox2->setLayout(formLayout2);
 
+	QGroupBox *groupBox3 = new QGroupBox(tr("Decawave"));
+	QFormLayout *formLayout3 = new QFormLayout;
+	formLayout3->addRow(tr("&Decawave:"), mDecawave = new QLabel("NA"));
+	groupBox3->setLayout(formLayout3);
+
 	QVBoxLayout *vbox = new QVBoxLayout;
 	vbox->addWidget(groupBox);
 	vbox->addWidget(groupBox2);
+	vbox->addWidget(groupBox3);
 
 	setLayout(vbox);
 
@@ -108,12 +114,17 @@ void ValuesGrid::ReceiveTeensy2Data(const Robot::Teensy2Status &data)
 	mPaused->setText(QString::number(data.isPaused));
 }
 
+void ValuesGrid::ReceiveDecawave(double value)
+{
+	mDecawave->setText(QString::number(value));
+}
+
 
 MapOverview::MapOverview(QWidget *parent)
 	: QWidget(parent), view(&scene), mCore(nullptr)
 {
 	//SETUP THE GRID
-	qreal windowSize = 10.0;
+	qreal windowSize = 30.0;
 	for(qreal x = -windowSize; x <= windowSize; x += 1.0)
 	{
 		auto color = x == 0 ? Qt::black : Qt::gray;
@@ -128,8 +139,8 @@ MapOverview::MapOverview(QWidget *parent)
 	SetRobot({0.0, 0.0}, 0.0);
 
 	//Make the whole world visible
-	view.setSceneRect(-5, -5, 10, 10);
-	view.fitInView(-5, -5, 10, 10, Qt::KeepAspectRatio);
+	view.setSceneRect(-15, -15, 30, 30);
+	view.fitInView(-15, -15, 30, 30, Qt::KeepAspectRatio);
 
 	//Scale the axis to fit nice visually.
 	view.scale(1, -1);

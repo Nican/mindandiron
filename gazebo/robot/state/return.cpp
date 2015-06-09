@@ -15,20 +15,20 @@ void ReturnToStationState::Start()
 	//Get the -30 seconds of odometry
 	auto odometry = Robot()->GetOdometryTraveledSince(mStartTime.addSecs(-10));
 
-	// if(Robot()->GetDecawave()->lastDistance < 10.0)
-	// {
-	// 	SetState(new ReturnLocateAprilState(this));
-	// } 
-	// else if(odometry.mPosition.norm() < 1.0)
-	// {
-	// 	//If we moved less than 1 meter, we need to re-align
+	if(Robot()->GetDecawave()->lastDistance < 10.0)
+	{
+		SetState(new ReturnLocateAprilState(this));
+	} 
+	else if(odometry.mPosition.norm() < 1.0)
+	{
+		//If we moved less than 1 meter, we need to re-align
 		SetState(new ReturnRealignState(this));
-	// }
-	// else
-	// {
-	// 	//TODO: Rotate to the desired orientation
-	// 	SetState(new ReturnRealignState(this));
-	// }
+	}
+	else
+	{
+		//TODO: Rotate to the desired orientation
+		SetState(new ReturnRealignState(this));
+	}
 }
 
 
@@ -39,11 +39,11 @@ void ReturnToStationState::MoveToNextState()
 	if(qobject_cast<ReturnRealignState*>(mState) != nullptr)
 	{
 		//Move towards base station
-		SetState(new DecawaveMoveRadialState(1, this));
+		SetState(new ReturnToBaseStationDecawave(this));
 		return;
 	}
 
-	if(qobject_cast<DecawaveMoveRadialState*>(mState) != nullptr)
+	if(qobject_cast<ReturnToBaseStationDecawave*>(mState) != nullptr)
 	{
 		//Locate april tag
 		SetState(new ReturnLocateAprilState(this));
@@ -76,6 +76,29 @@ void ReturnToStationState::SetState(ProgressState* nextState)
  	}
 }
 
+////////////////////
+////	ReturnToBaseStationDecawave
+////////////////////
+
+ReturnToBaseStationDecawave::ReturnToBaseStationDecawave(QObject *parent) :
+	ProgressState(parent)
+{
+}
+
+void ReturnToBaseStationDecawave::Start()
+{
+	mMove = new DecawaveMoveRadialState(1, this);
+
+	connect(Robot(), &Kratos2::AprilLocationUpdate, this, &ReturnToBaseStationDecawave::FoundAprilTag);
+
+	mMove->Start();
+}
+
+void ReturnToBaseStationDecawave::FoundAprilTag(Eigen::Affine2d newLocation)
+{
+	SetFinished();
+}
+
 
 ////////////////////
 ////	BackIntoBaseStationState
@@ -90,7 +113,14 @@ void BackIntoBaseStationState::Start()
 
 void BackIntoBaseStationState::TeensyStatus(TeenseyStatus status)
 {
-	
+	if(mMoveInfront == nullptr)
+		return;
+
+	if(Robot()->GetDecawave()->lastDistance < 0.7)
+	{
+		mMoveInfront->SetFinished();
+		Robot()->SetWheelVelocity(0.0, 0.0);
+	}
 }
 
 void BackIntoBaseStationState::FoundAprilTag(Eigen::Affine2d newLocation)
@@ -102,7 +132,7 @@ void BackIntoBaseStationState::FoundAprilTag(Eigen::Affine2d newLocation)
 	rotation2D.fromRotationMatrix(newLocation.linear());
 
 	mMoveInfront = new MoveTowardsGoalState(this);
-	mMoveInfront->mGoal = Vector2d(-0.5, 0.0);
+	mMoveInfront->mGoal = Vector2d(-0.8, 0.0);
 	mMoveInfront->mStartPos = newLocation.translation();
 	mMoveInfront->mStartAngle = rotation2D.angle();
 	mMoveInfront->mReverse = true;
@@ -114,7 +144,7 @@ void BackIntoBaseStationState::FoundAprilTag(Eigen::Affine2d newLocation)
 
 void BackIntoBaseStationState::DriveInto()
 {
-
+	Robot()->SetWheelVelocity(0.0, 0.0);
 }
 
 
@@ -125,82 +155,68 @@ void BackIntoBaseStationState::DriveInto()
 
 void ReturnLocateAprilState::Start()
 {
-	mMoveInfront = nullptr;
-	
-	mRotate = new RotateState(this, M_PI);
-	connect(mRotate, &ProgressState::Finished, this, &ReturnLocateAprilState::FinishRotate);
-	mRotate->Start();
-
-	mFinishedRotatingTime = QDateTime::currentDateTime();
-
-	mStartTime = QDateTime::currentDateTime();
-
-	
+	Robot()->SetWheelVelocity(0.0, 0.0);
+	connect(Robot(), &Kratos2::AprilLocationUpdate, this, &ReturnLocateAprilState::FoundAprilTag);	
 }
 
-void ReturnLocateAprilState::TeensyStatus(TeenseyStatus status)
-{
-	if(!mFinishedRotatingTime.isValid())
-		return;
-
-	//We are going to wait for a maximun of 30 seconds to find the april tags
-	if(mStartTime.msecsTo(QDateTime::currentDateTime()) > 15 * 1000){
-		//Move around a bit and try to find the april tag again
-		return;
-	}
-
-}
-
-void ReturnLocateAprilState::FinishRotate()
-{
-	//Robot()->SetWheelVelocity(0.0, 0.0);
-
-	mFinishedRotatingTime = QDateTime::currentDateTime();
-	//Can we see the april tag?
-	connect(Robot(), &Kratos2::AprilLocationUpdate, this, &ReturnLocateAprilState::FoundAprilTag);
-}
 
 void ReturnLocateAprilState::FoundAprilTag(Eigen::Affine2d newLocation)
 {
-	Robot()->SetWheelVelocity(0.0, 0.0);
+	disconnect(Robot(), &Kratos2::AprilLocationUpdate, this, &ReturnLocateAprilState::FoundAprilTag);	
+	Vector2d loc = newLocation.translation();
 
-	if(mRotate->IsValid())
+	std::cout << "Starting: ReturnLocateAprilState; Robot at: " << loc.transpose() << "\n"; 
+	
+	if(loc.x() < 0.0)
 	{
-		std::cout << "Rotating is still valid. Killing it!\n";
-		mRotate->SetFinished();
+		Vector2d goal(0,0);
+
+		if(loc.y() > 0.0)
+		{
+			goal = Vector2d(0.0, 4.0);
+		}
+		else
+		{
+			goal = Vector2d(0.0, -4.0);
+		}
+
+		std::cout << "Moving to the side of the base station at goal: " << goal << "\n";
+
+		TravelToWayPoint* waypoint = new TravelToWayPoint(goal, this);
+		connect(waypoint, &ProgressState::Finished, this, &ReturnLocateAprilState::TravelToFront);
+		waypoint->Start();
+
+		return;
 	}
 
-	//std::cout << "ReturnLocateAprilState::FoundAprilTag";
+	TravelToFront();
 
-	if(mMoveInfront != nullptr)
-		return;
+}
 
-	Rotation2Dd rotation2D(0);
-	rotation2D.fromRotationMatrix(newLocation.linear());
 
-	mMoveInfront = new MoveTowardsGoalState(this);
-	mMoveInfront->mGoal = Vector2d(3.0, 0.0);
-	mMoveInfront->mStartPos = newLocation.translation();
-	mMoveInfront->mStartAngle = rotation2D.angle();
-	mMoveInfront->mReverse = true;
-	mMoveInfront->mAprilUpdates = true;
-	mMoveInfront->Start();
+void ReturnLocateAprilState::TravelToFront()
+{
+	std::cout << "Moving to the front of the base station\n";
 
-	connect(mMoveInfront, &ProgressState::Finished, this, &ReturnLocateAprilState::RealignInFront);
+	TravelToWayPoint* waypoint = new TravelToWayPoint(Vector2d(5, 0), this);
+	connect(waypoint, &ProgressState::Finished, this, &ReturnLocateAprilState::RealignInFront);
+	waypoint->Start();
 }
 
 void ReturnLocateAprilState::RealignInFront()
 {
+	std::cout << "Waiting 2 seconds rotating in front";
 	QTimer::singleShot(2000, this, SLOT(StartRealignInFrontRotation()));
 }
 
 void ReturnLocateAprilState::StartRealignInFrontRotation()
 {
-	auto odometry = Robot()->GetOdometryTraveledSince(QDateTime::currentDateTime().addSecs(-2), QDateTime::currentDateTime(), true);
-	cout << "Rotating angle: " << -odometry.mTheta << " rad\n";
+	double angle = GetEuler(Robot()->mLocation.GetEstimate().linear());
+
+	std::cout << "ReturnLocateAprilState::StartRealignInFrontRotation at angle: " << (angle*180/M_PI) << "\n";
 
 	//Rotate to align itself with the base station
-	RotateState* rotate = new RotateState(this, -odometry.mTheta);
+	RotateState* rotate = new RotateState(this, -angle);
 	rotate->Start();
 
 	connect(rotate, &ProgressState::Finished, this, &ReturnLocateAprilState::FinishedRealignRotation);
@@ -211,191 +227,6 @@ void ReturnLocateAprilState::FinishedRealignRotation()
 	std::cout << "Finished 'realign in front' rotation\n";
 	SetFinished();	
 	// QTimer::singleShot(2000, this, SLOT(SendFinishedRealignRotationSignal()));
-}
-
-// void ReturnLocateAprilState::SendFinishedRealignRotationSignal()
-// {
-// 	std::cout << "Finished 'realign in front' rotation\n";
-// 	SetFinished();
-// }
-
-////////////////////
-////	DecawaveMoveRadialState
-////	Move forward while attempting to minimize the distance between odometry and decawave distance traveled
-////////////////////
-
-void DecawaveMoveRadialState::Start()
-{
-	mLastPerformance = 0.0;
-	returnType = ReturnMoveEnum::FORWARD;
-	Robot()->SetWheelVelocity(0.2, 0.2);
-
-	connect(Robot()->GetDecawave(), &Decawave::statusUpdate, this, &DecawaveMoveRadialState::DecawaveUpdate);
-}
-
-void DecawaveMoveRadialState::DecawaveUpdate(double value)
-{
-	mLastReadings[lastReadingId] = value;
-
-	if(lastReadingId == mLastReadings.size() - 1)
-	{
-		UpdateDirection(GetAverageDecawaveVelocity(), in);
-		mLastReadings[0] = mLastReadings[lastReadingId];
-		lastReadingId = 1;
-	}
-	else
-	{
-		lastReadingId++;
-	}
-
-	// if(value < 10.0){
-	// 	Robot()->SetWheelVelocity(0.0, 0.0);
-	// 	SetFinished();
-	// 	return;
-	// }
-}
-
-// Should return average velocity in m/s
-double DecawaveMoveRadialState::GetAverageDecawaveVelocity()
-{
-	double averageValue = 0.0;
-	for(std::size_t i = 1; i < mLastReadings.size(); i++)
-	{
-		double diff = mLastReadings[i-1] - mLastReadings[i];
-		// Decawave updates at about 0.8 seconds
-		averageValue += diff / 0.8;  // THIS IS MORE ACCURATE THAN MEASURING TIME DIFF
-									 // There's some weird data buffering going on
-	}
-	return averageValue / (double) mLastReadings.size();
-}
-
-void DecawaveMoveRadialState::UpdateDirection(double averageVelocity, int in)
-{
-	// Note to Henrique: if any velocities are positive/negative when they
-	// shouldn't be, change state to realign?
-
-	static double lastVelocity = 0.0;  // Stores last average velocity for comparison
-	const double MAX_SIDE_VELOCITY = 0.075;
-	const double MAX_FORWARD_VELOCITY = 0.57;
-	static double maxSeenVelocity = MAX_FORWARD_VELOCITY;
-
-	if ((!in && averageVelocity < maxSeenVelocity) ||
-	    (in  && averageVelocity > maxSeenVelocity))
-	{
-			maxSeenVelocity = averageVelocity;
-	}
-	std::cout << "Average m/s value is: " << averageVelocity << "\n";
-	std::cout << "Last m/s value is: " << lastVelocity << "\n";
-
-	double forwardVelocity = MAX_FORWARD_VELOCITY;
-
-	// The "get average velocity" function overestimates a little, or the
-	// Teensy overdoes the velocity. Hard to know. Test whether the multiplier
-	// (currently 1.0) works on grass, it's good on concrete
-	if ((!in && averageVelocity <= (-1.0 * MAX_FORWARD_VELOCITY)) ||
-		(in  && averageVelocity >= ( 1.0 * MAX_FORWARD_VELOCITY)))
-	{
-		std::cout << "Doing well, moving FORWARD\n";
-		Robot()->SetWheelVelocity(forwardVelocity, forwardVelocity);
-		lastVelocity = averageVelocity;  // For comparison to next computed velocity
-		return;
-	}
-
-	if ((!in && averageVelocity <= lastVelocity) ||
-		(in  && averageVelocity >= lastVelocity))
-	{
-		std::cout << "State improved from last run, continuing on without DIRECTION change\n";
-	} else if (returnType == ReturnMoveEnum::RIGHT) {
-		std::cout << "Moving LEFT\n";
-		returnType = ReturnMoveEnum::LEFT;
-	} else {
-		std::cout << "Moving RIGHT\n";
-		returnType = ReturnMoveEnum::RIGHT;
-	}
-
-	double proportionalReaction = (1.15 - averageVelocity / maxSeenVelocity) * MAX_SIDE_VELOCITY;
-	// std::cout << "forwardVelocity: " << forwardVelocity << "\n";
-	// std::cout << "proportionalReaction: " << proportionalReaction << "\n";
-	CommandVelocity(forwardVelocity, proportionalReaction);
-	lastVelocity = averageVelocity;  // For comparison to next computed velocity
-}
-
-
-void DecawaveMoveRadialState::CommandVelocity(double forwardVelocity, double proportionalReaction)
-{
-	switch(returnType) {
-		case ReturnMoveEnum::FORWARD:
-			Robot()->SetWheelVelocity(forwardVelocity, forwardVelocity);
-			break;
-		case ReturnMoveEnum::RIGHT: 
-			Robot()->SetWheelVelocity(forwardVelocity + proportionalReaction,
-									  forwardVelocity - proportionalReaction);
-			break;
-		case ReturnMoveEnum::LEFT: 
-			Robot()->SetWheelVelocity(forwardVelocity - proportionalReaction,
-									  forwardVelocity + proportionalReaction);
-			break;
-	}
-}
-
-
-void DecawaveMoveTangentialState::UpdateDirection(double averageVelocity, int in)
-{
-	static int guessIsLeftIn = 0;  // Guesses that "in" is to the left of the robot
-	static double lastVelocity = 0.0;  // Stores last average velocity for comparison
-	const double MAX_SIDE_VELOCITY = 0.075;
-	const double MAX_FORWARD_VELOCITY = 0.35;
-
-	double forwardVelocity = MAX_FORWARD_VELOCITY;
-
-	const double guessVelocityCutoff = 0.2 * MAX_FORWARD_VELOCITY;
-	if ((returnType == ReturnMoveEnum::LEFT  && (averageVelocity > (lastVelocity + guessVelocityCutoff))) ||
-	    (returnType == ReturnMoveEnum::RIGHT && (averageVelocity < (lastVelocity - guessVelocityCutoff))))
-	{
-		// std::cout << "Making guess higher\n";
-		if (guessIsLeftIn < 2)
-			guessIsLeftIn++;
-	}
-	if ((returnType == ReturnMoveEnum::LEFT  && (averageVelocity < (lastVelocity - guessVelocityCutoff))) ||
-	    (returnType == ReturnMoveEnum::RIGHT && (averageVelocity > (lastVelocity + guessVelocityCutoff))))
-	{
-		// std::cout << "Making guess lower\n";
-		if (guessIsLeftIn > -2)
-			guessIsLeftIn--;
-	}
-	// std::cout << "returnType: " << (int) returnType << "\n";
-	// std::cout << "Average m/s value is: " << averageVelocity << "\n";
-	// std::cout << "Last m/s value is: " << lastVelocity << "\n";
-	std::cout << "guessIsLeftIn: " << guessIsLeftIn << "\n";
-
-
-	if (abs(averageVelocity) <= (0.15 * MAX_FORWARD_VELOCITY))
-	{
-		std::cout << "\tDoing well, moving FORWARD: " << forwardVelocity << " m/s\n";
-		Robot()->SetWheelVelocity(forwardVelocity, forwardVelocity);
-		lastVelocity = averageVelocity;  // For comparison to next computed velocity
-		return;
-	}
-
-	if (((averageVelocity < 0 && lastVelocity < 0) ||
-		 (averageVelocity > 0 && lastVelocity > 0)) &&
-		abs(averageVelocity) < abs(lastVelocity))
-	{
-		std::cout << "State improved from last run, continuing on without DIRECTION change\n";
-	} else if ((averageVelocity < 0 && guessIsLeftIn >= 0) ||
-		   	   (averageVelocity > 0 && guessIsLeftIn < 0)) {
-		std::cout << "\tMoving LEFT\n";
-		returnType = ReturnMoveEnum::LEFT;
-	} else {
-		std::cout << "\tMoving RIGHT\n";
-		returnType = ReturnMoveEnum::RIGHT;
-	}
-
-	double proportionalReaction = abs(averageVelocity) / MAX_FORWARD_VELOCITY * MAX_SIDE_VELOCITY;
-	// std::cout << "forwardVelocity: " << forwardVelocity << "\n";
-	// std::cout << "proportionalReaction: " << proportionalReaction << "\n";
-	CommandVelocity(forwardVelocity, proportionalReaction);
-	lastVelocity = averageVelocity;  // For comparison to next computed velocity
 }
 
 

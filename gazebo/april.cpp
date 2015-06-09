@@ -92,7 +92,7 @@ AprilTagCamera::AprilTagCamera(double fx, double fy, double px, double py, QObje
 {
 	m_tagDetector.reset(new AprilTags::TagDetector(AprilTags::tagCodes25h9));
 
-	connect(&mDetectionFutureWatcher, SIGNAL(finished()), this, SLOT(finishedProcessing()));
+	//connect(&mDetectionFutureWatcher, SIGNAL(finished()), this, SLOT(finishedProcessing()));
 	connect(this, SIGNAL(ReceiveFrame(QImage)), this, SLOT(ReadFrame(QImage)));
 	//connect(this, &AprilTagCamera::ReceiveFrame, this, &AprilTagCamera::ReadFrame);
 }
@@ -123,7 +123,7 @@ void AprilTagCamera::ReadFrame(QImage image)
 
 	auto future = QtConcurrent::run([cvImage, this]()
 	{
-		//std::cout << objectName().toStdString() << " Starting processing image: " << QDateTime::currentDateTime().toString("hh:mm:ss.zzz").toStdString() << "\n";
+		
 		cv::Mat image_gray;
 		std::vector<AprilTags::TagDetection> detections;
 
@@ -132,8 +132,10 @@ void AprilTagCamera::ReadFrame(QImage image)
 		detections = m_tagDetector->extractTags(image_gray);
 
 		// std::cout << "Finish processing image : " << QDateTime::currentDateTime().toString("hh:mm:ss.zzz").toStdString()<< "\n";
-
-		return detections;
+		// std::cout << QDateTime::currentDateTime().toString("hh:mm:ss.zzz").toStdString() << ": " << objectName().toStdString() << " finished processing";
+		// std::cout << " and found " << detections.size() << " samples.\n";
+		finishedProcessing(detections);
+	
 	});
 	lastFrameTime = QDateTime::currentDateTime();
 
@@ -141,12 +143,12 @@ void AprilTagCamera::ReadFrame(QImage image)
 
 }
 
-void AprilTagCamera::finishedProcessing()
+void AprilTagCamera::finishedProcessing(std::vector<AprilTags::TagDetection> detections)
 {
-	auto detections = mDetectionFutureWatcher.future().result();
 	QList<AprilTagDetectionItem> detectionsItems;
 
-	// std::cout << "Main thread grabbing tags: " << QDateTime::currentDateTime().toString("hh:mm:ss.zzz").toStdString() << "\n";
+	//std::cout << QDateTime::currentDateTime().toString("hh:mm:ss.zzz").toStdString() << ":" << objectName().toStdString()  << " grabbing ";
+	//std::cout << detections.size() << " entries\n";
 
 	for(auto &tag : detections)
 	{
@@ -157,8 +159,6 @@ void AprilTagCamera::finishedProcessing()
 			std::cerr << "Unkown tag of id: " << tag.id << "\n";
 			continue;
 		}
-
-
 
 		AprilTagDetectionItem item;
 		item.detection = tag;
@@ -184,6 +184,8 @@ void AprilTagCamera::finishedProcessing()
 
 		detectionsItems.append(item);
 	}
+
+	//std::cout << "\t emmitting: " << detectionsItems.size() << " entries\n";
 
 	emit tagsDetected(detectionsItems);
 }

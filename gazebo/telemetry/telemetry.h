@@ -119,8 +119,12 @@ public:
 	QLabel* mVoltage;
 	QLabel* mPaused;
 
+	//Decawave
+	QLabel* mDecawave;
+
 	void ReceiveTeensyData(const Robot::TeenseyStatus &data);
 	void ReceiveTeensy2Data(const Robot::Teensy2Status &data);
+	void ReceiveDecawave(double value);
 };
 
 

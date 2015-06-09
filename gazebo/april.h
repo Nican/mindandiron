@@ -49,7 +49,7 @@ class AprilTagCamera : public QObject
 
 public:
 	std::shared_ptr<AprilTags::TagDetector> m_tagDetector;
-	QFutureWatcher<std::vector<AprilTags::TagDetection>> mDetectionFutureWatcher;
+	QFutureWatcher<void> mDetectionFutureWatcher;
 	QDateTime lastFrameTime;
 
 	double mFx;
@@ -63,7 +63,7 @@ public:
 
 public slots:
 	void ReadFrame(QImage image);
-	virtual void finishedProcessing();
+	virtual void finishedProcessing(std::vector<AprilTags::TagDetection> detections);
 
 signals:
 	void tagsDetected(QList<AprilTagDetectionItem>);

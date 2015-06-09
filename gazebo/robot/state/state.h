@@ -5,6 +5,9 @@
 #include <QDateTime>
 #include <QQueue>
 
+
+double GetEuler(Eigen::Matrix2d matrix);
+
 namespace Robot
 {
 
@@ -131,6 +134,7 @@ public slots:
 	void StartToTravelBehind();
 	//void MoveForwardBehind();
 	void StartExplore();
+	void EndExplore();
 };
 
 
@@ -196,13 +200,11 @@ public:
 	virtual void Start() override;
 
 public slots:
-	void TeensyStatus(TeenseyStatus status);
 	void FoundAprilTag(Eigen::Affine2d newLocation);
-	void FinishRotate();
+	void TravelToFront();
 	void RealignInFront();
 	void StartRealignInFrontRotation();
 	void FinishedRealignRotation();
-	// void SendFinishedRealignRotationSignal();
 };
 
 enum class ReturnMoveEnum 
@@ -282,15 +284,17 @@ class ExploreState : public ProgressState
 	Q_OBJECT
 public:
 
-	DecawaveMoveRadialState* mExploreOut;
+	ProgressState* mExploreOut;
 	NavigateToSample* mSampleNavigation;
 	QDateTime mStartTime;
+	double mLastRotation;
 
-	ExploreState(QObject *parent) : ProgressState(parent), mExploreOut(nullptr), mSampleNavigation(nullptr)
-	{
-	}
+	double lastExploreRadius;
+
+	ExploreState(QObject *parent);
 
 	virtual void Start() override;
+	void ResetExplore();
 
 public slots:
 	void StartNavigation();
@@ -298,8 +302,11 @@ public slots:
 	void RestartNavigation();
 
 	void FinishRotate();
+	void RotateBack();
 
 	void StartSampleCollection(QList<DetectedSample> samples);
+	void ObstacleMapUpdate(ObstacleMap obstacleMap);
+	void DecawaveUpdate(double value);
 };
 
 
@@ -347,6 +354,26 @@ public slots:
 	void FoundAprilTag(Eigen::Affine2d newLocation);
 	void FinishedTrajectory();
 };
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+class ReturnToBaseStationDecawave : public ProgressState
+{
+	Q_OBJECT
+
+public:
+	DecawaveMoveRadialState* mMove;
+
+	ReturnToBaseStationDecawave(QObject *parent);
+
+	virtual void Start() override;
+
+public slots:
+	void FoundAprilTag(Eigen::Affine2d newLocation);
+};
+
 
 
 
