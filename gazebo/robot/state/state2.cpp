@@ -18,6 +18,7 @@ double GetEuler(Matrix2d matrix)
 TravelToWayPoint::TravelToWayPoint(Vector2d position, QObject *parent) : 
 	ProgressState(parent)
 	,mTargetPosition(position)
+	,mTolerance(0.4)
 	,mReverse(false)
 {
 }
@@ -25,6 +26,10 @@ TravelToWayPoint::TravelToWayPoint(Vector2d position, QObject *parent) :
 void TravelToWayPoint::Start()
 {
 	connect(Robot()->GetTeensy(), &Teensy::statusUpdate, this, &TravelToWayPoint::TeensyStatus);
+
+	std::cout << "TRAVEL TO WAYPOINT: \n";
+	std::cout << "\tStarting at: " << Robot()->mLocation.GetEstimate().translation().transpose() << "\n";
+	std::cout << "\tTarget at: " << mTargetPosition.transpose() << "\n";
 }
 
 void TravelToWayPoint::TeensyStatus(TeenseyStatus status)
@@ -34,8 +39,8 @@ void TravelToWayPoint::TeensyStatus(TeenseyStatus status)
 
 	const double TURN_STRENGTH = 0.1; 
 	const double SIDE_VELOCITY_OFFSET = 0.03;  // meters/second
-	const double FORWARD_VELOCITY = 0.5;  // meters/second
-	const double ARRIVAL_RADIUS = 0.4 + 0.01 * mTargetPosition.norm();  // meters, gets bigger as goal goes away from base
+	const double FORWARD_VELOCITY = 0.35;  // meters/second
+	//const double ARRIVAL_RADIUS = 0.4 + 0.01 * mTargetPosition.norm();  // meters, gets bigger as goal goes away from base
 
 	auto goal = mTargetPosition;
 	auto current = Robot()->mLocation.GetEstimate();
@@ -43,7 +48,7 @@ void TravelToWayPoint::TeensyStatus(TeenseyStatus status)
 
 	//std::cout << "Distance from goal: " << (goal - current.translation()).norm() << "\n";
 
-	if((goal - current.translation()).norm() < ARRIVAL_RADIUS)
+	if((goal - current.translation()).norm() < mTolerance)
 	{
 		std::cout << "Arrived at destination. :)\n";
 		Robot()->SetWheelVelocity(0.0, 0.0);
@@ -53,6 +58,9 @@ void TravelToWayPoint::TeensyStatus(TeenseyStatus status)
 
 	Vector2d diff(goal - current.translation());
 	double desiredAngle = std::atan2(diff.y(), diff.x());
+
+	if(mReverse)
+		currentAngle += M_PI;
 
 	//Message to Mali: Complex numbers are way better. 
 	double angleDiff = std::arg(std::polar(1.0, desiredAngle) * std::polar(1.0, -currentAngle));
@@ -155,9 +163,10 @@ void DecawaveMoveRadialState::UpdateDirection(double averageVelocity, int in)
 	// Note to Henrique: if any velocities are positive/negative when they
 	// shouldn't be, change state to realign?
 
+	const double MAX_SIDE_VELOCITY = in ? 0.075 : 0.05;
+	const double MAX_FORWARD_VELOCITY = in ? 0.57 : 0.35;
+
 	static double lastVelocity = 0.0;  // Stores last average velocity for comparison
-	const double MAX_SIDE_VELOCITY = 0.075;
-	const double MAX_FORWARD_VELOCITY = 0.57;
 	static double maxSeenVelocity = MAX_FORWARD_VELOCITY;
 
 	if ((!in && averageVelocity < maxSeenVelocity) ||
@@ -165,6 +174,7 @@ void DecawaveMoveRadialState::UpdateDirection(double averageVelocity, int in)
 	{
 			maxSeenVelocity = averageVelocity;
 	}
+	std::cout << "In radial decawave mode, going in? " << in << "\n";
 	std::cout << "Average m/s value is: " << averageVelocity << "\n";
 	std::cout << "Last m/s value is: " << lastVelocity << "\n";
 
@@ -245,6 +255,7 @@ void DecawaveMoveTangentialState::UpdateDirection(double averageVelocity, int in
 			guessIsLeftIn--;
 	}
 	// std::cout << "returnType: " << (int) returnType << "\n";
+		std::cout << "In tangential decawave mode\n";
 	// std::cout << "Average m/s value is: " << averageVelocity << "\n";
 	// std::cout << "Last m/s value is: " << lastVelocity << "\n";
 	std::cout << "guessIsLeftIn: " << guessIsLeftIn << "\n";
@@ -277,4 +288,72 @@ void DecawaveMoveTangentialState::UpdateDirection(double averageVelocity, int in
 	// std::cout << "proportionalReaction: " << proportionalReaction << "\n";
 	CommandVelocity(forwardVelocity, proportionalReaction);
 	lastVelocity = averageVelocity;  // For comparison to next computed velocity
+}
+
+
+
+////////////////////
+////	AprilRotateState
+////////////////////
+
+
+void AprilRotateState::Start()
+{
+	mStartTime = QDateTime::currentDateTime();
+
+	connect(Robot()->GetTeensy(), &Teensy::statusUpdate, this, &AprilRotateState::TeensyStatus);
+	connect(Robot(), &Kratos2::AprilLocationUpdate, this, &AprilRotateState::FoundAprilTag);
+
+}
+
+void AprilRotateState::FoundAprilTag(Eigen::Affine2d newLocation)
+{
+	mLastAprilTag = QDateTime::currentDateTime();
+}
+
+void AprilRotateState::TeensyStatus(TeenseyStatus status)
+{
+	auto current = Robot()->mLocation.GetEstimate();
+	double currentAngle = GetEuler(current.linear());
+	const double TURN_STRENGTH = 0.075;
+
+	if(IsFinished())
+		return;
+
+	double angleDiff = std::arg(std::polar(1.0, mTargetRotation) * std::polar(1.0, -currentAngle));
+
+	auto currentTime = QDateTime::currentDateTime();
+	double timeDiff = std::abs(mStartTime.msecsTo(currentTime));
+	double aprilTimeDiff = std::abs(mLastAprilTag.msecsTo(currentTime));
+
+	if(timeDiff >= 20000){
+		Robot()->SetWheelVelocity(0.0, 0.0);
+		SetFinished();
+		return;
+	}
+
+	if(std::abs(angleDiff) < mTolerance)
+	{
+		Robot()->SetWheelVelocity(0.0, 0.0);
+
+		if(timeDiff >= 10000)
+			SetFinished();
+
+		return;
+	}
+
+	//If we have not seen the april tag in a while, just stop and re-localize
+	if(aprilTimeDiff >= 4000)
+	{
+		Robot()->SetWheelVelocity(0.0, 0.0);
+		return;
+	}
+
+
+	if(angleDiff < 0.0)
+		Robot()->SetWheelVelocity(TURN_STRENGTH, -TURN_STRENGTH);
+	else
+		Robot()->SetWheelVelocity(-TURN_STRENGTH, TURN_STRENGTH);
+
+
 }

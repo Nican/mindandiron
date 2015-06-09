@@ -12,7 +12,8 @@ static const bool lowBandwidth = false;
 
 SensorLog::SensorLog(Kratos2* parent, nzmqt::ZMQContext* context) : 
 QObject(parent),
-mDb(QSqlDatabase::addDatabase("QSQLITE"))
+mDb(QSqlDatabase::addDatabase("QSQLITE")),
+mRobot(parent)
 {
 	mSocket = context->createSocket(ZMQSocket::TYP_PUB, this);
 	mSocket->setObjectName("Publisher.Socket.socket(PUB)");
@@ -201,6 +202,7 @@ void SensorLog::teensyStatus(TeenseyStatus status)
 	QByteArray buffer;
 	QDataStream stream(&buffer, QIODevice::WriteOnly);
 	stream << status;
+	stream << mRobot->GetTimeEstimate();
 
 
 	QList<QByteArray> msg;

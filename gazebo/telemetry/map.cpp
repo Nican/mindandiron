@@ -59,6 +59,12 @@ void LabelWithPlot::paintEvent(QPaintEvent * event)
 
 ValuesGrid::ValuesGrid(QWidget *parent) : QWidget(parent)
 {
+	
+	QGroupBox *groupBox0 = new QGroupBox(tr("Total Run Time"));
+	QFormLayout *formLayout0 = new QFormLayout;
+	formLayout0->addRow(tr("&T:"), mTotalTime = new QLabel("NA"));
+	groupBox0->setLayout(formLayout0);
+
 	QGroupBox *groupBox = new QGroupBox(tr("Teensy 1"));
 	QFormLayout *formLayout = new QFormLayout;
 	formLayout->addRow(tr("&Left:"), mLeftWheel = new QLabel("NA"));
@@ -85,6 +91,7 @@ ValuesGrid::ValuesGrid(QWidget *parent) : QWidget(parent)
 	groupBox3->setLayout(formLayout3);
 
 	QVBoxLayout *vbox = new QVBoxLayout;
+	vbox->addWidget(groupBox0);
 	vbox->addWidget(groupBox);
 	vbox->addWidget(groupBox2);
 	vbox->addWidget(groupBox3);
@@ -118,6 +125,12 @@ void ValuesGrid::ReceiveDecawave(double value)
 {
 	mDecawave->setText(QString::number(value));
 }
+
+void ValuesGrid::ReceiveTime(double value)
+{
+	mTotalTime->setText(QString::number(value));
+}
+
 
 
 MapOverview::MapOverview(QWidget *parent)
