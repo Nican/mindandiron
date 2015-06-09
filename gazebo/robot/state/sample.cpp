@@ -7,7 +7,7 @@ using namespace Robot;
 using namespace Eigen;
 
 
-static const double SAMPLE_RANGE = 45.0; //+- 10m 
+static const double SAMPLE_RANGE = 64.0; //+- 10m 
 static const double SAMPLE_SEARCH_RANGE = 10.0;
 static const double SAMPLE_ANGLE = 135.0 * M_PI / 180.0;
 
