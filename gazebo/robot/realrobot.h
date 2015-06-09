@@ -22,6 +22,8 @@
 namespace Robot 
 {
 
+class Kratos2;
+
 class KratosSampleDetection : public SampleDetection
 {
 	Q_OBJECT
@@ -41,11 +43,15 @@ class KratosAprilTag : public AprilTagCamera
 	Q_OBJECT
 public:
 	QFutureWatcher<QImage> mImageWatcher;
+	QString mCameraName;
+	Kratos2* mRobot;
 
 	KratosCamera* mCamera;
-	KratosAprilTag(QObject* parent = 0);
+	KratosAprilTag(Kratos2* parent = 0);
 
 	void RequestFrame();
+	void SetLowRes();
+	void SetHighRes();
 
 public slots:
 	void ReceiveCameraFrame();

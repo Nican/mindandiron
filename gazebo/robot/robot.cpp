@@ -49,7 +49,7 @@ Eigen::Affine2d LocationEstimation::GetEstimate()
 
 void LocationEstimation::AprilLocationUpdate(Affine2d newLocation)
 {
-	//std::cout << QDateTime::currentDateTime().toString("hh:mm:ss.zzz").toStdString() << "got april update: " << newLocation.translation().transpose() << "\n";
+//	std::cout << QDateTime::currentDateTime().toString("hh:mm:ss.zzz").toStdString() << "got april update: " << newLocation.translation().transpose() << "\n";
 	
 	odometry = Odometry();
 
@@ -137,6 +137,8 @@ void Kratos2::Initialize()
 	connect(GetSampleDetection(), &SampleDetection::SampleDetected, mSensorLog, &SensorLog::SampleDetected);
 
 	
+	mTotalRunTime = 0.0;
+	mLastUnpaused = QDateTime::currentDateTime();
 
 	auto aprilTimer = new QTimer(this);
 	aprilTimer->start(2250);
@@ -253,7 +255,7 @@ void Kratos2::AprilTagDetected(QList<AprilTagDetectionItem> detections)
 	}
 
 	QSqlQuery query(mSensorLog->mDb);
-	query.prepare("SELECT servoAngle FROM teensy2Log WHERE timestamp > :startTime ORDER BY timestamp ASC LIMIT 1");
+	query.prepare("SELECT servoAngle FROM teensy2Log WHERE timestamp < :startTime ORDER BY timestamp DESC LIMIT 1");
 	query.bindValue(":startTime", tag.time);
 
 	if(!query.exec()){
@@ -266,6 +268,7 @@ void Kratos2::AprilTagDetected(QList<AprilTagDetectionItem> detections)
 	if(!query.next())
 	{
 		std::cout << "Got no data in teensy2Log" << std::endl;
+		return;
 	}
 	else
 	{
@@ -296,16 +299,23 @@ void Kratos2::AprilTagDetected(QList<AprilTagDetectionItem> detections)
 	double rot2 = std::atan2(tag.translation.y(), tag.translation.x());
 	if(std::abs(rot2) > (1.0 * M_PI / 180.0))
 	{
+		// std::cout << "Found tag at angle: " << tag.translation.transpose() << " -- " << servoAngle << "\n";
+		// std::cout << "SEnding to april teensy: " << clamp(rot2 + servoAngle, -M_PI/2, M_PI/2) * 180 / M_PI << "\n";
 		GetTeensy2()->setAprilAngle(clamp(rot2 + servoAngle, -M_PI/2, M_PI/2));
 	}
 }
 
 void Kratos2::TeensyStatus(TeenseyStatus status)
 {
-	if(mIsPaused != status.autoFlag)
+	double paused = !status.autoFlag;
+	if(mIsPaused != paused)
 	{
-		mIsPaused = status.autoFlag;
+		mIsPaused = paused;
 		std::cout << "Robot changed to paused state: " << mIsPaused << "\n";
+
+		mTotalRunTime += std::abs(QDateTime::currentDateTime().msecsTo(mLastUnpaused)) / 1000.0;
+		mLastUnpaused = QDateTime::currentDateTime();
+
 		emit pauseUpdate(mIsPaused);
 	}
 
@@ -313,6 +323,17 @@ void Kratos2::TeensyStatus(TeenseyStatus status)
 	{
 		//SetWheelVelocity(0.0, 0.0);
 	}
+}
+
+double Kratos2::GetTimeEstimate()
+{
+	auto current = QDateTime::currentDateTime();
+	double total = mTotalRunTime;
+
+	if(!mIsPaused)
+		total += std::abs(current.msecsTo(mLastUnpaused) / 1000.0);
+
+	return total;
 }
 
 void Kratos2::SetWheelVelocity(double left, double right)

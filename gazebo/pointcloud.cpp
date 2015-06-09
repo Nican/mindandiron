@@ -234,6 +234,38 @@ PointCloud::Ptr RegionGrowingSegmenter::AsyncronousUpdate(PointCloud::Ptr imgClo
 	}
 
 
+	//Check if we have too many points at a high position
+	//We might be near a wall if so
+	const double HieghtTreshhold = 0.27;
+	const int countThreshhold = 300;
+	int highCount = 0;
+
+	for(auto& pt : colored_cloud->points )
+	{
+		if(pt.y > HieghtTreshhold)
+		{
+			highCount++;
+
+			if(highCount >= countThreshhold)
+				break;
+		}
+	}
+
+	if(highCount >= countThreshhold)
+	{
+		for(auto& pt : colored_cloud->points )
+		{
+			if(pt.y > HieghtTreshhold)
+			{
+				pt.r = 255;
+				pt.g = 0;
+				pt.b = 0;
+			}
+		}
+	}
+
+
+
 	/*
 	for(auto &point : colored_cloud->points)
 	{

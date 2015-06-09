@@ -113,33 +113,31 @@ void BackIntoBaseStationState::Start()
 
 void BackIntoBaseStationState::TeensyStatus(TeenseyStatus status)
 {
-	if(mMoveInfront == nullptr)
+	if(IsFinished())
+		return;
+
+	if(mWaypoint == nullptr)
 		return;
 
 	if(Robot()->GetDecawave()->lastDistance < 0.7)
 	{
-		mMoveInfront->SetFinished();
+		mWaypoint->SetFinished();
 		Robot()->SetWheelVelocity(0.0, 0.0);
 	}
 }
 
 void BackIntoBaseStationState::FoundAprilTag(Eigen::Affine2d newLocation)
 {
-	if(mMoveInfront != nullptr)
+	if(IsFinished())
 		return;
 
-	Rotation2Dd rotation2D(0);
-	rotation2D.fromRotationMatrix(newLocation.linear());
+	if(mWaypoint != nullptr)
+		return;
 
-	mMoveInfront = new MoveTowardsGoalState(this);
-	mMoveInfront->mGoal = Vector2d(-0.8, 0.0);
-	mMoveInfront->mStartPos = newLocation.translation();
-	mMoveInfront->mStartAngle = rotation2D.angle();
-	mMoveInfront->mReverse = true;
-	mMoveInfront->mAprilUpdates = true;
-	mMoveInfront->Start();
-
-	connect(mMoveInfront, &ProgressState::Finished, this, &BackIntoBaseStationState::DriveInto);
+	mWaypoint = new TravelToWayPoint(Vector2d(-0.8, 0.0), this);
+	mWaypoint->mReverse = true;
+	connect(mWaypoint, &ProgressState::Finished, this, &BackIntoBaseStationState::DriveInto);
+	mWaypoint->Start();
 }
 
 void BackIntoBaseStationState::DriveInto()
@@ -173,11 +171,11 @@ void ReturnLocateAprilState::FoundAprilTag(Eigen::Affine2d newLocation)
 
 		if(loc.y() > 0.0)
 		{
-			goal = Vector2d(0.0, 4.0);
+			goal = Vector2d(0.0, 5.0);
 		}
 		else
 		{
-			goal = Vector2d(0.0, -4.0);
+			goal = Vector2d(0.0, -5.0);
 		}
 
 		std::cout << "Moving to the side of the base station at goal: " << goal << "\n";
@@ -198,7 +196,7 @@ void ReturnLocateAprilState::TravelToFront()
 {
 	std::cout << "Moving to the front of the base station\n";
 
-	TravelToWayPoint* waypoint = new TravelToWayPoint(Vector2d(5, 0), this);
+	TravelToWayPoint* waypoint = new TravelToWayPoint(Vector2d(6.0, 0), this);
 	connect(waypoint, &ProgressState::Finished, this, &ReturnLocateAprilState::RealignInFront);
 	waypoint->Start();
 }
@@ -216,10 +214,11 @@ void ReturnLocateAprilState::StartRealignInFrontRotation()
 	std::cout << "ReturnLocateAprilState::StartRealignInFrontRotation at angle: " << (angle*180/M_PI) << "\n";
 
 	//Rotate to align itself with the base station
-	RotateState* rotate = new RotateState(this, -angle);
-	rotate->Start();
-
+	//RotateState* rotate = new RotateState(this, -angle);
+	//rotate->Start();
+	AprilRotateState* rotate = new AprilRotateState(this, 0);
 	connect(rotate, &ProgressState::Finished, this, &ReturnLocateAprilState::FinishedRealignRotation);
+	rotate->Start();
 }
 
 void ReturnLocateAprilState::FinishedRealignRotation()
@@ -309,7 +308,12 @@ void ReturnRealignState::Realign()
 		return;
 	}
 
-	if(diff < 0)
+	bool rotateAround = diff < 0;
+
+	if(bGoingOut)
+		rotateAround = diff > 0;
+
+	if(rotateAround)
 	{
 		cout << "Decawave says we are going completely in the wrong direction\n";
 		RotateState* rotate = new RotateState(this, M_PI);

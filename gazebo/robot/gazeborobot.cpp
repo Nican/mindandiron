@@ -18,7 +18,7 @@ void GazeboSampleDetection::receiveUpdate(const RobotGazeboTickData &data)
 void GazeboSampleDetection::TeensyStatus(TeenseyStatus status)
 {
 	static bool sampleCollected = false;
-	static const Vector2d sampleLocation(-40, 40);
+	static const Vector2d sampleLocation(-38, 11);
 	QList<DetectedSample> detections;
 
 	Vector2d relative = sampleLocation - gazeboData.robotPosition.head<2>();
@@ -284,8 +284,8 @@ void GazeboKratos::AprilTag2Detected(QList<AprilTagDetectionItem> detections)
 void GazeboKratos::fireControlUpdate()
 {
 	RobotGazeboControl control;
-	control.leftVelocity = GetLeftVelocity() * 2.5;
-	control.rightVelocity = GetRightVelocity() * 2.5;
+	control.leftVelocity = GetLeftVelocity();
+	control.rightVelocity = GetRightVelocity();
 	control.aprilAngle = mTeensy2->GetAprilGazeboAngle();
 
 	QByteArray buffer;

@@ -190,11 +190,14 @@ void MainWindow::messageReceived(const QList<QByteArray>& messages)
 	{
 		QDataStream stream(messages[1]);
 		TeenseyStatus teensy;
+		double time;
 
 		stream >> teensy;
+		stream >> time;
 
 		mWheelOdometry->ReceiveData(teensy);
 		mGridView->mValueGrid->ReceiveTeensyData(teensy);
+		mGridView->mValueGrid->ReceiveTime(time);
 	}
 
 	if(id == '\x03')

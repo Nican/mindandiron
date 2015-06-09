@@ -102,6 +102,8 @@ class ValuesGrid : public QWidget
 	Q_OBJECT
 public:
 	ValuesGrid(QWidget *parent = 0);
+	//Time
+	QLabel* mTotalTime;
 
 	//Teensy1
 	QLabel* mLeftWheel;
@@ -125,6 +127,7 @@ public:
 	void ReceiveTeensyData(const Robot::TeenseyStatus &data);
 	void ReceiveTeensy2Data(const Robot::Teensy2Status &data);
 	void ReceiveDecawave(double value);
+	void ReceiveTime(double value);
 };
 
 

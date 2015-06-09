@@ -63,28 +63,58 @@ void KratosSampleDetection::messageReceived(const QList<QByteArray>& messages)
 ////	KratosAprilTag
 //////////////////////////
 
-KratosAprilTag::KratosAprilTag(QObject* parent) : 
+KratosAprilTag::KratosAprilTag(Kratos2* parent) : 
 	// AprilTagCamera(1315, 1315, 1920, 1080, parent)
-AprilTagCamera(877, 877, 1280, 720, parent)
+AprilTagCamera(877, 877, 1280, 720, parent),
+	mCameraName("usb-046d_HD_Pro_Webcam_C920_2245793F-video-index0"),
+	mRobot(parent),
+	mCamera(nullptr)
 {
-	mCamera = new KratosCamera("usb-046d_HD_Pro_Webcam_C920_2245793F-video-index0", mPx, mPy, this);
+	//mCamera = new KratosCamera("usb-046d_HD_Pro_Webcam_C920_2245793F-video-index0", mPx, mPy, this);
 	// mCamera = new KratosCamera("usb-046d_HD_Pro_Webcam_C920_2245793F-video-index0", 1280, 720, this);
 	//mCamera = new KratosCamera("usb-046d_HD_Pro_Webcam_C920_2245793F-video-index0", 960, 540, this);
 	//usb-046d_HD_Pro_Webcam_C920_F19B696F-video-index0
 	//usb-046d_HD_Pro_Webcam_C920_2245793F-video-index0 -- April camera
 
+	SetLowRes();
 	setObjectName("AprilTagCamera");
 
 	connect(&mImageWatcher, SIGNAL(finished()), this, SLOT(ReceiveCameraFrame()));
 	RequestFrame();
 }
 
+void KratosAprilTag::SetLowRes()
+{
+	if(mCamera != nullptr)
+		delete mCamera;
+
+	mPx = 1280;
+	mPy = 720;
+	mFx = 877;
+	mFy = 877; 
+	mCamera = new KratosCamera(mCameraName, mPx, mPy, this);
+
+	std::cout << "Changing april tag camera resolution to 1280x720\n";
+}	
+
+void KratosAprilTag::SetHighRes()
+{
+	if(mCamera != nullptr)
+		delete mCamera;
+
+	mPx = 1920; 
+	mPy = 1080;
+	mFx = 1315;
+	mFy = 1315;
+	mCamera = new KratosCamera(mCameraName, mPx, mPy, this);
+
+	std::cout << "Changing april tag camera resolution to 1920x1080\n";
+}
+
 void KratosAprilTag::ReceiveCameraFrame()
 {
 	QImage frame = mImageWatcher.future().result();
-
 	// std::cout << "Grabbing on main thread: " << QDateTime::currentDateTime().toString("hh:mm:ss.zzz").toStdString() << "\n";
-
 	emit this->ReceiveFrame(frame);
 
 	RequestFrame();
@@ -92,6 +122,19 @@ void KratosAprilTag::ReceiveCameraFrame()
 
 void KratosAprilTag::RequestFrame()
 {
+	if(this->mRobot->GetDecawave()->lastDistance > 30)
+	{
+		if(this->mPx != 1920){
+			this->SetHighRes();
+		}
+	}
+	else
+	{
+		if(this->mPx != 1280){
+			this->SetLowRes();
+		}
+	}
+
 	QFuture<QImage> future = QtConcurrent::run([this](){
 		// std::cout << "Starting grab image: " << QDateTime::currentDateTime().toString("hh:mm:ss.zzz").toStdString() << "\n";
 		QImage frame = this->mCamera->read();

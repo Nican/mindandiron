@@ -36,14 +36,7 @@ Kratos2* BaseState::Robot()
 ////////////////////
 
 RootState::RootState(QObject *parent) : BaseState(parent), mState(nullptr)
-{
-	//MoveToNextState();
-	//SetState(new MoveTowardsGoalState(this));
-
-	//QTimer::singleShot(1000, this, SLOT(MoveToNextState));
-
-	
-	
+{	
 }
 
 void RootState::Start()
@@ -108,6 +101,16 @@ void RootState::MoveToNextState()
 
 bool ProgressState::IsFinished()
 {
+	QObject* parent = this->parent();
+
+	ProgressState* base = qobject_cast<ProgressState*>(parent);
+	if(base != nullptr){
+		bool isParentFinished = base->IsFinished();
+
+		if(isParentFinished)
+			return true;
+	}
+
 	return mIsFinished;
 }
 
@@ -124,6 +127,7 @@ void ProgressState::SetFinished()
 		return;
 	}
 
+	Robot()->SetWheelVelocity(0.0, 0.0);
 	mIsFinished = true;
 	emit Finished();
 }
@@ -430,7 +434,7 @@ void MoveForwardState::TeensyStatus(TeenseyStatus status)
 	auto odometry = Robot()->GetOdometryTraveledSince(mStartTime);
 
 	// To test: Should these be set asymmetrically? Left wheel sometimes accelerates slower
-	Robot()->SetWheelVelocity(0.15, 0.15);
+	Robot()->SetWheelVelocity(0.4, 0.4);
 
 	//std::cout << "\tDistance traveled " << odometry.mDistanceTraveled << "\n";
 
@@ -459,7 +463,7 @@ void RotateState::Start()
 
 void RotateState::TeensyStatus(TeenseyStatus status)
 {
-	const double TURN_STRENGTH = 0.075;  // meters/second. Too fast of a turn creates error
+	const double TURN_STRENGTH = 0.075*2.0;  // meters/second. Too fast of a turn creates error
 
 	if(IsFinished())
 		return;
@@ -481,7 +485,7 @@ void RotateState::TeensyStatus(TeenseyStatus status)
 		Robot()->SetWheelVelocity(-TURN_STRENGTH, TURN_STRENGTH);
 
 	// if(mTotalRotation >= std::abs(mRotation))
-	if (std::abs(mTotalRotation) >= (std::abs(mRotation) / 2.0)) /// 2.0  // NOTE THIS DIVISION, IT'S SKETCHY (It's to deal by hand with slippage issues)
+	if (std::abs(mTotalRotation) >= (std::abs(mRotation))) /// 2.0  // NOTE THIS DIVISION, IT'S SKETCHY (It's to deal by hand with slippage issues)
 	{
 		Robot()->SetWheelVelocity(0.0, 0.0);
 

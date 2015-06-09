@@ -16,6 +16,7 @@ class MoveForwardState;
 class MoveTowardsGoalState;
 class RotateState;
 class ExploreState;
+class TravelToWayPoint;
 
 class BaseState : public QObject
 {
@@ -94,71 +95,12 @@ public slots:
 };
 
 
-class LeaveBaseStation : public ProgressState
-{
-	Q_OBJECT
-public:
-
-	QDateTime mStartTime;
-	MoveTowardsGoalState* mMoveInfront;
-	int finalApproach;
-
-	LeaveBaseStation(QObject *parent) : ProgressState(parent), mMoveInfront(nullptr)
-	{
-	}
-
-	virtual void Start() override;
-
-public slots:
-	void MoveToRotate();
-	void MoveToNextState();
-};
 
 
-class Level1State : public ProgressState
-{
-	Q_OBJECT
-public:
-
-	LeaveBaseStation* leaveBase;
-	MoveTowardsGoalState* mMoveInfront;
-	ExploreState* mExplore;
-
-	Level1State(QObject *parent) : ProgressState(parent), leaveBase(nullptr), mMoveInfront(nullptr)
-	{
-	}
-
-	virtual void Start() override;
-
-public slots:
-	void StartToTravelBehind();
-	//void MoveForwardBehind();
-	void StartExplore();
-	void EndExplore();
-};
 
 
-class NavigateToSample : public ProgressState
-{
-	Q_OBJECT
-public:
-	int finalApproach;
-	QDateTime mLastSampleSeen;
 
-	NavigateToSample(QObject *parent) : ProgressState(parent)
-	{
-	}
 
-	virtual void Start() override;
-
-public slots:
-	void TeensyStatus(TeenseyStatus status);
-	void ProportionalSteerOverSample(QList<DetectedSample> samples);
-	void MomentarilyHaltRobot();
-	void BackUpToCollectSample();
-	void LongHaltForRobot();
-	void FinishSampleCollection();
-};
 
 
 class BackIntoBaseStationState : public ProgressState
@@ -167,9 +109,10 @@ class BackIntoBaseStationState : public ProgressState
 public:
 
 	QDateTime mStartTime;
-	MoveTowardsGoalState* mMoveInfront;
+	//MoveTowardsGoalState* mMoveInfront;
+	TravelToWayPoint* mWaypoint;
 
-	BackIntoBaseStationState(QObject *parent) : ProgressState(parent), mMoveInfront(nullptr)
+	BackIntoBaseStationState(QObject *parent) : ProgressState(parent), mWaypoint(nullptr)
 	{
 	}
 
@@ -264,8 +207,9 @@ public:
 	QDateTime mStartTime;
 	MoveForwardState* mMoveForward;
 	double startDecawaveValue;
+	bool bGoingOut;
 
-	ReturnRealignState(QObject *parent) : ProgressState(parent)
+	ReturnRealignState(QObject *parent) : ProgressState(parent), bGoingOut(false)
 	{
 	}
 
@@ -276,37 +220,6 @@ public slots:
 	void FinishedTrajectory();
 	void Realign();
 	void FinishRotate();
-};
-
-
-class ExploreState : public ProgressState
-{
-	Q_OBJECT
-public:
-
-	ProgressState* mExploreOut;
-	NavigateToSample* mSampleNavigation;
-	QDateTime mStartTime;
-	double mLastRotation;
-
-	double lastExploreRadius;
-
-	ExploreState(QObject *parent);
-
-	virtual void Start() override;
-	void ResetExplore();
-
-public slots:
-	void StartNavigation();
-	void FailedNavigation();
-	void RestartNavigation();
-
-	void FinishRotate();
-	void RotateBack();
-
-	void StartSampleCollection(QList<DetectedSample> samples);
-	void ObstacleMapUpdate(ObstacleMap obstacleMap);
-	void DecawaveUpdate(double value);
 };
 
 
@@ -375,8 +288,149 @@ public slots:
 };
 
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+class RotateScanForSample : public ProgressState
+{
+	Q_OBJECT
+public:
+	RotateState* mRotate;
 
+	RotateScanForSample(QObject *parent) : ProgressState(parent), mRotate(nullptr)
+	{
+	}
+
+	virtual void Start() override;
+
+public slots:
+	virtual void FinishRotate1();
+	virtual void FinishRotate2();
+	virtual void FinishRotate3();
+};
+
+class LeaveBaseStation : public ProgressState
+{
+	Q_OBJECT
+public:
+
+	QDateTime mStartTime;
+	MoveTowardsGoalState* mMoveInfront;
+	int finalApproach;
+
+	LeaveBaseStation(QObject *parent) : ProgressState(parent), mMoveInfront(nullptr)
+	{
+	}
+
+	virtual void Start() override;
+
+public slots:
+	void MoveToRotate();
+	void MoveToNextState();
+};
+
+class Level1State : public ProgressState
+{
+	Q_OBJECT
+public:
+
+	LeaveBaseStation* leaveBase;
+	MoveTowardsGoalState* mMoveInfront;
+	ExploreState* mExplore;
+
+	Level1State(QObject *parent) : ProgressState(parent), leaveBase(nullptr), mMoveInfront(nullptr)
+	{
+	}
+
+	virtual void Start() override;
+
+public slots:
+	void StartToTravelBehind();
+	void RotateToTarget();
+	void StartExplore();
+	void EndExplore();
+};
+
+class NavigateToSample : public ProgressState
+{
+	Q_OBJECT
+public:
+	int finalApproach;
+	QDateTime mLastSampleSeen;
+	bool bSuccess;
+
+	NavigateToSample(QObject *parent) : ProgressState(parent)
+	{
+	}
+
+	virtual void Start() override;
+
+public slots:
+	void TeensyStatus(TeenseyStatus status);
+	void ProportionalSteerOverSample(QList<DetectedSample> samples);
+	void MomentarilyHaltRobot();
+	void BackUpToCollectSample();
+	void LongHaltForRobot();
+	void FinishSampleCollection();
+};
+
+class ExploreState : public ProgressState
+{
+	Q_OBJECT
+public:
+
+	ProgressState* mExploreOut;
+	NavigateToSample* mSampleNavigation;
+	QDateTime mLastAprilTag;
+	
+	double mLastRotation;
+	double mNextExploreRadius;
+	bool mGoingOutUsingApril;
+	bool mSuccessCollect;
+
+	ExploreState(QObject *parent);
+
+	virtual void Start() override;
+	void ResetExplore();
+
+public slots:
+	void StartNavigation();
+	void FinishCollect();
+	void FinishPostCollecting();
+	void StartDecawaveExplore();
+
+	void FinishRotate();
+	void RotateBack();
+
+	void FinishedFarGoal();
+
+	void CheckStuck();
+
+	void StartSampleCollection(QList<DetectedSample> samples);
+	void ObstacleMapUpdate(ObstacleMap obstacleMap);
+	void DecawaveUpdate(double value);
+	void FoundAprilTag(Eigen::Affine2d newLocation);
+	void pauseUpdate(bool);
+};
+
+class HeadBackAndExploreAgain : public ProgressState
+{
+	Q_OBJECT
+public:
+
+	DecawaveMoveRadialState* mMove;
+	TravelToWayPoint* mWaypoint;
+
+	HeadBackAndExploreAgain(QObject *parent) : ProgressState(parent)
+	{
+	}
+
+	virtual void Start() override;
+
+public slots:
+	void StartHeadingBack();
+	void FoundAprilTag(Eigen::Affine2d newLocation);
+	void ExploreAgain();
+};
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -386,6 +440,7 @@ class TravelToWayPoint : public ProgressState
 public:
 
 	Eigen::Vector2d mTargetPosition;
+	double mTolerance;
 	bool mReverse;
 
 	TravelToWayPoint(Eigen::Vector2d position, QObject *parent);
@@ -442,5 +497,31 @@ public:
 public slots:
 	void TeensyStatus(TeenseyStatus status);
 };
+
+
+class AprilRotateState : public ProgressState
+{
+	Q_OBJECT
+public:
+
+	QDateTime mStartTime;
+	QDateTime mLastAprilTag;
+	double mTargetRotation;
+	double mTolerance;
+
+	AprilRotateState(QObject *parent, double targetRotation) : 
+		ProgressState(parent), 
+		mTargetRotation(targetRotation),
+		mTolerance(5.0 * M_PI / 180.0)
+	{
+	}
+
+	virtual void Start() override;
+
+public slots:
+	void TeensyStatus(TeenseyStatus status);
+	void FoundAprilTag(Eigen::Affine2d newLocation);
+};
+
 
 }

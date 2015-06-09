@@ -125,6 +125,7 @@ public:
 	QSqlDatabase mDb;
 	nzmqt::ZMQSocket* mSocket;
 	QFutureWatcher<QByteArray> mAprilTagWatcher;
+	Kratos2* mRobot;
 
 	SensorLog(Kratos2* parent, nzmqt::ZMQContext* context);
 
@@ -179,6 +180,9 @@ class Kratos2 : public QObject
 	double mLeftWheelVelocity;
 	double mRightWheelVelocity;
 
+	double mTotalRunTime;
+	QDateTime mLastUnpaused;
+
 public:
 	nzmqt::ZMQContext* mContext;
 	LocationEstimation mLocation;
@@ -215,6 +219,8 @@ public:
 	void SetWheelVelocity(double left, double right);
 	double GetLeftVelocity();
 	double GetRightVelocity();
+
+	double GetTimeEstimate();
 
 	Odometry GetOdometryTraveledSince(QDateTime startTime, QDateTime endTime = QDateTime::currentDateTime(), bool useApril = false);
 
