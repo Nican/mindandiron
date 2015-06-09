@@ -11,8 +11,8 @@
 
 
 #define SORTER_SWITCH_1_PIN A9
-#define SORTER_1_CUTOFF_HIGH 30  // For Schmitt trigger
-#define SORTER_1_CUTOFF_LOW 7
+#define SORTER_1_CUTOFF_HIGH 700  // For Schmitt trigger
+#define SORTER_1_CUTOFF_LOW 300
 #define SORTER_1_OUT_PIN 20
 #define SORTER_SWITCH_2_PIN A8
 #define SORTER_2_CUTOFF_HIGH 30  // For Schmitt trigger
@@ -88,7 +88,7 @@ void loop() {
 
     printDataToComputer(Herkulex.getAngle(CAM_SERVO_ID),
                         getCurrent(), getPaused());
-    delay(5);
+    delay(1);
 
     // Periodically reboots the servo, every three minutes (roughly)
     loopCounter++;

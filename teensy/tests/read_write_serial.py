@@ -31,9 +31,10 @@ def main():
     Sorter = 0
     while(True):
         message = ser.readline()
+        print("Commanded slot: %d" %Sorter)
         print(message)
         LPOS, RPOS = checkForJumps(message, LPOS, RPOS)
-        if counter % cycleCounts == 0 and counter < 50000:
+        if counter % cycleCounts == 0 and counter < 40000:
             print('WRITING DATA TO TEENSY')
             # Format
             # \tLVEL\tRVEL\tLPOS\tRPOS\tVEL?\tCOLL\tSORT\tEND

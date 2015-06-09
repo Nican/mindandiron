@@ -18,11 +18,11 @@ void checkSorterSlotChange() {
     int sorter2State = digitalRead(SORTER_2_IN_PIN);
 
     if (lastSorter1State == HIGH and sorter1State == LOW) {
-        if (travelDirection) {
+        //if (travelDirection) {
             currentSlot++;
-        } else {
-            currentSlot--;
-        }
+        //} else {
+        //    currentSlot--;
+        //}
     }
 
     lastSorter1State = sorter1State;
@@ -53,7 +53,7 @@ void commandSorter(Servo servo, int slot) {
             servo.write(MIN_SERVO_SPEED);
             i = 0;
         } else if (slot > currentSlot) {
-            servo.write(140);
+            servo.write(40);
 //            servo.write(MIN_SERVO_SPEED + SORTER_SPEED);
 //            if ((MIN_SERVO_SPEED + SORTER_SPEED + speedAdd) < 180) {
 //                servo.write(MIN_SERVO_SPEED + SORTER_SPEED + speedAdd);
@@ -61,7 +61,7 @@ void commandSorter(Servo servo, int slot) {
 //                servo.write(180);
 //            }
         } else {
-            servo.write(0);
+            servo.write(MIN_SERVO_SPEED);
 //            servo.write(MIN_SERVO_SPEED - SORTER_SPEED);
 //            if ((MIN_SERVO_SPEED - SORTER_SPEED - speedAdd) > 0) {
 //                servo.write(MIN_SERVO_SPEED - SORTER_SPEED - speedAdd);
