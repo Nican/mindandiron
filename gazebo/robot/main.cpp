@@ -14,13 +14,6 @@
 
 using namespace Eigen;
 
-struct TestItem
-{
-	double rot; 
-	Vector3d value;
-	Vector3d expected;
-};
-
 int main(int argc, char* argv[])
 {
 	//QCoreApplication does not have a GUI

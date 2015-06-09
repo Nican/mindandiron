@@ -276,13 +276,12 @@ void ExploreState::StartSampleCollection(QList<DetectedSample> samples)
 	if(samples.isEmpty())
 		return;
 
-	ResetExplore();
-
 	std::cout << "Start to navigate to sample\n";
 	mSampleNavigation = new NavigateToSample(this);
 	connect(mSampleNavigation, &ProgressState::Finished, this, &ExploreState::FinishCollect);
 	mSampleNavigation->Start();
 
+	ResetExplore();
 }
 
 void ExploreState::FinishCollect()
@@ -313,7 +312,10 @@ void ExploreState::FinishPostCollecting()
 	if(IsFinished())
 		return;
 
-	std::cout << "Finished post colleting\n";
+	std::cout << "Finished post colleting (" << mSampleNavigation << ")\n";
+
+	if(mSampleNavigation != nullptr)
+		return;
 
 	if(mSuccessCollect)
 	{
