@@ -41,6 +41,7 @@ RootState::RootState(QObject *parent) : BaseState(parent), mState(nullptr)
 
 void RootState::Start()
 {	
+	//SetState(new ReturnLocateAprilState(this));
 	SetState(new Level1State(this));
 	//SetState(new ReturnToStationState(this));
 

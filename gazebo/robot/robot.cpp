@@ -307,7 +307,7 @@ void Kratos2::AprilTagDetected(QList<AprilTagDetectionItem> detections)
 
 void Kratos2::TeensyStatus(TeenseyStatus status)
 {
-	double paused = !status.autoFlag;
+	bool paused = !status.autoFlag;
 	if(mIsPaused != paused)
 	{
 		mIsPaused = paused;

@@ -196,7 +196,7 @@ void ReturnLocateAprilState::TravelToFront()
 {
 	std::cout << "Moving to the front of the base station\n";
 
-	TravelToWayPoint* waypoint = new TravelToWayPoint(Vector2d(6.0, 0), this);
+	TravelToWayPoint* waypoint = new TravelToWayPoint(Vector2d(8.0, 0), this);
 	connect(waypoint, &ProgressState::Finished, this, &ReturnLocateAprilState::RealignInFront);
 	waypoint->Start();
 }

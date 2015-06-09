@@ -9,7 +9,7 @@ using namespace Eigen;
 
 static const double SAMPLE_RANGE = 45.0; //+- 10m 
 static const double SAMPLE_SEARCH_RANGE = 10.0;
-static const double SAMPLE_ANGLE = -27.0 * M_PI / 180.0;
+static const double SAMPLE_ANGLE = 135.0 * M_PI / 180.0;
 
 ////////////////////
 ////	Level1State
@@ -31,20 +31,18 @@ void Level1State::Start()
 
 void Level1State::StartToTravelBehind()
 {
-	/*
 	if(leaveBase != nullptr)
 	{
 		leaveBase->deleteLater();
 		leaveBase = nullptr;
 	}
 
-	auto move = new TravelToWayPoint(Vector2d(-5.0, -5.0), this);
-	move->mTolerance = 1.25;
+	auto move = new TravelToWayPoint(Vector2d(-5.0, 5.0), this);
+	move->mTolerance = 2.0;
 	move->Start();
 	
-	connect(move, &ProgressState::Finished, this, &Level1State::RotateToTarget);
-	*/
-	RotateToTarget();
+	//connect(move, &ProgressState::Finished, this, &Level1State::RotateToTarget);
+	connect(move, &ProgressState::Finished, this, &Level1State::StartExplore);
 }
 
 void Level1State::RotateToTarget()
@@ -53,8 +51,6 @@ void Level1State::RotateToTarget()
 	move->mTolerance = 10.0 * M_PI / 180.0;
 	connect(move, &ProgressState::Finished, this, &Level1State::StartExplore);
 	move->Start();
-	
-	//connect(move, &ProgressState::Finished, this, &Level1State::RotateToTarget);
 }
 
 void Level1State::StartExplore()
@@ -543,8 +539,8 @@ void LeaveBaseStation::MoveToRotate()
 {
 	// auto rotate = new RotateState(this, M_PI/2);
 	// rotate->Start();
-	auto move = new TravelToWayPoint(Vector2d(0.0, -5.0), this);
-	move->mTolerance = 10000.0;
+	auto move = new TravelToWayPoint(Vector2d(0.0, 5.0), this);
+	move->mTolerance = 1.0;
 	move->Start();
 
 	connect(move, &ProgressState::Finished, this, &LeaveBaseStation::MoveToNextState);

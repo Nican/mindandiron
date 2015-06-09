@@ -65,6 +65,94 @@
       </model>
 
 
+
+      <model name='wall_west'>
+        <pose>0 -100 0.5 0 0 0</pose>
+        <static>1</static>
+        <link name='link'>
+          <collision name='collision'>
+            <geometry>
+              <box>
+                <size>200 1 1</size>
+              </box>
+            </geometry>
+          </collision>
+          <visual name='visual'>
+            <geometry>
+              <box>
+                <size>200 1 1</size>
+              </box>
+            </geometry>
+          </visual>
+        </link>
+      </model>
+
+      <model name='wall_east'>
+        <pose>0 100 0.5 0 0 0</pose>
+        <static>1</static>
+        <link name='link'>
+          <collision name='collision'>
+            <geometry>
+              <box>
+                <size>200 1 1</size>
+              </box>
+            </geometry>
+          </collision>
+          <visual name='visual'>
+            <geometry>
+              <box>
+                <size>200 1 1</size>
+              </box>
+            </geometry>
+          </visual>
+        </link>
+      </model>
+
+      <model name='wall_north'>
+        <pose>100 0 0.5 0 0 0</pose>
+        <static>1</static>
+        <link name='link'>
+          <collision name='collision'>
+            <geometry>
+              <box>
+                <size>1 200 1</size>
+              </box>
+            </geometry>
+          </collision>
+          <visual name='visual'>
+            <geometry>
+              <box>
+                <size>1 200 1</size>
+              </box>
+            </geometry>
+          </visual>
+        </link>
+      </model>
+
+      <model name='wall_south'>
+        <pose>-100 0 0.5 0 0 0</pose>
+        <static>1</static>
+        <link name='link'>
+          <collision name='collision'>
+            <geometry>
+              <box>
+                <size>1 200 1</size>
+              </box>
+            </geometry>
+          </collision>
+          <visual name='visual'>
+            <geometry>
+              <box>
+                <size>1 200 1</size>
+              </box>
+            </geometry>
+          </visual>
+        </link>
+      </model>
+
+
+
+
       <model name='unit_box_1'>
         <pose>15 0 0.5 0 0 0</pose>
         <static>1</static>
