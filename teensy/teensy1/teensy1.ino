@@ -116,7 +116,7 @@ void loop() {
         } else {
           servoLeft.write(getLeftAutoWheelCmd());
           servoRight.write(getRightAutoWheelCmd());
-          // commandSorter(servoSorter, sorterAutoSlotCmd);  // Uncomment when wired
+          commandSorter(servoSorter, sorterAutoSlotCmd);  // Uncomment when wired
           if (collectorAutoCmd) {
               commandCollectorSimple(servoCollector, SERVO_OUTPUT_LARGE_DELTA);
           } else {
@@ -129,10 +129,14 @@ void loop() {
             isSystemAuto = 0;
             digitalWrite(AUTO_SWITCH_OUT, isSystemAuto);
         }
-        lastLeftCmd = passThroughRC(servoLeft, LEFT_CMD_IN, lastLeftCmd);
-        lastRightCmd = passThroughRC(servoRight, RIGHT_CMD_IN, lastRightCmd);
-        roughlyControlSorterWithRC(servoSorter, SORTER_CMD_IN);
-        roughlyControlWithRC(servoCollector, COLLECTOR_CMD_IN);
+//        lastLeftCmd = passThroughRC(servoLeft, LEFT_CMD_IN, lastLeftCmd);
+//        lastRightCmd = passThroughRC(servoRight, RIGHT_CMD_IN, lastRightCmd);
+//        roughlyControlSorterWithRC(servoSorter, SORTER_CMD_IN);
+//        roughlyControlWithRC(servoCollector, COLLECTOR_CMD_IN);
+          servoLeft.write(MIN_SERVO_SPEED);
+          servoRight.write(MIN_SERVO_SPEED);
+          servoSorter.write(MIN_SERVO_SPEED);
+          servoCollector.write(MIN_SERVO_SPEED);
     }
 
     printDataToComputer(getLeftPosition(), getRightPosition(),

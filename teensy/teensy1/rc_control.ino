@@ -106,7 +106,7 @@ void roughlyControlSorterWithRC(Servo servo, int signalPin) {
 
     // Adjusts the direction as appropriate
     if (duration < MID_SIGNAL) {
-        direction = 1;
+        direction = 0;  // Only allow travel in desired direction
     } else {
         direction = -1;
     }
